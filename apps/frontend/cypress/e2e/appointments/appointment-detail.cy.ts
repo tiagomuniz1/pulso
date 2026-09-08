@@ -135,6 +135,12 @@ function stubExamRequests() {
     statusCode: 200,
     body: { data: [], total: 0, page: 1, limit: 100 },
   })
+  // A aba Histórico monta ao ser aberta; sem stub o 401 do backend real leva
+  // o app para /login e a tela some inteira.
+  cy.intercept('GET', `${Cypress.env('API_URL')}/medical-records?*`, {
+    statusCode: 200,
+    body: { data: [], total: 0, page: 1, limit: 50 },
+  }).as('getHistorico')
 }
 
 describe('Appointment Detail Page', () => {
@@ -369,4 +375,107 @@ describe('Appointment Detail Page', () => {
       cy.get('[data-testid="tab-prontuario"]').should('not.exist')
     })
   })
+
+  describe('aba Histórico', () => {
+    // Mesmo preparo do describe ADMIN: sem estes stubs as demais chamadas da
+    // tela batem no backend real, dão 401 e o app sai para /login.
+    beforeEach(() => {
+      stubProfessionals()
+      stubMedicalRecord()
+      stubTemplates()
+      stubPrescriptions()
+      stubAtestados()
+      stubExamRequests()
+    })
+
+    const registro = (over = {}) => ({
+      id: 'record-1',
+      appointmentId: 'appointment-antigo',
+      patientId: mockAppointmentDetail.patientId,
+      patientName: 'Paciente Teste',
+      professionalId: 'prof-1',
+      professionalName: 'Dra. Helena Vasconcelos',
+      specialtyId: mockAppointmentDetail.specialtyId,
+      specialtyName: 'Ginecologia',
+      appointmentDate: '2026-03-11',
+      appointmentStartTime: '14:30',
+      templateId: 't1',
+      templateSchemaSnapshot: [
+        { key: 'queixa', label: 'Queixa principal', type: 'text', required: false, order: 1, options: null, placeholder: null, helpText: null, sectionKey: null },
+      ],
+      data: { queixa: 'Dor pélvica' },
+      notes: null,
+      createdAt: '2026-03-11T18:00:00.000Z',
+      updatedAt: '2026-03-11T18:00:00.000Z',
+      ...over,
+    })
+
+    function stubHistorico(itens: object[]) {
+      cy.intercept('GET', `${Cypress.env('API_URL')}/medical-records?*`, {
+        statusCode: 200,
+        body: { data: itens, total: itens.length, page: 1, limit: 50 },
+      }).as('getHistorico')
+    }
+
+    it('mostra os atendimentos anteriores recolhidos, com data e quem atendeu', () => {
+      stubAppointmentDetail()
+      stubHistorico([registro()])
+
+      visitClinic(`/appointments/${APPT_ID}`, mockAdminUser)
+      // As contagens das abas chegam depois e re-renderizam a barra; clicar
+      // antes disso perde o elemento no meio do comando.
+      cy.wait(['@getAppointmentDetail', '@getPrescriptions', '@getAtestados'])
+      cy.get('[data-testid="tab-historico"]').click()
+      cy.wait('@getHistorico')
+
+      cy.get('[data-testid="appointment-history-item-record-1"]')
+        .should('contain', '11/03/2026')
+        .and('contain', 'Dra. Helena Vasconcelos')
+      cy.get('[data-testid="appointment-history-detail-record-1"]').should('not.exist')
+    })
+
+    it('expande o atendimento ao clicar', () => {
+      stubAppointmentDetail()
+      stubHistorico([registro()])
+
+      visitClinic(`/appointments/${APPT_ID}`, mockAdminUser)
+      // As contagens das abas chegam depois e re-renderizam a barra; clicar
+      // antes disso perde o elemento no meio do comando.
+      cy.wait(['@getAppointmentDetail', '@getPrescriptions', '@getAtestados'])
+      cy.get('[data-testid="tab-historico"]').click()
+      cy.wait('@getHistorico')
+
+      cy.get('[data-testid="appointment-history-toggle-record-1"]').click()
+      cy.get('[data-testid="appointment-history-detail-record-1"]')
+        .should('be.visible')
+        .and('contain', 'Dor pélvica')
+    })
+
+    it('a busca filtra pelo que foi registrado', () => {
+      stubAppointmentDetail()
+      stubHistorico([registro(), registro({ id: 'record-2', data: { queixa: 'Prurido vulvar' } })])
+
+      visitClinic(`/appointments/${APPT_ID}`, mockAdminUser)
+      // As contagens das abas chegam depois e re-renderizam a barra; clicar
+      // antes disso perde o elemento no meio do comando.
+      cy.wait(['@getAppointmentDetail', '@getPrescriptions', '@getAtestados'])
+      cy.get('[data-testid="tab-historico"]').click()
+      cy.wait('@getHistorico')
+
+      cy.get('[data-testid="appointment-history-search"]').type('Prurido')
+      cy.get('[data-testid="appointment-history-item-record-2"]').should('exist')
+      cy.get('[data-testid="appointment-history-item-record-1"]').should('not.exist')
+    })
+
+    it('mostra o estado vazio quando não há atendimento anterior', () => {
+      stubAppointmentDetail()
+      visitClinic(`/appointments/${APPT_ID}`, mockAdminUser)
+      // As contagens das abas chegam depois e re-renderizam a barra; clicar
+      // antes disso perde o elemento no meio do comando.
+      cy.wait(['@getAppointmentDetail', '@getPrescriptions', '@getAtestados'])
+      cy.get('[data-testid="tab-historico"]').click()
+      cy.get('[data-testid="appointment-history-empty"]').should('be.visible')
+    })
+  })
+
 })

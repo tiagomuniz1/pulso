@@ -27,6 +27,8 @@ const makeResponse = () => ({
   professionalName: 'Doctor',
   specialtyId: 'spec-uuid',
   specialtyName: 'Cardiologia',
+  appointmentDate: '2026-09-03',
+  appointmentStartTime: '09:00',
   templateId: 'template-uuid',
   templateSchemaSnapshot: [],
   data: {},

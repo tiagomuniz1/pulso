@@ -17,6 +17,7 @@ import { Schedule } from '../../schedules/entities/schedule.entity'
 import { Appointment } from '../../appointments/entities/appointment.entity'
 import { MedicalRecordTemplate } from '../../medical-record-templates/entities/medical-record-template.entity'
 import { MedicalRecord } from '../entities/medical-record.entity'
+import { CacheService } from '../../../cache/cache.service'
 
 const SEED_CLINIC_ID = '10000000-0000-4000-8000-000000000099'
 
@@ -43,6 +44,7 @@ describe('MedicalRecordsController (integration)', () => {
   let specialtyRepository: Repository<Specialty>
   let scheduleRepository: Repository<Schedule>
   let appointmentRepository: Repository<Appointment>
+  let cacheService: CacheService
   let templateRepository: Repository<MedicalRecordTemplate>
   let recordRepository: Repository<MedicalRecord>
 
@@ -79,6 +81,7 @@ describe('MedicalRecordsController (integration)', () => {
     specialtyRepository = module.get(getRepositoryToken(Specialty))
     scheduleRepository = module.get(getRepositoryToken(Schedule))
     appointmentRepository = module.get(getRepositoryToken(Appointment))
+    cacheService = module.get(CacheService)
     templateRepository = module.get(getRepositoryToken(MedicalRecordTemplate))
     recordRepository = module.get(getRepositoryToken(MedicalRecord))
   })
@@ -738,4 +741,98 @@ describe('MedicalRecordsController (integration)', () => {
         .expect(404)
     })
   })
+  describe('GET /medical-records — histórico por especialidade', () => {
+    // O recorte que a aba de histórico da consulta usa.
+    it('filtra por especialidade', async () => {
+      await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, data: { weight_abc1: 75 } })
+        .expect(201)
+
+      const { body } = await request(app.getHttpServer())
+        .get(`/medical-records?patientId=${patientId}&specialtyId=${specialtyId}`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(200)
+
+      expect(body.data.every((r: { specialtyId: string }) => r.specialtyId === specialtyId)).toBe(true)
+    })
+
+    it('exclui a consulta atual do próprio histórico', async () => {
+      const { body } = await request(app.getHttpServer())
+        .get(`/medical-records?patientId=${patientId}&excludeAppointmentId=${appointmentId}`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(200)
+
+      expect(body.data.every((r: { appointmentId: string }) => r.appointmentId !== appointmentId)).toBe(true)
+    })
+
+    // Data e horário do ATENDIMENTO, não do registro: é o que situa a consulta
+    // no tempo para quem lê o histórico.
+    it('devolve data e horário do atendimento', async () => {
+      await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, data: { weight_abc1: 75 } })
+        .expect(201)
+
+      const { body } = await request(app.getHttpServer())
+        .get(`/medical-records?patientId=${patientId}`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(200)
+
+      expect(body.data.length).toBeGreaterThan(0)
+      expect(body.data[0]).toHaveProperty('appointmentDate')
+      expect(body.data[0]).toHaveProperty('appointmentStartTime')
+      expect(body.data[0].appointmentDate).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    })
+
+    // Decisão de produto: atendimento excluído não aparece no histórico. O
+    // INNER JOIN em `baseQuery` faz o TypeORM acrescentar `deleted_at IS NULL`
+    // ao join, e o prontuário some junto com a consulta.
+    //
+    // A limpeza de cache abaixo não é maquiagem: a listagem guarda o resultado
+    // por 60s e a chave não muda quando a consulta é excluída, então sem isso o
+    // teste leria a resposta anterior. Na prática a janela é inofensiva —
+    // nenhum fluxo exclui consulta hoje (o repositório de appointments não tem
+    // delete; a interface cancela, que é status, não exclusão).
+    it('não devolve prontuário de consulta excluída', async () => {
+      await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, data: { weight_abc1: 75 } })
+        .expect(201)
+
+      const { body: antes } = await request(app.getHttpServer())
+        .get(`/medical-records?patientId=${patientId}`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(200)
+      expect(antes.total).toBe(1)
+
+      await appointmentRepository.softDelete(appointmentId)
+      await cacheService.delByPattern('medical_records:*')
+
+      const { body: depois } = await request(app.getHttpServer())
+        .get(`/medical-records?patientId=${patientId}`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(200)
+      expect(depois.total).toBe(0)
+      expect(depois.data).toHaveLength(0)
+    })
+
+    it('400 quando specialtyId não é uuid nem "null"', async () => {
+      await request(app.getHttpServer())
+        .get(`/medical-records?patientId=${patientId}&specialtyId=abc`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(400)
+    })
+
+    it('aceita specialtyId=null para o caso generalista', async () => {
+      await request(app.getHttpServer())
+        .get(`/medical-records?patientId=${patientId}&specialtyId=null`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(200)
+    })
+  })
+
 })

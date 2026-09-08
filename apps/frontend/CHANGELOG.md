@@ -1,5 +1,15 @@
 # Changelog — Frontend
 
+## [1.11.0] - 2026-09-08
+
+### Added
+
+#### Aba Histórico na consulta
+- Atendimentos anteriores da paciente **na mesma especialidade**, dentro da própria consulta — sem sair da tela em que o médico está
+- Cada linha mostra data, horário e **quem atendeu**; os detalhes vêm recolhidos e expandem no lugar, e dá para abrir dois ao mesmo tempo para comparar
+- **Busca local** que varre o que foi registrado, não só o cabeçalho: queixa, conduta, valores dos campos, observações, profissional e data. Quando o histórico não cabe numa página, a tela avisa que a busca alcança apenas o que foi carregado
+- A consulta atual não entra no próprio histórico
+
 ## [1.10.0] - 2026-09-08
 
 ### Added

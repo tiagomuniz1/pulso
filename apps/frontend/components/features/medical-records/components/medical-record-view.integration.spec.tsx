@@ -29,6 +29,8 @@ function makeRecord(overrides: Partial<IMedicalRecordModel> = {}): IMedicalRecor
     professionalName: 'Dr. João',
     specialtyId: 'spec-uuid',
     specialtyName: 'Cardiologia',
+    appointmentDate: '2026-09-03',
+    appointmentStartTime: '09:00',
     schema: [makeField()],
     data: { symptom: 'Dor no peito' },
     notes: null,

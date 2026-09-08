@@ -33,6 +33,8 @@ const makeRecord = (id: string) => ({
   notes: null,
   patient: { user: { fullName: 'Patient Name' } },
   professional: { user: { fullName: 'Doctor Name' } },
+  // A query junta a consulta por INNER JOIN: a relação está sempre carregada.
+  appointment: { id: 'appt-uuid', date: '2026-03-11', startTime: '14:30' } as any,
   specialty: { name: 'Cardiologia' },
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -90,15 +92,87 @@ describe('FindMedicalRecordsByPatientUseCase', () => {
     expect(result.limit).toBe(20)
   })
 
-  it('filters by own professionalId for DOCTOR', async () => {
-    mockProfessionalsRepository.findByUserId.mockResolvedValue({ id: professionalId } as any)
+  // A regra mudou: antes o profissional lia SÓ os próprios prontuários, e o
+  // segundo médico da mesma especialidade abria o histórico vazio — justamente
+  // o caso em que precisar do histórico faz mais sentido. Agora lê o que
+  // escreveu MAIS o que foi escrito nas especialidades que exerce.
+  it('dá ao PROFESSIONAL o que ele escreveu e o das especialidades que exerce', async () => {
+    mockProfessionalsRepository.findByUserId.mockResolvedValue({
+      id: professionalId,
+      professionalSpecialties: [{ specialtyId: 'spec-1' }, { specialtyId: 'spec-2' }],
+    } as any)
+
     await useCase.execute(patientId, makeQuery(), doctorUser)
+
     expect(mockMedicalRecordsRepository.findByPatient).toHaveBeenCalledWith(
       clinicId,
       patientId,
       1,
       20,
-      professionalId,
+      expect.objectContaining({
+        authorProfessionalId: professionalId,
+        visibleSpecialtyIds: ['spec-1', 'spec-2'],
+      }),
+    )
+  })
+
+  it('profissional sem especialidade cadastrada segue lendo o que escreveu', async () => {
+    mockProfessionalsRepository.findByUserId.mockResolvedValue({
+      id: professionalId,
+      professionalSpecialties: [],
+    } as any)
+
+    await useCase.execute(patientId, makeQuery(), doctorUser)
+
+    expect(mockMedicalRecordsRepository.findByPatient).toHaveBeenCalledWith(
+      clinicId,
+      patientId,
+      1,
+      20,
+      expect.objectContaining({ authorProfessionalId: professionalId, visibleSpecialtyIds: [] }),
+    )
+  })
+
+  // O ADMIN não é recortado por especialidade nem por autoria.
+  it('não recorta o ADMIN', async () => {
+    await useCase.execute(patientId, makeQuery(), adminUser)
+
+    const filtros = mockMedicalRecordsRepository.findByPatient.mock.calls[0][4]
+    expect(filtros?.authorProfessionalId).toBeUndefined()
+    expect(filtros?.visibleSpecialtyIds).toBeUndefined()
+  })
+
+  it('repassa o recorte de especialidade da consulta', async () => {
+    await useCase.execute(patientId, makeQuery({ specialtyId: 'spec-9' }), adminUser)
+
+    expect(mockMedicalRecordsRepository.findByPatient).toHaveBeenCalledWith(
+      clinicId,
+      patientId,
+      1,
+      20,
+      expect.objectContaining({ specialtyId: 'spec-9' }),
+    )
+  })
+
+  // Consulta generalista: prontuário com specialty_id nulo. Omitir o parâmetro
+  // significaria "todas as especialidades", que é outra coisa.
+  it("traduz specialtyId 'null' em recorte de especialidade nula", async () => {
+    await useCase.execute(patientId, makeQuery({ specialtyId: 'null' }), adminUser)
+
+    const filtros = mockMedicalRecordsRepository.findByPatient.mock.calls[0][4]
+    expect(filtros?.specialtyIsNull).toBe(true)
+    expect(filtros?.specialtyId).toBeUndefined()
+  })
+
+  it('repassa a exclusão da consulta atual', async () => {
+    await useCase.execute(patientId, makeQuery({ excludeAppointmentId: 'appt-atual' }), adminUser)
+
+    expect(mockMedicalRecordsRepository.findByPatient).toHaveBeenCalledWith(
+      clinicId,
+      patientId,
+      1,
+      20,
+      expect.objectContaining({ excludeAppointmentId: 'appt-atual' }),
     )
   })
 
@@ -109,7 +183,7 @@ describe('FindMedicalRecordsByPatientUseCase', () => {
       patientId,
       1,
       20,
-      'some-doctor',
+      expect.objectContaining({ professionalId: 'some-doctor' }),
     )
   })
 

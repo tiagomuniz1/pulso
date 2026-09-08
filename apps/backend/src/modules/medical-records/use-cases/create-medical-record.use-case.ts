@@ -29,6 +29,9 @@ export function toMedicalRecordResponse(record: MedicalRecord): MedicalRecordRes
     professionalName: record.professional.user.fullName,
     specialtyId: record.specialtyId,
     specialtyName: record.specialty?.name ?? null,
+    // Sempre presentes: prontuário de consulta excluída não é devolvido.
+    appointmentDate: record.appointment.date,
+    appointmentStartTime: record.appointment.startTime,
     templateId: record.templateId,
     templateSchemaSnapshot: record.templateSchemaSnapshot,
     data: record.data,
