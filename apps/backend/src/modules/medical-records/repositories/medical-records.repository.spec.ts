@@ -150,12 +150,13 @@ describe('MedicalRecordsRepository', () => {
       )
     })
 
-    // A consulta é juntada por LEFT JOIN: consulta soft-deleted não pode
-    // esconder o prontuário.
-    it('junta a consulta para expor data e horário do atendimento', async () => {
+    // INNER JOIN, não LEFT: o TypeORM acrescenta `deleted_at IS NULL` ao join,
+    // e é assim que prontuário de consulta excluída deixa de aparecer.
+    it('junta a consulta por INNER JOIN, para excluir atendimento excluído', async () => {
       mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0])
       await repository.findByPatient('clinic-1', 'patient-1', 1, 20)
-      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('mr.appointment', 'appointment')
+      expect(mockQueryBuilder.innerJoinAndSelect).toHaveBeenCalledWith('mr.appointment', 'appointment')
+      expect(mockQueryBuilder.leftJoinAndSelect).not.toHaveBeenCalledWith('mr.appointment', 'appointment')
     })
   })
 

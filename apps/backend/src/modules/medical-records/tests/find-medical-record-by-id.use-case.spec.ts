@@ -25,6 +25,8 @@ const makeRecord = (overrides = {}) => ({
   notes: null,
   patient: { user: { fullName: 'Patient Name' } },
   professional: { user: { fullName: 'Doctor Name' } },
+  // A query junta a consulta por INNER JOIN: a relação está sempre carregada.
+  appointment: { id: 'appt-uuid', date: '2026-03-11', startTime: '14:30' } as any,
   specialty: { name: 'Cardiologia' },
   createdAt: new Date(),
   updatedAt: new Date(),

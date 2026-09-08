@@ -288,16 +288,16 @@ describe('AppointmentHistorySection (integration)', () => {
     expect(screen.getByTestId('appointment-history-detail-record-1')).toHaveTextContent('—')
   })
 
-  // Consulta excluída deixa o prontuário sem data. Esconder o registro seria
-  // pior que exibi-lo sem ela.
-  it('exibe o registro mesmo sem data do atendimento', async () => {
+  // Consulta excluída não aparece no histórico — o backend não devolve o
+  // prontuário dela (INNER JOIN em medical-records.repository). Aqui fica
+  // travado que a tela sempre tem data e horário para mostrar.
+  it('mostra data e horário do atendimento em toda linha', async () => {
     mockService.listByPatient.mockResolvedValue(
-      makePage([makeDto({ appointmentDate: null, appointmentStartTime: null })]) as any,
+      makePage([makeDto(), makeDto({ id: 'record-2', appointmentDate: '2025-11-04', appointmentStartTime: '08:15' })]) as any,
     )
     render()
 
-    expect(await screen.findByTestId('appointment-history-item-record-1')).toHaveTextContent(
-      'Data não disponível',
-    )
+    expect(await screen.findByTestId('appointment-history-item-record-1')).toHaveTextContent('11/03/2026 às 14:30')
+    expect(screen.getByTestId('appointment-history-item-record-2')).toHaveTextContent('04/11/2025 às 08:15')
   })
 })

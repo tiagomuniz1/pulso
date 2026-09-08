@@ -14,8 +14,7 @@ import type {
 // Acima disto a tela avisa que a busca não alcança o resto.
 const TAMANHO_DA_PAGINA = 50
 
-function formatarData(iso: string | null): string {
-  if (!iso) return 'Data não disponível'
+function formatarData(iso: string): string {
   const [ano, mes, dia] = iso.split('-')
   return `${dia}/${mes}/${ano}`
 }
@@ -45,7 +44,7 @@ function textoBuscavel(registro: IMedicalRecordModel): string {
 
   return [
     formatarData(registro.appointmentDate),
-    registro.appointmentStartTime ?? '',
+    registro.appointmentStartTime,
     registro.professionalName,
     registro.specialtyName ?? '',
     campos,
@@ -175,12 +174,10 @@ export function AppointmentHistorySection({
                       <span className="flex flex-col gap-0.5">
                         <span className="text-sm font-medium text-text">
                           {formatarData(registro.appointmentDate)}
-                          {registro.appointmentStartTime && (
-                            <span className="font-normal text-text-mute">
-                              {' '}
-                              às {registro.appointmentStartTime}
-                            </span>
-                          )}
+                          <span className="font-normal text-text-mute">
+                            {' '}
+                            às {registro.appointmentStartTime}
+                          </span>
                         </span>
                         {/* Quem atendeu é o que situa o registro: com dois
                             profissionais na mesma especialidade, a conduta de

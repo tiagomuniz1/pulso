@@ -7,7 +7,8 @@
 - `GET /medical-records` aceita `specialtyId` e `excludeAppointmentId`. `specialtyId=null` pede exatamente os prontuários de consulta generalista: omitir significaria "todas as especialidades", que é outra coisa
 
 ### Added
-- A resposta de prontuário passa a trazer `appointmentDate` e `appointmentStartTime` — data e horário do **atendimento**, não do registro. Os dois divergem quando o médico preenche o prontuário depois, e o que situa a consulta no histórico é quando a paciente foi vista. Nulos quando a consulta foi excluída: o prontuário continua visível, porque perder registro clínico seria pior que exibi-lo sem data
+- A resposta de prontuário passa a trazer `appointmentDate` e `appointmentStartTime` — data e horário do **atendimento**, não do registro. Os dois divergem quando o médico preenche o prontuário depois, e o que situa a consulta no histórico é quando a paciente foi vista
+- **Prontuário de consulta excluída deixa de ser devolvido.** A relação é juntada por `innerJoinAndSelect`, e o TypeORM acrescenta `deleted_at IS NULL` ao join — atendimento excluído não aparece em histórico nenhum. Na prática nenhum fluxo exclui consulta hoje: a interface cancela, que é status, não exclusão
 
 ## [1.10.0] - 2026-09-08
 

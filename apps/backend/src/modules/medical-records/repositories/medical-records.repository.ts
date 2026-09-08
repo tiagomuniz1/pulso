@@ -25,9 +25,11 @@ export class MedicalRecordsRepository implements IMedicalRecordsRepository {
       .innerJoinAndSelect('professional.user', 'professionalUser')
       // LEFT JOIN: generalist records have specialty_id NULL — an inner join would drop them.
       .leftJoinAndSelect('mr.specialty', 'specialty')
-      // LEFT JOIN de propósito: consulta soft-deleted não pode esconder o
-      // prontuário. Perder registro clínico é pior que exibi-lo sem a data.
-      .leftJoinAndSelect('mr.appointment', 'appointment')
+      // INNER JOIN: o TypeORM acrescenta `deleted_at IS NULL` ao join, então
+      // prontuário de consulta excluída não volta em consulta nenhuma. É a
+      // decisão de produto — histórico não mostra atendimento excluído — e é
+      // também o que a casa faz em relação obrigatória (ver `backend.md`).
+      .innerJoinAndSelect('mr.appointment', 'appointment')
   }
 
   async findById(id: string, clinicId: string): Promise<MedicalRecord | null> {

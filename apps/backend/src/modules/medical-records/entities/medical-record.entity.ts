@@ -29,9 +29,12 @@ export class MedicalRecord {
   // A data e o horário do ATENDIMENTO, não do registro. O histórico clínico
   // precisa de quando a paciente foi vista; `createdAt` é quando o prontuário
   // foi digitado, e os dois divergem quando o médico preenche depois.
+  //
+  // Sempre carregada: a query junta por INNER JOIN, e prontuário sem consulta
+  // viva não é devolvido.
   @ManyToOne(() => Appointment, { eager: false })
   @JoinColumn({ name: 'appointment_id' })
-  appointment: Appointment | null
+  appointment: Appointment
 
   @ManyToOne(() => Patient, { eager: false })
   @JoinColumn({ name: 'patient_id' })
