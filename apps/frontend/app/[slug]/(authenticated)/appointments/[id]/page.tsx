@@ -24,6 +24,7 @@ import { ResumoTab } from '@/components/features/appointments/components/resumo-
 import { MedicalRecordSection } from '@/components/features/appointments/components/medical-record-section'
 import { PrescriptionSection } from '@/components/features/prescriptions/components/prescription-section'
 import { VaccineIndicationSection } from '@/components/features/vaccine-indications/components/vaccine-indication-section'
+import { AppointmentHistorySection } from '@/components/features/appointments/components/appointment-history-section'
 import { AtestadoSection } from '@/components/features/atestados/components/atestado-section'
 import { ExameSection } from '@/components/features/exames/components/exame-section'
 import { PhotoSection } from '@/components/features/consultation-photos/components/photo-section'
@@ -36,7 +37,7 @@ import { VaccinationHistory } from '@/components/features/vaccinations/component
 import { useVaccinations } from '@/components/features/vaccinations/hooks/use-vaccinations.hook'
 import type { IApiError } from '@/types/api.types'
 
-type TabId = 'resumo' | 'prontuario' | 'receitas' | 'atestados' | 'exames' | 'fotos' | 'vacinas'
+type TabId = 'resumo' | 'prontuario' | 'historico' | 'receitas' | 'atestados' | 'exames' | 'fotos' | 'vacinas'
 
 export default function AppointmentDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -145,6 +146,10 @@ export default function AppointmentDetailPage() {
   const tabItems = [
     { id: 'resumo', label: 'Resumo' },
     ...(canSeeMedicalRecord ? [{ id: 'prontuario', label: 'Prontuário' }] : []),
+    // Ao lado do Prontuário de propósito: é o contexto que embasa o que se
+    // escreve ali. Sem contagem — o número de atendimentos anteriores não é
+    // uma pendência a zerar.
+    ...(canSeeMedicalRecord ? [{ id: 'historico', label: 'Histórico' }] : []),
     ...(canManage
       ? [{ id: 'receitas', label: 'Receitas', count: prescriptions?.length ?? 0 }]
       : []),
@@ -254,6 +259,14 @@ export default function AppointmentDetailPage() {
                   professionalId={appointment.professionalId}
                   appointmentStatus={appointment.status}
                   canManage={canManage}
+                />
+              )}
+
+              {activeTab === 'historico' && canSeeMedicalRecord && (
+                <AppointmentHistorySection
+                  patientId={appointment.patientId}
+                  specialtyId={appointment.specialtyId}
+                  appointmentId={id}
                 />
               )}
 

@@ -1,5 +1,14 @@
 # Changelog — Backend
 
+## [1.11.0] - 2026-09-08
+
+### Changed
+- **O PROFESSIONAL passa a ler o histórico de prontuários da própria especialidade**, não só o que ele mesmo escreveu. A regra é "o que escrevi **ou** o que foi escrito numa especialidade que exerço" — antes o segundo médico de uma especialidade abria o histórico da paciente vazio, que é justamente quando ele mais precisa dele
+- `GET /medical-records` aceita `specialtyId` e `excludeAppointmentId`. `specialtyId=null` pede exatamente os prontuários de consulta generalista: omitir significaria "todas as especialidades", que é outra coisa
+
+### Added
+- A resposta de prontuário passa a trazer `appointmentDate` e `appointmentStartTime` — data e horário do **atendimento**, não do registro. Os dois divergem quando o médico preenche o prontuário depois, e o que situa a consulta no histórico é quando a paciente foi vista. Nulos quando a consulta foi excluída: o prontuário continua visível, porque perder registro clínico seria pior que exibi-lo sem data
+
 ## [1.10.0] - 2026-09-08
 
 ### Changed

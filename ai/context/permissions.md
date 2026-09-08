@@ -292,11 +292,14 @@ O esquema que o sistema usa para dizer o que falta, e a conduta que o profission
 | Ação | ADMIN | PROFESSIONAL | USER | PATIENT |
 |---|:---:|:---:|:---:|:---:|
 | Criar prontuário | ✓ qualquer | só das próprias consultas | ✗ | ✗ |
-| Listar prontuários (paginado) | ✓ todos | só os próprios | ✗ | ✗ |
+| Listar prontuários (paginado) | ✓ todos | os próprios **e os das especialidades que exerce** | ✗ | ✗ |
 | Ver por consulta (`by-appointment`) | ✓ | só das próprias | ✗ | ✗ |
 | Ver por ID | ✓ | só o próprio | ✗ | ✗ |
 | Editar | ✓ qualquer | só o próprio | ✗ | ✗ |
 | Excluir | ✓ | ✗ | ✗ | ✗ |
+
+
+> **O profissional lê o histórico da própria especialidade, não só o que escreveu.** Antes lia apenas os próprios prontuários, e o segundo médico de uma especialidade abria o histórico da paciente vazio — justamente quando precisar dele faz mais sentido. A regra agora é: o que ele escreveu **ou** o que foi escrito numa especialidade que ele exerce. Continua sem enxergar as demais especialidades: um nutricionista não lê o prontuário de ginecologia.
 
 > Prontuário é 1:1 com a consulta — não existe sem consulta vinculada. A especialidade é herdada da consulta e não pode ser alterada. Edição é bloqueada pelo backend após a consulta ser concluída (`422`). O histórico do paciente (`GET /medical-records?patientId=`) é acessível apenas por ADMIN e PROFESSIONAL.
 

@@ -21,6 +21,9 @@ export interface IMedicalRecordModel {
   professionalName: string
   specialtyId: string | null
   specialtyName: string | null
+  /** Data e horário do atendimento. Nulos se a consulta foi excluída. */
+  appointmentDate: string | null
+  appointmentStartTime: string | null
   schema: IRecordFieldModel[]
   data: Record<string, unknown>
   notes: string | null

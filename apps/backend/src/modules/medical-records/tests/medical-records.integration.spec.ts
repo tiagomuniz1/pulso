@@ -738,4 +738,65 @@ describe('MedicalRecordsController (integration)', () => {
         .expect(404)
     })
   })
+  describe('GET /medical-records — histórico por especialidade', () => {
+    // O recorte que a aba de histórico da consulta usa.
+    it('filtra por especialidade', async () => {
+      await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, data: { weight_abc1: 75 } })
+        .expect(201)
+
+      const { body } = await request(app.getHttpServer())
+        .get(`/medical-records?patientId=${patientId}&specialtyId=${specialtyId}`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(200)
+
+      expect(body.data.every((r: { specialtyId: string }) => r.specialtyId === specialtyId)).toBe(true)
+    })
+
+    it('exclui a consulta atual do próprio histórico', async () => {
+      const { body } = await request(app.getHttpServer())
+        .get(`/medical-records?patientId=${patientId}&excludeAppointmentId=${appointmentId}`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(200)
+
+      expect(body.data.every((r: { appointmentId: string }) => r.appointmentId !== appointmentId)).toBe(true)
+    })
+
+    // Data e horário do ATENDIMENTO, não do registro: é o que situa a consulta
+    // no tempo para quem lê o histórico.
+    it('devolve data e horário do atendimento', async () => {
+      await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, data: { weight_abc1: 75 } })
+        .expect(201)
+
+      const { body } = await request(app.getHttpServer())
+        .get(`/medical-records?patientId=${patientId}`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(200)
+
+      expect(body.data.length).toBeGreaterThan(0)
+      expect(body.data[0]).toHaveProperty('appointmentDate')
+      expect(body.data[0]).toHaveProperty('appointmentStartTime')
+      expect(body.data[0].appointmentDate).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    })
+
+    it('400 quando specialtyId não é uuid nem "null"', async () => {
+      await request(app.getHttpServer())
+        .get(`/medical-records?patientId=${patientId}&specialtyId=abc`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(400)
+    })
+
+    it('aceita specialtyId=null para o caso generalista', async () => {
+      await request(app.getHttpServer())
+        .get(`/medical-records?patientId=${patientId}&specialtyId=null`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(200)
+    })
+  })
+
 })

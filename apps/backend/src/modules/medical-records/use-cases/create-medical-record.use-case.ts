@@ -29,6 +29,10 @@ export function toMedicalRecordResponse(record: MedicalRecord): MedicalRecordRes
     professionalName: record.professional.user.fullName,
     specialtyId: record.specialtyId,
     specialtyName: record.specialty?.name ?? null,
+    // Nulos quando a consulta foi excluída: o prontuário continua visível, sem
+    // a data do atendimento. Perder registro clínico seria pior.
+    appointmentDate: record.appointment?.date ?? null,
+    appointmentStartTime: record.appointment?.startTime ?? null,
     templateId: record.templateId,
     templateSchemaSnapshot: record.templateSchemaSnapshot,
     data: record.data,

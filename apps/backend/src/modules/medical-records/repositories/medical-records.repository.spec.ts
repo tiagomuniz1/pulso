@@ -66,7 +66,7 @@ describe('MedicalRecordsRepository', () => {
 
     it('adds professionalId filter when provided', async () => {
       mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0])
-      await repository.findByPatient('clinic-1', 'patient-1', 1, 20, 'doctor-1')
+      await repository.findByPatient('clinic-1', 'patient-1', 1, 20, { professionalId: 'doctor-1' })
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('mr.professionalId = :professionalId', { professionalId: 'doctor-1' })
     })
 
@@ -75,6 +75,87 @@ describe('MedicalRecordsRepository', () => {
       await repository.findByPatient('clinic-1', 'patient-1', 1, 20)
       const andWhereCalls = (mockQueryBuilder.andWhere as jest.Mock).mock.calls.map((c: unknown[]) => c[0])
       expect(andWhereCalls).not.toContain('mr.professionalId = :professionalId')
+    })
+
+    it('filtra por especialidade quando informada', async () => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0])
+      await repository.findByPatient('clinic-1', 'patient-1', 1, 20, { specialtyId: 'spec-1' })
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('mr.specialtyId = :specialtyId', { specialtyId: 'spec-1' })
+    })
+
+    // Consulta generalista gera prontuário com specialty_id nulo, e `= NULL`
+    // não casa — sem este caminho o histórico da consulta sem especialidade
+    // viria vazio.
+    it('filtra por especialidade nula no caso generalista', async () => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0])
+      await repository.findByPatient('clinic-1', 'patient-1', 1, 20, { specialtyIsNull: true })
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('mr.specialtyId IS NULL')
+    })
+
+    it('especialidade explícita tem precedência sobre a nula', async () => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0])
+      await repository.findByPatient('clinic-1', 'patient-1', 1, 20, { specialtyId: 'spec-1', specialtyIsNull: true })
+      const calls = (mockQueryBuilder.andWhere as jest.Mock).mock.calls.map((c: unknown[]) => c[0])
+      expect(calls).toContain('mr.specialtyId = :specialtyId')
+      expect(calls).not.toContain('mr.specialtyId IS NULL')
+    })
+
+    // A consulta em que o médico está não entra no próprio histórico.
+    it('exclui a consulta atual', async () => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0])
+      await repository.findByPatient('clinic-1', 'patient-1', 1, 20, { excludeAppointmentId: 'appt-1' })
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'mr.appointmentId != :excludeAppointmentId',
+        { excludeAppointmentId: 'appt-1' },
+      )
+    })
+
+    // A regra do PROFESSIONAL: o que escreveu OU o que foi escrito nas
+    // especialidades que exerce. É OR, não AND — com AND ele perderia os
+    // próprios prontuários de especialidade que deixou de exercer.
+    it('combina autoria e especialidades visíveis com OR', async () => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0])
+      await repository.findByPatient('clinic-1', 'patient-1', 1, 20, {
+        visibleSpecialtyIds: ['spec-1', 'spec-2'],
+        authorProfessionalId: 'doctor-1',
+      })
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        '(mr.specialtyId IN (:...visibleSpecialtyIds) OR mr.professionalId = :authorProfessionalId)',
+        { visibleSpecialtyIds: ['spec-1', 'spec-2'], authorProfessionalId: 'doctor-1' },
+      )
+    })
+
+    // Profissional sem especialidade cadastrada (nutricionista, por exemplo):
+    // continua lendo o que escreveu.
+    it('cai para autoria quando não há especialidades', async () => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0])
+      await repository.findByPatient('clinic-1', 'patient-1', 1, 20, {
+        visibleSpecialtyIds: [],
+        authorProfessionalId: 'doctor-1',
+      })
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'mr.professionalId = :authorProfessionalId',
+        { authorProfessionalId: 'doctor-1' },
+      )
+    })
+
+    it('usa só as especialidades quando não há autoria', async () => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0])
+      await repository.findByPatient('clinic-1', 'patient-1', 1, 20, {
+        visibleSpecialtyIds: ['spec-1'],
+      })
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'mr.specialtyId IN (:...visibleSpecialtyIds)',
+        { visibleSpecialtyIds: ['spec-1'] },
+      )
+    })
+
+    // A consulta é juntada por LEFT JOIN: consulta soft-deleted não pode
+    // esconder o prontuário.
+    it('junta a consulta para expor data e horário do atendimento', async () => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0])
+      await repository.findByPatient('clinic-1', 'patient-1', 1, 20)
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('mr.appointment', 'appointment')
     })
   })
 
