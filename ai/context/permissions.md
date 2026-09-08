@@ -69,7 +69,10 @@ Isso existe porque quem é dono da clínica com frequência também atende. Um �
 | Editar | ✓ qualquer | só o próprio | só o próprio | ✗ |
 | Alterar perfil de acesso / ativação | ✓ de outros | ✗ | ✗ | ✗ |
 | Ativar / Desativar | ✓ | ✗ | ✗ | ✗ |
+| Enviar link de definição de senha | ✓ | ✗ | ✗ | ✗ |
 | Excluir | ✓ | ✗ | ✗ | ✗ |
+
+> **Enviar link de definição de senha** (`POST /users/:id/send-set-password-email`) é exclusivo do ADMIN: gera um token de acesso à conta de outra pessoa. Não vale para PATIENT, que não faz login, nem para conta desativada, em que o link morreria no login sem explicação — nos dois casos o backend responde `422`. E **não responde sucesso quando o e-mail não sai**: se o envio estiver desconfigurado ou falhar, vem `503` com o motivo, para a tela não confirmar uma entrega que não aconteceu.
 
 > PROFESSIONAL e USER chegam à tela de edição pelo link **"Meu perfil"** no header. Não têm acesso à listagem.
 

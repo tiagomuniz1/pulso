@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common'
-import * as nodemailer from 'nodemailer'
-import * as CircuitBreaker from 'opossum'
+import { Injectable } from '@nestjs/common'
 import { getEnvConfig } from '../../../config/env.config'
+import { EmailSenderService } from '../../../common/email/email-sender.service'
+import { EmailSendResult } from '../../../common/email/email-send-result.type'
 import {
   IAccessRequestEmailAdapter,
   ISendAccessRequestEmailParams,
@@ -18,46 +18,13 @@ function escapeHtml(value: string): string {
 
 @Injectable()
 export class AccessRequestEmailAdapter implements IAccessRequestEmailAdapter {
-  private readonly logger = new Logger(AccessRequestEmailAdapter.name)
-  private readonly breaker: CircuitBreaker<[ISendAccessRequestEmailParams], void>
+  constructor(private readonly emailSender: EmailSenderService) {}
 
-  constructor() {
-    this.breaker = new CircuitBreaker(
-      (params: ISendAccessRequestEmailParams) => this.send(params),
-      {
-        timeout: 10000,
-        errorThresholdPercentage: 50,
-        resetTimeout: 30000,
-      },
-    )
-
-    this.breaker.fallback(() => {
-      this.logger.warn('Email circuit breaker open — skipping send')
-    })
-  }
-
-  async sendAccessRequestEmail(params: ISendAccessRequestEmailParams): Promise<void> {
-    await this.breaker.fire(params)
-  }
-
-  private async send(params: ISendAccessRequestEmailParams): Promise<void> {
-    const env = getEnvConfig()
-
-    if (!env.SMTP_HOST) {
-      this.logger.warn('SMTP_HOST not configured — skipping email send')
-      return
-    }
-
-    const transporter = nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      secure: false,
-      auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
-    })
-
-    await transporter.sendMail({
-      from: `Pulso <${env.SMTP_FROM}>`,
-      to: env.ACCESS_REQUEST_TO_EMAIL,
+  async sendAccessRequestEmail(params: ISendAccessRequestEmailParams): Promise<EmailSendResult> {
+    return this.emailSender.sendEmail({
+      to: getEnvConfig().ACCESS_REQUEST_TO_EMAIL,
+      fromName: 'Pulso',
+      // Responder o e-mail fala direto com quem solicitou.
       replyTo: params.email,
       subject: `Solicitação de acesso — ${params.clinicName}`,
       html: this.buildHtml(params),

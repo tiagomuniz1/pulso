@@ -60,6 +60,7 @@ describe('CreateAccessRequestUseCase', () => {
     })
     mockAccessRequestEmailAdapter.sendAccessRequestEmail.mockImplementation(async () => {
       callOrder.push('email')
+      return { sent: true as const }
     })
 
     await useCase.execute({ fullName: 'Ana', email: 'ana@clinica.com', clinicName: 'Clínica' })

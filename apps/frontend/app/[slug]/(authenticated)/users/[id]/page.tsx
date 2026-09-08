@@ -67,6 +67,7 @@ export default function UserDetailsPage() {
 
       {!isPending && !isError && user && (
         <UserDetails
+          canSendSetPasswordEmail={isAdmin}
           user={user}
           canDelete={isAdmin}
           onDeleteClick={() => setShowDeleteDialog(true)}

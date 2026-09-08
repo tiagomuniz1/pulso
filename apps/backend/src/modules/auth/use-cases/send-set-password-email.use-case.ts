@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import { createHash, randomBytes } from 'crypto'
 import { DataSource } from 'typeorm'
 import { BaseUseCase } from '../../../common/base.use-case'
+import { EmailSendResult } from '../../../common/email/email-send-result.type'
 import { getEnvConfig } from '../../../config/env.config'
 import { buildClinicUrl } from '../../../common/utils/clinic-url.utils'
 import { FindClinicByIdUseCase } from '../../clinics/use-cases/find-clinic-by-id.use-case'
@@ -26,7 +27,7 @@ export class SendSetPasswordEmailUseCase extends BaseUseCase {
     super(dataSource)
   }
 
-  async execute(userId: string, clinicId: string | null): Promise<void> {
+  async execute(userId: string, clinicId: string | null): Promise<EmailSendResult> {
     const token = randomBytes(32).toString('hex')
     const tokenHash = createHash('sha256').update(token).digest('hex')
     const expiresAt = new Date(Date.now() + SendSetPasswordEmailUseCase.TTL_MS)
@@ -37,7 +38,7 @@ export class SendSetPasswordEmailUseCase extends BaseUseCase {
       const user = await this.usersRepository.findById(userId, clinicId)
       if (!user) {
         this.logger.warn('User not found for set-password email', { context: SendSetPasswordEmailUseCase.name, userId })
-        return
+        return { sent: false, reason: 'send_failed' }
       }
 
       let slug: string | null = null
@@ -77,7 +78,7 @@ export class SendSetPasswordEmailUseCase extends BaseUseCase {
         ? buildClinicUrl(slug, `/set-password?token=${token}`)
         : `${getEnvConfig().FRONTEND_URL}/set-password?token=${token}`
 
-      await this.emailAdapter.sendSetPasswordEmail({
+      return await this.emailAdapter.sendSetPasswordEmail({
         to: user.email,
         recipientName: user.fullName,
         link,
@@ -87,11 +88,15 @@ export class SendSetPasswordEmailUseCase extends BaseUseCase {
         accentSoftColor,
       })
     } catch (error) {
-      this.logger.warn('Failed to send set-password email', {
+      // Segue engolindo de propósito: criar usuário não deve falhar porque o
+      // SMTP caiu. Mas o desfecho vai de volta a quem chamou, e quem precisa
+      // dizer a verdade na tela — o botão de reenvio — usa isso.
+      this.logger.error('Failed to send set-password email', {
         context: SendSetPasswordEmailUseCase.name,
         userId,
         error: error instanceof Error ? error.message : String(error),
       })
+      return { sent: false, reason: 'send_failed' }
     }
   }
 }

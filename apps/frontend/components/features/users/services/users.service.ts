@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/api-client'
-import type { UserResponseDto, PaginatedUsersResponseDto, CreateUserDto, UpdateUserDto } from '@app/shared'
+import type { CreateUserDto, PaginatedUsersResponseDto, SendSetPasswordEmailResponseDto, UpdateUserDto, UserResponseDto } from '@app/shared'
 import type { IUserListParams } from '../types/user-input.types'
 
 export const userService = {
@@ -15,4 +15,7 @@ export const userService = {
   create: (data: CreateUserDto) => apiClient.post<UserResponseDto>('/users', data),
   update: (id: string, data: UpdateUserDto) => apiClient.patch<UserResponseDto>(`/users/${id}`, data),
   remove: (id: string) => apiClient.delete<void>(`/users/${id}`),
+
+  sendSetPasswordEmail: (id: string) =>
+    apiClient.post<SendSetPasswordEmailResponseDto>(`/users/${id}/send-set-password-email`),
 }

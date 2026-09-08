@@ -1,0 +1,554 @@
+<meta charset="utf-8">
+<title>Vacinas no Pulso — complemento ao guia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@500&display=swap">
+
+<style>
+  :root {
+    --ground: #FBF7F3;
+    --surface: #FFFFFF;
+    --surface-sunk: #F5EEE7;
+    --ink: #1E1618;
+    --ink-dim: #57494C;
+    --ink-mute: #8B7B7F;
+    --line: #E7DBD2;
+    --line-soft: #F0E7DF;
+    --brand: #5A0E20;
+    --brand-soft: #F8E3E9;
+    --accent: #D9542F;
+    --accent-soft: #FCEDE6;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #15100F;
+      --surface: #1E1817;
+      --surface-sunk: #271F1E;
+      --ink: #F5EDE8;
+      --ink-dim: #C2B2AC;
+      --ink-mute: #8E7C77;
+      --line: #362B29;
+      --line-soft: #2A2220;
+      --brand: #F0A8B8;
+      --brand-soft: #3A1A22;
+      --accent: #F0835C;
+      --accent-soft: #3A211A;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #15100F;
+    --surface: #1E1817;
+    --surface-sunk: #271F1E;
+    --ink: #F5EDE8;
+    --ink-dim: #C2B2AC;
+    --ink-mute: #8E7C77;
+    --line: #362B29;
+    --line-soft: #2A2220;
+    --brand: #F0A8B8;
+    --brand-soft: #3A1A22;
+    --accent: #F0835C;
+    --accent-soft: #3A211A;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Source Sans 3", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-size: 16.5px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 46rem; margin: 0 auto; padding: 0 1.5rem 5rem; }
+
+  h1, h2, h3, .wordmark {
+    font-family: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    text-wrap: balance;
+    line-height: 1.14;
+    letter-spacing: -.018em;
+  }
+
+  p { margin-bottom: .85rem; }
+  p:last-child { margin-bottom: 0; }
+  strong { font-weight: 600; }
+
+  /* ---------------- capa ---------------- */
+
+  .cover {
+    min-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 4rem 0;
+  }
+
+  .logo-slot {
+    border: 1.5px dashed var(--line);
+    border-radius: 12px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    color: var(--ink-mute);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: .74rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    max-width: 20rem;
+  }
+
+  .wordmark { font-size: 3rem; color: var(--brand); letter-spacing: -.03em; }
+  .wordmark span { color: var(--accent); }
+
+  .cover h1 { font-size: clamp(2.6rem, 7vw, 4rem); }
+  .cover .sub { font-size: 1.25rem; color: var(--ink-dim); max-width: 34ch; }
+
+  .cover .meta {
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 2px solid var(--brand);
+    font-size: .95rem;
+    color: var(--ink-dim);
+  }
+  .cover .meta b { color: var(--ink); font-weight: 600; }
+
+  /* ---------------- sumário ---------------- */
+
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1.75rem 2rem;
+    margin-bottom: 3.5rem;
+  }
+  .toc h2 { font-size: 1.15rem; margin-bottom: 1rem; }
+  .toc ol { list-style: none; display: flex; flex-direction: column; gap: .55rem; }
+  .toc li { display: flex; gap: .75rem; align-items: baseline; color: var(--ink-dim); }
+  .toc .n {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: .8rem;
+    color: var(--brand);
+    min-width: 1.4rem;
+  }
+  .toc a { color: var(--ink); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  /* ---------------- capítulos ---------------- */
+
+  .chapter { margin-bottom: 3.5rem; }
+
+  .chapter > h2 {
+    font-size: 1.75rem;
+    padding-bottom: .6rem;
+    border-bottom: 2px solid var(--brand);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: .8rem;
+  }
+  .chapter > h2 .cn {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: .95rem;
+    color: var(--brand);
+    font-weight: 500;
+  }
+
+  .section { margin-bottom: 2rem; }
+  .section h3 { font-size: 1.2rem; margin-bottom: .6rem; color: var(--ink); }
+  .section p, .section ul { color: var(--ink-dim); }
+  .section ul { padding-left: 1.2rem; display: flex; flex-direction: column; gap: .4rem; margin-bottom: .85rem; }
+  .section li strong { color: var(--ink); }
+
+  .steps { counter-reset: step; list-style: none; padding-left: 0; }
+  .steps li {
+    counter-increment: step;
+    position: relative;
+    padding-left: 2.1rem;
+  }
+  .steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: .1rem;
+    width: 1.45rem;
+    height: 1.45rem;
+    border-radius: 50%;
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: .76rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ---------------- figuras ---------------- */
+
+  figure {
+    margin: 1.25rem 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  figure img {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+  .placeholder {
+    border: 1.5px dashed var(--line);
+    border-radius: 10px;
+    background: var(--surface-sunk);
+    padding: 2.25rem 1.5rem;
+    text-align: center;
+  }
+  .placeholder .tag {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: .68rem;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: .4rem;
+  }
+  .placeholder .what { color: var(--ink-dim); font-size: .95rem; }
+  figcaption {
+    font-size: .87rem;
+    color: var(--ink-mute);
+    margin-top: .5rem;
+    text-align: center;
+  }
+
+  /* ---------------- destaques ---------------- */
+
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    border-radius: 0 10px 10px 0;
+    padding: .95rem 1.15rem;
+    margin: 1.1rem 0;
+    color: var(--ink-dim);
+    font-size: .96rem;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .callout b { color: var(--ink); font-weight: 600; }
+  .callout .kind {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: .66rem;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: .25rem;
+  }
+
+  .split {
+    display: grid;
+    gap: 1rem;
+    margin: 1.25rem 0;
+  }
+  @media (min-width: 34rem) { .split { grid-template-columns: 1fr 1fr; } }
+  .split > div {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+  }
+  .split h4 {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 700;
+    font-size: 1.02rem;
+    margin-bottom: .35rem;
+  }
+  .split p { font-size: .95rem; color: var(--ink-dim); }
+
+  /* ---------------- faq ---------------- */
+
+  .faq { display: flex; flex-direction: column; gap: 1.1rem; }
+  .faq-item { break-inside: avoid; page-break-inside: avoid; }
+  .faq-item h3 { font-size: 1.03rem; margin-bottom: .3rem; }
+  .faq-item p { color: var(--ink-dim); font-size: .96rem; }
+
+  .closing {
+    background: var(--surface-sunk);
+    border-radius: 14px;
+    padding: 1.75rem 2rem;
+    margin-top: 1rem;
+  }
+  .closing h2 { font-size: 1.2rem; margin-bottom: .6rem; }
+  .closing p { color: var(--ink-dim); font-size: .96rem; }
+
+  /* ---------------- impressão ---------------- */
+
+  @media print {
+    @page { size: A4; margin: 16mm 15mm; }
+
+    /* Precisa casar a especificidade do bloco de tema escuro
+       (`:root:not([data-theme="light"])`), senão ele vence na impressão e o
+       guia sai com texto claro sobre papel branco. */
+    :root,
+    :root[data-theme="dark"],
+    :root:not([data-theme="light"]) {
+      --ground: #FFFFFF;
+      --surface: #FFFFFF;
+      --surface-sunk: #F7F1EB;
+      --ink: #17100F;
+      --ink-dim: #453A3C;
+      --ink-mute: #7A6B6E;
+      --line: #DCCFC5;
+      --brand: #5A0E20;
+      --brand-soft: #F6E0E6;
+      --accent: #B8431F;
+      --accent-soft: #FBEDE6;
+    }
+
+    body {
+      background: #FFF;
+      font-size: 10.5pt;
+      line-height: 1.5;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page { max-width: none; padding: 0; }
+
+    .cover { min-height: auto; height: 240mm; justify-content: center; padding: 0; }
+    .cover, .toc, .chapter { break-after: page; page-break-after: always; }
+    .chapter:last-of-type { break-after: auto; page-break-after: auto; }
+
+    .chapter > h2, .section h3 { break-after: avoid; page-break-after: avoid; }
+    .section { break-inside: avoid-page; }
+
+    a { color: var(--ink); text-decoration: none; }
+    .toc a::after { content: ""; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+  <header class="cover">
+    <div class="logo-slot">Substituir pelo logotipo da clínica</div>
+    <div class="wordmark">pulso<span>.</span></div>
+    <h1>Vacinas no Pulso</h1>
+    <p class="sub">Complemento ao Guia do Pulso: a caderneta da paciente, o que falta pelo calendário e a indicação que ela leva para aplicar.</p>
+    <div class="meta">
+      <b>Clínica:</b> _______________________<br>
+      <b>Entregue em:</b> ____ / ____ / ________
+    </div>
+  </header>
+
+  <nav class="toc">
+    <h2>O que tem neste complemento</h2>
+    <ol>
+      <li><span class="n">1</span><a href="#v1">O que mudou</a></li>
+      <li><span class="n">2</span><a href="#v2">A caderneta da paciente</a></li>
+      <li><span class="n">3</span><a href="#v3">O que falta pelo calendário</a></li>
+      <li><span class="n">4</span><a href="#v4">Sua conduta sobre cada pendência</a></li>
+      <li><span class="n">5</span><a href="#v5">Indicar uma vacina</a></li>
+      <li><span class="n">6</span><a href="#v6">Dúvidas frequentes</a></li>
+    </ol>
+    <p class="sub">Este material trata só das vacinas. O restante do sistema continua como no <b>Guia do Pulso</b> que você já recebeu.</p>
+  </nav>
+
+  <!-- ==================== 1 ==================== -->
+  <section class="chapter" id="v1">
+    <h2><span class="cn">01</span>O que mudou</h2>
+
+    <div class="section">
+      <h3>Três coisas novas, que trabalham juntas</h3>
+      <p>O Pulso passou a acompanhar a vacinação das suas pacientes. São três funções, e a ordem entre elas é a ordem natural do atendimento.</p>
+      <div class="split">
+        <div>
+          <h4>Registrar</h4>
+          <p>A <strong>caderneta</strong>: o que a paciente já tomou, inclusive doses aplicadas anos atrás em outro serviço.</p>
+        </div>
+        <div>
+          <h4>Conferir</h4>
+          <p>A <strong>situação vacinal</strong>: o sistema compara a caderneta com o calendário e aponta o que está faltando.</p>
+        </div>
+      </div>
+      <div class="split">
+        <div>
+          <h4>Indicar</h4>
+          <p>A <strong>indicação de vacina</strong>: um documento assinado que a paciente leva ao serviço de imunização.</p>
+        </div>
+        <div>
+          <h4>O que o Pulso não faz</h4>
+          <p>Não controla lote, estoque nem validade — porque a aplicação não acontece na clínica.</p>
+        </div>
+      </div>
+      <div class="callout">
+        <span class="kind">A regra que vale para tudo</span>
+        <b>O sistema informa, você decide.</b> Ele diz o que está pendente pelo calendário; a palavra final é sempre sua, e fica registrada com o motivo.
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Onde cada coisa fica</h3>
+      <ul>
+        <li><strong>Na ficha da paciente</strong> — a situação vacinal e a caderneta, uma abaixo da outra</li>
+        <li><strong>Na consulta, aba Vacinas</strong> — as indicações emitidas naquele atendimento, e a caderneta logo abaixo</li>
+      </ul>
+      <p>Não há item novo no menu lateral: vacina é dado da paciente, e vive onde os dados dela já viviam.</p>
+    </div>
+  </section>
+
+  <!-- ==================== 2 ==================== -->
+  <section class="chapter" id="v2">
+    <h2><span class="cn">02</span>A caderneta da paciente</h2>
+
+    <div class="section">
+      <h3>Registrar uma dose</h3>
+      <p>Abra <strong>Pacientes</strong>, escolha a paciente e desça até <strong>Caderneta de vacinação</strong>. O botão de registrar abre um formulário curto: a vacina, a dose, a data e onde foi aplicada.</p>
+      <figure>
+        <div class="placeholder"><span class="tag">Print</span><span class="what">Ficha da paciente com a seção "Caderneta de vacinação" e o botão de registrar</span></div>
+        <figcaption>A caderneta na ficha da paciente, da dose mais recente para a mais antiga.</figcaption>
+      </figure>
+      <div class="callout">
+        <span class="kind">Por que isso importa</span>
+        <b>A dose não precisa estar ligada a uma consulta.</b> A caderneta que a paciente traz do posto tem doses de anos atrás, e não haveria consulta a que amarrar. Se você registrar durante um atendimento, o vínculo é gravado sozinho; fora dele, a dose entra igual.
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>O que cada campo quer dizer</h3>
+      <ul>
+        <li><strong>Vacina</strong> — escolhida de uma lista fechada, para a caderneta conversar com o calendário</li>
+        <li><strong>Dose</strong> — "1ª dose", "reforço", como está escrito na carteirinha</li>
+        <li><strong>Data</strong> — o dia da aplicação, não o dia em que você está digitando</li>
+        <li><strong>Onde foi aplicada</strong> — "UBS Centro", "Maternidade". Texto livre, porque é transcrição</li>
+        <li><strong>Lote e fabricante</strong> — opcionais, só se a carteirinha trouxer</li>
+      </ul>
+      <p>Você corrige ou exclui o que registrou. Como administradora, mexe em qualquer registro da clínica.</p>
+    </div>
+  </section>
+
+  <!-- ==================== 3 ==================== -->
+  <section class="chapter" id="v3">
+    <h2><span class="cn">03</span>O que falta pelo calendário</h2>
+
+    <div class="section">
+      <h3>A situação vacinal</h3>
+      <p>Na ficha da paciente, acima da caderneta, o Pulso mostra vacina por vacina como ela está — cruzando a idade, o sexo e as doses já registradas com o Calendário Nacional de Vacinação.</p>
+      <figure>
+        <div class="placeholder"><span class="tag">Print</span><span class="what">Painel "Situação vacinal" com vacinas em estados diferentes e o aviso no rodapé</span></div>
+        <figcaption>O que precisa de atenção aparece primeiro.</figcaption>
+      </figure>
+      <p>Os cinco estados possíveis:</p>
+      <ul>
+        <li><strong>Fora da janela do calendário</strong> — passou da idade prevista para aquela dose</li>
+        <li><strong>Pendente pelo calendário</strong> — já é devida e não foi registrada</li>
+        <li><strong>Ainda não devida</strong> — a paciente ainda não chegou na idade</li>
+        <li><strong>Em dia</strong> — as doses previstas estão registradas</li>
+        <li><strong>Não se aplica</strong> — você já decidiu que aquela vacina não cabe nesta paciente</li>
+      </ul>
+      <div class="callout">
+        <span class="kind">Leia com atenção</span>
+        <b>"Pendente pelo calendário" não quer dizer "em atraso".</b> A escolha da palavra é deliberada. O Pulso conhece o calendário oficial, não a sua paciente: ele não sabe de contraindicação, esquema especial ou vacina tomada e não registrada. Por isso o painel avisa, no rodapé: <i>"Sugestão baseada no calendário cadastrado. A conduta é do profissional."</i>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Duas coisas que costumam gerar dúvida</h3>
+      <p><strong>A idade é calculada no dia.</strong> Uma vacina pode aparecer como "ainda não devida" hoje e "pendente" amanhã, se a paciente fizer aniversário — não é erro.</p>
+      <p><strong>Vacina com recorte de sexo simplesmente não aparece</strong> para quem está fora dele. Não é "não se aplica": é ausência de dever, e listar só encheria a tela.</p>
+    </div>
+  </section>
+
+  <!-- ==================== 4 ==================== -->
+  <section class="chapter" id="v4">
+    <h2><span class="cn">04</span>Sua conduta sobre cada pendência</h2>
+
+    <div class="section">
+      <h3>Registrar conduta</h3>
+      <p>Em cada linha pendente há o botão <strong>Registrar conduta</strong>. São três opções:</p>
+      <ul>
+        <li><strong>Vai ser aplicada</strong> — você concorda com o calendário e a paciente vai tomar</li>
+        <li><strong>Adiar</strong> — faz sentido, mas não agora</li>
+        <li><strong>Não se aplica a esta paciente</strong> — contraindicação, esquema especial, já tomou e não há registro</li>
+      </ul>
+      <figure>
+        <div class="placeholder"><span class="tag">Print</span><span class="what">Diálogo de conduta aberto, com o seletor e o campo de motivo</span></div>
+        <figcaption>Adiar e dispensar pedem o motivo; confirmar, não.</figcaption>
+      </figure>
+      <div class="callout">
+        <span class="kind">Por que o motivo é obrigatório</span>
+        <b>Sem ele, a pendência voltaria a aparecer para sempre.</b> Uma paciente com contraindicação ficaria com alerta permanente e errado na tela, e daqui a seis meses ninguém lembraria por quê. O motivo fica visível na própria linha, junto do seu nome.
+      </div>
+      <p>Depois de registrada, a conduta aparece ao lado da vacina, e você pode mudá-la a qualquer momento.</p>
+    </div>
+  </section>
+
+  <!-- ==================== 5 ==================== -->
+  <section class="chapter" id="v5">
+    <h2><span class="cn">05</span>Indicar uma vacina</h2>
+
+    <div class="section">
+      <h3>O documento que a paciente leva</h3>
+      <p>Dentro da consulta, na aba <strong>Vacinas</strong>, o bloco <strong>Indicações de vacina</strong> emite o documento que a paciente apresenta no serviço de imunização. Escolha a vacina, a dose e, se quiser, uma orientação; depois baixe o PDF.</p>
+      <figure>
+        <div class="placeholder"><span class="tag">Print</span><span class="what">Aba Vacinas da consulta, com o bloco de indicações acima da caderneta</span></div>
+        <figcaption>A indicação fica junto da caderneta: quem olha o que falta é quem indica.</figcaption>
+      </figure>
+      <p>O PDF sai com o nome da clínica, o seu nome, o seu conselho e o número de registro — do mesmo jeito que a receita e o atestado.</p>
+      <div class="callout">
+        <span class="kind">Importante</span>
+        <b>Só é possível indicar numa consulta sua.</b> A mesma regra da receita e do atestado, e ela vale inclusive para você como administradora: o documento leva o registro profissional de quem assina, e ninguém assina no lugar de outro.
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Duas diferenças em relação à receita</h3>
+      <p><strong>A vacina vem sempre da lista.</strong> Não há campo de texto livre como o princípio ativo da receita. Nome digitado quebraria a ligação com a caderneta e com o calendário.</p>
+      <p><strong>Não tem QR Code.</strong> A receita tem porque a farmácia confere. Na indicação não há quem confira, e um endereço público exporia dado da sua paciente sem necessidade.</p>
+    </div>
+  </section>
+
+  <!-- ==================== 6 ==================== -->
+  <section class="chapter" id="v6">
+    <h2><span class="cn">06</span>Dúvidas frequentes</h2>
+
+    <div class="faq">
+      <div class="faq-item">
+        <h4>Não vejo o botão de registrar dose nem o de indicar vacina.</h4>
+        <p>Esses botões dependem de você ter uma <strong>ficha de profissional</strong>, não do seu cargo. Administrar a clínica e exercer são coisas separadas no Pulso: quem só administra vê tudo, mas não emite nem registra. Confira em <strong>Profissionais</strong> se existe uma ficha ligada ao seu usuário.</p>
+      </div>
+      <div class="faq-item">
+        <h4>A paciente não tem data de nascimento cadastrada.</h4>
+        <p>Sem ela o Pulso não calcula idade, e a situação vacinal não tem como dizer o que está pendente. A caderneta funciona igual — só o painel de situação depende da data.</p>
+      </div>
+      <div class="faq-item">
+        <h4>A vacina que preciso não está na lista.</h4>
+        <p>A lista é curada pela plataforma e vale para todas as clínicas — não é editável por dentro da sua. Peça a inclusão pelo suporte; entra para todo mundo.</p>
+      </div>
+      <div class="faq-item">
+        <h4>Registrei uma dose na consulta errada.</h4>
+        <p>Exclua e registre de novo. A dose guarda a consulta em que foi lançada, e não há como transferi-la.</p>
+      </div>
+      <div class="faq-item">
+        <h4>A recepcionista consegue ver a caderneta?</h4>
+        <p>Não. Vacinação é dado clínico, na mesma linha do prontuário e das fotos de evolução.</p>
+      </div>
+      <div class="faq-item">
+        <h4>Outro profissional registrou uma dose. Eu vejo?</h4>
+        <p>Vê. A caderneta é da paciente, inteira, independente de quem transcreveu — diferente das fotos, que são recortadas por quem atendeu. Uma dose que ela tomou é fato dela.</p>
+      </div>
+      <div class="faq-item">
+        <h4>Uma vacina sumiu da lista de um dia para o outro.</h4>
+        <p>Ela pode ter sido desativada no catálogo da plataforma, quando sai de circulação. As doses já registradas continuam na caderneta; ela só não pode ser indicada de novo.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="closing">
+    <h2>Precisa de ajuda?</h2>
+    <p>Este complemento acompanha o <b>Guia do Pulso</b>. Se algo aqui não bater com o que você vê na tela, fale com o suporte — a interface muda, e o material é atualizado junto.</p>
+  </section>
