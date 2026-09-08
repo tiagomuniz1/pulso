@@ -17,6 +17,7 @@ export interface IEnvConfig {
   COOKIE_DOMAIN: string | undefined
   AWS_S3_BUCKET: string | undefined
   AWS_REGION: string | undefined
+  EMAIL_PROVIDER: string | undefined
   SMTP_HOST: string | undefined
   SMTP_PORT: number
   SMTP_USER: string | undefined
@@ -65,6 +66,7 @@ export function getEnvConfig(): IEnvConfig {
     COOKIE_DOMAIN: process.env.COOKIE_DOMAIN || undefined,
     AWS_S3_BUCKET: process.env.AWS_S3_BUCKET,
     AWS_REGION: process.env.AWS_REGION,
+    EMAIL_PROVIDER: process.env.EMAIL_PROVIDER,
     SMTP_HOST: process.env.SMTP_HOST,
     SMTP_PORT: parseInt(process.env.SMTP_PORT ?? '587', 10),
     SMTP_USER: process.env.SMTP_USER,

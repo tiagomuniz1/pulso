@@ -76,7 +76,7 @@ describe('SendSetPasswordEmailUseCase', () => {
     const clinic = makeClinic({ slug: 'clinica-a' })
     mockUsersRepository.findById.mockResolvedValue(user as any)
     mockFindClinicByIdUseCase.execute.mockResolvedValue(clinic as any)
-    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue(undefined)
+    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue({ sent: true })
 
     await useCase.execute(user.id, clinic.id)
 
@@ -97,7 +97,7 @@ describe('SendSetPasswordEmailUseCase', () => {
     const clinic = makeClinic({ name: 'Clínica do Vale', logoUrl: 'https://s3.example.com/logo.png' })
     mockUsersRepository.findById.mockResolvedValue(user as any)
     mockFindClinicByIdUseCase.execute.mockResolvedValue(clinic as any)
-    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue(undefined)
+    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue({ sent: true })
 
     await useCase.execute(user.id, clinic.id)
 
@@ -114,7 +114,7 @@ describe('SendSetPasswordEmailUseCase', () => {
     const clinic = makeClinic({ logoUrl: null })
     mockUsersRepository.findById.mockResolvedValue(user as any)
     mockFindClinicByIdUseCase.execute.mockResolvedValue(clinic as any)
-    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue(undefined)
+    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue({ sent: true })
 
     await useCase.execute(user.id, clinic.id)
 
@@ -131,7 +131,7 @@ describe('SendSetPasswordEmailUseCase', () => {
     mockUsersRepository.findById.mockResolvedValue(user as any)
     mockFindClinicByIdUseCase.execute.mockResolvedValue(clinic as any)
     mockFindThemeByIdUseCase.execute.mockResolvedValue(theme as any)
-    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue(undefined)
+    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue({ sent: true })
 
     await useCase.execute(user.id, clinic.id)
 
@@ -146,7 +146,7 @@ describe('SendSetPasswordEmailUseCase', () => {
     const clinic = makeClinic({ themeId: null })
     mockUsersRepository.findById.mockResolvedValue(user as any)
     mockFindClinicByIdUseCase.execute.mockResolvedValue(clinic as any)
-    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue(undefined)
+    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue({ sent: true })
 
     await useCase.execute(user.id, clinic.id)
 
@@ -162,7 +162,7 @@ describe('SendSetPasswordEmailUseCase', () => {
     mockUsersRepository.findById.mockResolvedValue(user as any)
     mockFindClinicByIdUseCase.execute.mockResolvedValue(clinic as any)
     mockFindThemeByIdUseCase.execute.mockRejectedValue(new Error('Theme not found'))
-    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue(undefined)
+    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue({ sent: true })
 
     await useCase.execute(user.id, clinic.id)
 
@@ -174,7 +174,7 @@ describe('SendSetPasswordEmailUseCase', () => {
   it('uses /set-password (no slug) when clinicId is null', async () => {
     const user = makeUser()
     mockUsersRepository.findById.mockResolvedValue(user as any)
-    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue(undefined)
+    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue({ sent: true })
 
     await useCase.execute(user.id, null)
 
@@ -188,7 +188,7 @@ describe('SendSetPasswordEmailUseCase', () => {
   it('passes undefined branding when clinicId is null', async () => {
     const user = makeUser()
     mockUsersRepository.findById.mockResolvedValue(user as any)
-    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue(undefined)
+    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue({ sent: true })
 
     await useCase.execute(user.id, null)
 
@@ -200,7 +200,7 @@ describe('SendSetPasswordEmailUseCase', () => {
   it('stores sha256 hash of token — not the plaintext', async () => {
     mockUsersRepository.findById.mockResolvedValue(makeUser() as any)
     mockFindClinicByIdUseCase.execute.mockResolvedValue(makeClinic() as any)
-    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue(undefined)
+    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue({ sent: true })
 
     await useCase.execute(faker.string.uuid(), faker.string.uuid())
 
@@ -209,12 +209,18 @@ describe('SendSetPasswordEmailUseCase', () => {
     expect(tokenHash).toMatch(/^[a-f0-9]+$/)
   })
 
+  // Continua não lançando de propósito: criar usuário não deve falhar porque o
+  // SMTP caiu. O que mudou é que agora o desfecho volta a quem chamou, para
+  // quem precisa dizer a verdade na tela poder dizê-la.
   it('does not throw when email adapter fails with Error', async () => {
     mockUsersRepository.findById.mockResolvedValue(makeUser() as any)
     mockFindClinicByIdUseCase.execute.mockResolvedValue(makeClinic() as any)
     mockEmailAdapter.sendSetPasswordEmail.mockRejectedValue(new Error('SMTP error'))
 
-    await expect(useCase.execute(faker.string.uuid(), faker.string.uuid())).resolves.toBeUndefined()
+    await expect(useCase.execute(faker.string.uuid(), faker.string.uuid())).resolves.toEqual({
+      sent: false,
+      reason: 'send_failed',
+    })
   })
 
   it('does not throw when email adapter rejects with a non-Error value', async () => {
@@ -222,14 +228,17 @@ describe('SendSetPasswordEmailUseCase', () => {
     mockFindClinicByIdUseCase.execute.mockResolvedValue(makeClinic() as any)
     mockEmailAdapter.sendSetPasswordEmail.mockRejectedValue('smtp-connection-refused')
 
-    await expect(useCase.execute(faker.string.uuid(), faker.string.uuid())).resolves.toBeUndefined()
+    await expect(useCase.execute(faker.string.uuid(), faker.string.uuid())).resolves.toEqual({
+      sent: false,
+      reason: 'send_failed',
+    })
   })
 
   it('falls back to /set-password path when clinic lookup throws', async () => {
     const user = makeUser()
     mockUsersRepository.findById.mockResolvedValue(user as any)
     mockFindClinicByIdUseCase.execute.mockRejectedValue(new Error('Clinic not found'))
-    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue(undefined)
+    mockEmailAdapter.sendSetPasswordEmail.mockResolvedValue({ sent: true })
 
     await useCase.execute(user.id, 'any-clinic-id')
 
@@ -241,7 +250,10 @@ describe('SendSetPasswordEmailUseCase', () => {
   it('does not throw when user is not found', async () => {
     mockUsersRepository.findById.mockResolvedValue(null)
 
-    await expect(useCase.execute(faker.string.uuid(), faker.string.uuid())).resolves.toBeUndefined()
+    await expect(useCase.execute(faker.string.uuid(), faker.string.uuid())).resolves.toEqual({
+      sent: false,
+      reason: 'send_failed',
+    })
     expect(mockEmailAdapter.sendSetPasswordEmail).not.toHaveBeenCalled()
   })
 })

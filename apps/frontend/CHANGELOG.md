@@ -1,5 +1,11 @@
 # Changelog — Frontend
 
+## [1.10.0] - 2026-09-08
+
+### Added
+- **Botão "Enviar link de senha" na tela do usuário**, visível apenas para o ADMIN. Some para paciente, que não faz login, e fica desabilitado com explicação para conta inativa
+- O resultado é honesto: quando o backend responde `503` a tela mostra **erro**, não confirmação — o e-mail não sair não pode parecer entrega feita. A mensagem é traduzida por status, sem exibir o `detail` técnico
+
 ## [1.9.0] - 2026-09-04
 
 ### Added

@@ -1,5 +1,31 @@
 # Changelog — Backend
 
+## [1.10.0] - 2026-09-08
+
+### Changed
+
+#### Envio de e-mail pela API do SES, autenticado pela role da instância
+- Produção passa a enviar pelo **SES**, sem usuário nem senha em lugar nenhum: a role da EC2 já carregava `ses:SendEmail` e o domínio já estava verificado com DKIM. Era um desencontro — o código enviava por SMTP enquanto a infraestrutura tinha sido preparada para a API, e por isso `SMTP_HOST` nunca havia sido semeado
+- O provedor é escolhido pela presença de `SMTP_HOST`: ausente → SES; presente → SMTP (o mailpit local). `EMAIL_PROVIDER` força um dos dois
+- **`EmailSenderService` passa a ser o único lugar que envia e-mail.** Os dois adapters traziam cópias quase idênticas de circuito, checagem de configuração, transporte e log — e a divergência entre elas já havia custado: ambas logavam "circuit breaker open" para qualquer falha. Os adapters ficaram com o que lhes pertence: assunto e corpo
+- `GET /health/email` passa a informar **qual provedor está ativo**, que é a primeira pergunta ao diagnosticar
+
+### Fixed
+- `SESv2Client` recebia `region: undefined` quando a variável não estava no ambiente, o que **anula a resolução do próprio SDK** e derruba o envio com "Region is missing". Encontrado ao testar o caminho SES pela primeira vez — e visível justamente por causa do log novo, que expõe o erro real
+
+## [1.9.0] - 2026-09-08
+
+### Added
+- `POST /users/:id/send-set-password-email` — reenviar o link de definição de senha, exclusivo do ADMIN. `422` para PATIENT (não faz login) e para conta desativada (o link morreria no login sem explicação); `503` com motivo quando o e-mail não sai
+- `GET /health/email` — diagnóstico da configuração de SMTP, **separado do `GET /health`**. Aquele é o healthcheck do container: e-mail quebrado não pode marcar a instância como doente e pô-la em ciclo de restart, com o sistema capaz de atender consulta e emitir documento. Responde `503` com `missing` quando falta configuração, e nunca expõe usuário nem senha
+
+### Changed
+- **Os adapters de e-mail passam a reportar o desfecho** em vez de devolver `void`. `SMTP_HOST` ausente fazia o envio ser pulado em silêncio e quem chamou seguia como se tivesse enviado — era o defeito virado contrato, com um teste afirmando "pula e não lança"
+- **Logs de e-mail com código estável e em nível de erro**, pensados para filtro de métrica no CloudWatch: `EMAIL_NOT_CONFIGURED`, `EMAIL_SEND_FAILED`, `EMAIL_CIRCUIT_OPEN`
+
+### Fixed
+- **O erro real do nodemailer não aparecia em log nenhum.** O `fallback` do opossum substitui a exceção, e ele era o único ponto que logava — pior, logava "circuit breaker open" para qualquer falha, mandando quem investiga para o lugar errado. Agora `failure` expõe o erro e `open` registra o circuito de fato aberto
+
 ## [1.8.2] - 2026-09-06
 
 ### Added

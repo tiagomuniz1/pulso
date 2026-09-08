@@ -1,61 +1,31 @@
-import { Injectable, Logger } from '@nestjs/common'
-import * as nodemailer from 'nodemailer'
-import * as CircuitBreaker from 'opossum'
-import { getEnvConfig } from '../../../config/env.config'
+import { Injectable } from '@nestjs/common'
+import { EmailSenderService } from '../../../common/email/email-sender.service'
+import { EmailSendResult } from '../../../common/email/email-send-result.type'
 import { IEmailAdapter, ISendSetPasswordEmailParams } from './email.adapter.interface'
 
+/**
+ * O e-mail "defina sua senha".
+ *
+ * O nome do arquivo virou herança: o transporte não é mais necessariamente
+ * SMTP — em produção é a API do SES. O adapter monta assunto e corpo; provedor,
+ * circuito e log vivem em `EmailSenderService`.
+ */
 @Injectable()
 export class SmtpEmailAdapter implements IEmailAdapter {
-  private readonly logger = new Logger(SmtpEmailAdapter.name)
-  private readonly breaker: CircuitBreaker<[ISendSetPasswordEmailParams], void>
+  constructor(private readonly emailSender: EmailSenderService) {}
 
-  constructor() {
-    this.breaker = new CircuitBreaker(
-      (params: ISendSetPasswordEmailParams) => this.send(params),
-      {
-        timeout: 10000,
-        errorThresholdPercentage: 50,
-        resetTimeout: 30000,
-      },
-    )
-
-    this.breaker.fallback(() => {
-      this.logger.warn('Email circuit breaker open — skipping send')
-    })
-  }
-
-  async sendSetPasswordEmail(params: ISendSetPasswordEmailParams): Promise<void> {
-    await this.breaker.fire(params)
-  }
-
-  private async send(params: ISendSetPasswordEmailParams): Promise<void> {
-    const env = getEnvConfig()
-
-    if (!env.SMTP_HOST) {
-      this.logger.warn('SMTP_HOST not configured — skipping email send')
-      return
-    }
-
-    const transporter = nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      secure: false,
-      auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
-    })
-
+  async sendSetPasswordEmail(params: ISendSetPasswordEmailParams): Promise<EmailSendResult> {
     const clinicName = params.clinicName ?? 'Pulso'
-    const accentColor = params.accentColor ?? '#0066cc'
-    const accentSoftColor = params.accentSoftColor ?? '#e8f0fe'
 
-    await transporter.sendMail({
-      from: `${clinicName} <${env.SMTP_FROM}>`,
+    return this.emailSender.sendEmail({
       to: params.to,
+      fromName: clinicName,
       subject: `Defina sua senha — ${clinicName}`,
       html: this.buildHtml(params.recipientName, params.link, {
         clinicName,
         clinicLogoUrl: params.clinicLogoUrl ?? null,
-        accentColor,
-        accentSoftColor,
+        accentColor: params.accentColor ?? '#0066cc',
+        accentSoftColor: params.accentSoftColor ?? '#e8f0fe',
       }),
     })
   }

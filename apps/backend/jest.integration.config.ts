@@ -15,6 +15,8 @@ const config: Config = {
     '^@app/shared/(.*)$': '<rootDir>/../../../packages/shared/src/$1',
   },
   globalSetup: '<rootDir>/database/seeds/test/test.seed.ts',
+  // Mantém os testes fora da rede: ver o arquivo para o porquê.
+  setupFiles: ['<rootDir>/tests/setup-integration-env.ts'],
 }
 
 export default config

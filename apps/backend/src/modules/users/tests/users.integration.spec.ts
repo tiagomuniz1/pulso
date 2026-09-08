@@ -157,6 +157,78 @@ describe('UsersController (integration)', () => {
       })
   }
 
+  describe('POST /users/:id/send-set-password-email', () => {
+    const rota = (id: string) => `/users/${id}/send-set-password-email`
+
+    // O ambiente de teste força `EMAIL_PROVIDER=smtp` sem host justamente para
+    // exercitar este caminho sem sair para a rede (ver
+    // `tests/setup-integration-env.ts`). O endpoint tem de acusar, não
+    // responder sucesso.
+    it('503 com motivo legível quando o e-mail não está configurado', async () => {
+      const { body } = await request(app.getHttpServer())
+        .post(rota(userUserId))
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(503)
+
+      expect(body.detail).toContain('não está configurado')
+    })
+
+    it('403 para a recepcionista', async () => {
+      await request(app.getHttpServer())
+        .post(rota(userUserId))
+        .set('Authorization', `Bearer ${userToken}`)
+        .expect(403)
+    })
+
+    it('403 para o profissional', async () => {
+      await request(app.getHttpServer())
+        .post(rota(userUserId))
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .expect(403)
+    })
+
+    it('401 sem autenticação', async () => {
+      await request(app.getHttpServer()).post(rota(userUserId)).expect(401)
+    })
+
+    it('404 quando o usuário não existe', async () => {
+      await request(app.getHttpServer())
+        .post(rota(faker.string.uuid()))
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(404)
+    })
+
+    // Conta desativada: o link morreria no login com "conta inativa".
+    it('422 para usuário desativado', async () => {
+      await userRepository.update(userUserId, { isActive: false })
+
+      const { body } = await request(app.getHttpServer())
+        .post(rota(userUserId))
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(422)
+
+      expect(body.detail).toContain('Activate')
+    })
+
+    // PATIENT não faz login: definir senha não o levaria a lugar nenhum.
+    it('422 para usuário paciente', async () => {
+      const paciente = await userRepository.save(
+        userRepository.create({
+          fullName: 'Paciente Sem Acesso',
+          email: `paciente.${Date.now()}@test.com`,
+          password: 'hash',
+          role: UserRole.PATIENT,
+          clinicId: SEED_CLINIC_ID,
+        }),
+      )
+
+      await request(app.getHttpServer())
+        .post(rota(paciente.id))
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(422)
+    })
+  })
+
   describe('POST /users', () => {
     it('returns 201 with UserResponseDto on success', async () => {
       const payload = { fullName: faker.person.fullName(), email: faker.internet.email(), password: 'Password123!' }

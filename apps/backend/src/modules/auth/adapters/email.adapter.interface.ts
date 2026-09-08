@@ -1,3 +1,5 @@
+import { EmailSendResult } from '../../../common/email/email-send-result.type'
+
 export interface ISendSetPasswordEmailParams {
   to: string
   recipientName: string
@@ -9,5 +11,5 @@ export interface ISendSetPasswordEmailParams {
 }
 
 export abstract class IEmailAdapter {
-  abstract sendSetPasswordEmail(params: ISendSetPasswordEmailParams): Promise<void>
+  abstract sendSetPasswordEmail(params: ISendSetPasswordEmailParams): Promise<EmailSendResult>
 }

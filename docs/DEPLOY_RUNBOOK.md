@@ -173,6 +173,81 @@ vacinal** lista 29 regras.
 
 ---
 
+### 3.6. Envio de e-mail (SES)
+
+Produção envia pela **API do SES, autenticada pela role da instância** — não há
+usuário nem senha de SMTP em lugar nenhum, e nada a semear no Parameter Store.
+A role já carrega `ses:SendEmail` e `ses:SendRawEmail`
+(`infra/terraform/modules/ec2-app/main.tf`), e o domínio `pulso.center` está
+verificado com DKIM.
+
+A escolha do provedor é por presença de `SMTP_HOST`:
+
+| Ambiente | `SMTP_HOST` | Provedor |
+|---|---|---|
+| Produção | ausente | **SES** pela role da instância |
+| Local | `mailpit` / `localhost` | SMTP |
+
+`EMAIL_PROVIDER=ses\|smtp` força um dos dois quando essa inferência não servir.
+
+> **Histórico:** o código enviava por SMTP enquanto a infraestrutura tinha sido
+> preparada para a API. Era por isso que `SMTP_HOST` nunca havia sido semeado —
+> as duas metades apontavam para caminhos diferentes, e o envio era pulado em
+> silêncio.
+
+#### Sandbox
+
+Enquanto a conta estiver no sandbox do SES, **só chega a destinatário
+verificado**. `pulso.center` é domínio verificado, então endereços `@pulso.center`
+recebem; um `@gmail.com` de recepcionista é rejeitado. Conferir:
+
+```bash
+aws sesv2 get-account --profile pulso-workload --region us-east-1 \
+  --query 'ProductionAccessEnabled'
+```
+
+Para testar sem entregar a ninguém, use o simulador — aceito mesmo no sandbox:
+
+```bash
+aws sesv2 send-email --profile pulso-workload --region us-east-1 \
+  --from-email-address "Pulso <noreply@pulso.center>" \
+  --destination 'ToAddresses=success@simulator.amazonses.com' \
+  --content '{"Simple":{"Subject":{"Data":"Teste","Charset":"UTF-8"},"Body":{"Html":{"Data":"<p>ok</p>","Charset":"UTF-8"}}}}'
+```
+
+#### Conferir
+
+```bash
+curl -s https://api.pulso.center/health/email
+```
+
+Traz o provedor ativo (`ses` ou `smtp`) e o que falta, se faltar. **Este endpoint
+é separado do `GET /health` de propósito:** aquele é o healthcheck do container,
+e derrubá-lo por causa de e-mail poria a instância em ciclo de restart com o
+sistema perfeitamente capaz de atender consulta e emitir documento.
+
+#### Alarme no CloudWatch
+
+Os logs trazem um código estável no início da mensagem, pensado para filtro de
+métrica. O nível em produção é `warn`, e os três saem como `error`:
+
+| Código | O que significa |
+|---|---|
+| `EMAIL_NOT_CONFIGURED` | Falta o mínimo do provedor: nada foi enviado |
+| `EMAIL_SEND_FAILED` | Tentou e falhou — **traz o erro real** do SES ou do nodemailer |
+| `EMAIL_CIRCUIT_OPEN` | Falhas repetidas suspenderam os envios por 30s |
+
+Filtro de métrica sugerido: `?EMAIL_NOT_CONFIGURED ?EMAIL_SEND_FAILED
+?EMAIL_CIRCUIT_OPEN`. **Não mude essas strings sem trocar o alarme junto** — é
+o contrato entre o log e o alerta.
+
+> Cuidado ao interpretar ausência de log: os códigos só aparecem quando alguém
+> dispara um envio. Zero ocorrências pode significar "está tudo bem" ou
+> "ninguém cadastrou nada desde o último restart". Para saber o estado da
+> configuração, use `/health/email`, que não depende de tráfego.
+
+---
+
 ## 4. Deploy de rotina
 
 Todo deploy é **manual** (`workflow_dispatch`) — nunca automático em push.
