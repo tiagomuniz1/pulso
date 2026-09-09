@@ -8,6 +8,7 @@ import { MedicalRecordFieldType } from '@app/shared'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { Tabs } from '@/components/ui/atoms/tabs/tabs'
+import { ModalFormActions } from '@/components/ui/molecules/modal-form-actions/modal-form-actions'
 import { groupFieldsBySection } from '../utils/group-fields-by-section.util'
 import { DynamicField } from './dynamic-field'
 import { coerceFieldValue } from '../mappers/coerce-field-value.mapper'
@@ -250,7 +251,7 @@ export function MedicalRecordForm({
         </Alert>
       )}
 
-      <div className="flex justify-end pt-2 border-t border-border">
+      <ModalFormActions>
         <Button
           type="submit"
           isLoading={isPending}
@@ -259,7 +260,7 @@ export function MedicalRecordForm({
         >
           Salvar prontuário
         </Button>
-      </div>
+      </ModalFormActions>
     </form>
   )
 }

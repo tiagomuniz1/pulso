@@ -28,6 +28,11 @@ describe('AtestadoForm (integration)', () => {
     expect(screen.getByTestId('atestado-form-type-leave')).toBeInTheDocument()
     expect(screen.getByTestId('atestado-form-type-attendance')).toBeInTheDocument()
     expect(screen.getByTestId('atestado-form-submit')).toBeInTheDocument()
+    // Dentro da barra fixa: solto no corpo do modal, o botão cai abaixo da
+    // dobra assim que o formulário cresce.
+    expect(screen.getByTestId('modal-form-actions')).toContainElement(
+      screen.getByTestId('atestado-form-submit'),
+    )
     expect(screen.getByTestId('atestado-form-days-off')).toBeInTheDocument()
     expect(screen.getByTestId('atestado-form-start-date')).toBeInTheDocument()
   })

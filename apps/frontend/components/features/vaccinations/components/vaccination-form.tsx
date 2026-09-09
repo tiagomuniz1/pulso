@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/atoms/button/button'
+import { ModalFormActions } from '@/components/ui/molecules/modal-form-actions/modal-form-actions'
 import { Input } from '@/components/ui/atoms/input/input'
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { useVaccines } from '@/components/features/vaccines/hooks/use-vaccines.hook'
@@ -178,9 +179,11 @@ export function VaccinationForm({
         />
       </div>
 
-      <Button type="submit" variant="primary" disabled={isPending} data-testid="vaccination-form-submit">
-        {isPending ? 'Salvando…' : 'Registrar dose'}
-      </Button>
+      <ModalFormActions>
+        <Button type="submit" variant="primary" disabled={isPending} data-testid="vaccination-form-submit">
+          {isPending ? 'Salvando…' : 'Registrar dose'}
+        </Button>
+      </ModalFormActions>
     </form>
   )
 }

@@ -127,7 +127,12 @@ describe('VaccineIndicationSection (integration)', () => {
 
     await userEvent.selectOptions(select, 'v1')
     await userEvent.type(screen.getByTestId('vaccine-indication-dose-input-0'), '1ª dose')
-    await userEvent.click(screen.getByTestId('vaccine-indication-submit'))
+    // Dentro da barra fixa: solto no corpo do modal, o botão cai abaixo da
+      // dobra assim que o formulário cresce.
+      expect(screen.getByTestId('modal-form-actions')).toContainElement(
+        screen.getByTestId('vaccine-indication-submit'),
+      )
+      await userEvent.click(screen.getByTestId('vaccine-indication-submit'))
 
     await waitFor(() => {
       expect(mockService.create).toHaveBeenCalledWith({
