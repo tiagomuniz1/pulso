@@ -11,7 +11,6 @@ import { IProfessionalsRepository } from '../../professionals/repositories/profe
 const mockTemplatesRepository: jest.Mocked<IMedicalRecordTemplatesRepository> = {
   findAll: jest.fn(),
   findById: jest.fn(),
-  findByClinicAndSpecialty: jest.fn(),
   create: jest.fn(),
   update: jest.fn(),
   delete: jest.fn(),
@@ -79,11 +78,11 @@ describe('FindAllMedicalRecordTemplatesUseCase', () => {
 
     const result = await useCase.execute({ specialtyId: 'spec-1' } as any, currentUser)
 
-    expect(mockTemplatesRepository.findAll).toHaveBeenCalledWith(clinicId, 1, 20, 'spec-1', undefined, undefined, undefined)
+    expect(mockTemplatesRepository.findAll).toHaveBeenCalledWith(clinicId, 1, 20, 'spec-1', undefined, undefined, undefined, undefined)
     expect(result.data[0].specialtyName).toBe('Cardiologia')
     expect(result.total).toBe(1)
     expect(mockCacheService.set).toHaveBeenCalledWith(
-      `medical_record_templates:list:${clinicId}:1:20:spec-1:all`,
+      `medical_record_templates:list:${clinicId}:1:20:spec-1:any:all`,
       result,
       60,
     )
@@ -110,12 +109,12 @@ describe('FindAllMedicalRecordTemplatesUseCase', () => {
 
     const result = await useCase.execute({ generalist: true } as any, currentUser)
 
-    expect(mockTemplatesRepository.findAll).toHaveBeenCalledWith(clinicId, 1, 20, undefined, true, undefined, undefined)
+    expect(mockTemplatesRepository.findAll).toHaveBeenCalledWith(clinicId, 1, 20, undefined, true, undefined, undefined, undefined)
     expect(mockCacheService.get).toHaveBeenCalledWith(
-      `medical_record_templates:list:${clinicId}:1:20:generalist:all`,
+      `medical_record_templates:list:${clinicId}:1:20:generalist:any:all`,
     )
     expect(mockCacheService.set).toHaveBeenCalledWith(
-      `medical_record_templates:list:${clinicId}:1:20:generalist:all`,
+      `medical_record_templates:list:${clinicId}:1:20:generalist:any:all`,
       result,
       60,
     )
@@ -130,9 +129,9 @@ describe('FindAllMedicalRecordTemplatesUseCase', () => {
 
     const result = await useCase.execute({ councilType: 'crn' } as any, currentUser)
 
-    expect(mockTemplatesRepository.findAll).toHaveBeenCalledWith(clinicId, 1, 20, undefined, undefined, 'crn', undefined)
+    expect(mockTemplatesRepository.findAll).toHaveBeenCalledWith(clinicId, 1, 20, undefined, undefined, 'crn', undefined, undefined)
     expect(mockCacheService.get).toHaveBeenCalledWith(
-      `medical_record_templates:list:${clinicId}:1:20:crn:all`,
+      `medical_record_templates:list:${clinicId}:1:20:crn:any:all`,
     )
     expect(result.data[0].specialtyId).toBeNull()
   })
@@ -146,9 +145,35 @@ describe('FindAllMedicalRecordTemplatesUseCase', () => {
     const result = await useCase.execute({ page: 2, limit: 10 } as any, currentUser)
 
     expect(mockCacheService.get).toHaveBeenCalledWith(
-      `medical_record_templates:list:${clinicId}:2:10:all:all`,
+      `medical_record_templates:list:${clinicId}:2:10:all:any:all`,
     )
     expect(result.data[0].specialtyName).toBeNull()
+  })
+
+  it('forwards the isActive filter to the repository', async () => {
+    mockCacheService.get.mockResolvedValue(null)
+    mockTemplatesRepository.findAll.mockResolvedValue([[], 0])
+    mockSpecialtiesRepository.findByIds.mockResolvedValue([])
+
+    await useCase.execute({ isActive: true } as any, currentUser)
+
+    expect(mockTemplatesRepository.findAll).toHaveBeenCalledWith(
+      clinicId, 1, 20, undefined, undefined, undefined, undefined, true,
+    )
+  })
+
+  // Sem o isActive na chave, a lista "só ativos" do seletor da consulta e a
+  // lista completa da gestão colidiriam na mesma entrada — uma serviria a outra.
+  it('keeps the active-only listing on a cache key of its own', async () => {
+    mockCacheService.get.mockResolvedValue(null)
+    mockTemplatesRepository.findAll.mockResolvedValue([[], 0])
+    mockSpecialtiesRepository.findByIds.mockResolvedValue([])
+
+    await useCase.execute({ specialtyId: 'spec-1', isActive: true } as any, currentUser)
+
+    expect(mockCacheService.get).toHaveBeenCalledWith(
+      `medical_record_templates:list:${clinicId}:1:20:spec-1:true:all`,
+    )
   })
 
   it('continues when cache read fails', async () => {
@@ -199,6 +224,7 @@ describe('FindAllMedicalRecordTemplatesUseCase', () => {
       expect(mockTemplatesRepository.findAll).toHaveBeenCalledWith(
         clinicId, 1, 20, undefined, undefined, undefined,
         { specialtyIds: ['spec-1', 'spec-2'], councilType: CouncilType.CRM },
+        undefined,
       )
     })
 
@@ -210,6 +236,7 @@ describe('FindAllMedicalRecordTemplatesUseCase', () => {
       expect(mockTemplatesRepository.findAll).toHaveBeenCalledWith(
         clinicId, 1, 20, undefined, undefined, undefined,
         { specialtyIds: [], councilType: null },
+        undefined,
       )
     })
 

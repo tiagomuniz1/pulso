@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { INestApplication, ValidationPipe } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { getRepositoryToken } from '@nestjs/typeorm'
@@ -301,7 +302,7 @@ describe('MedicalRecordsController (integration)', () => {
       const { body } = await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: { weight_abc1: 75 } })
+        .send({ appointmentId, templateId, data: { weight_abc1: 75 } })
         .expect(201)
 
       expect(body.id).toBeDefined()
@@ -320,7 +321,7 @@ describe('MedicalRecordsController (integration)', () => {
       const { body } = await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(201)
 
       expect(body.templateSchemaSnapshot[0].key).toBe('weight_abc1')
@@ -331,7 +332,7 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${doctorToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(201)
     })
 
@@ -339,7 +340,7 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${otherDoctorToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(403)
     })
 
@@ -361,7 +362,7 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(422)
     })
 
@@ -369,7 +370,7 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: { unknown_field: 'value' } })
+        .send({ appointmentId, templateId, data: { unknown_field: 'value' } })
         .expect(422)
     })
 
@@ -377,7 +378,7 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: { weight_abc1: 'not-a-number' } })
+        .send({ appointmentId, templateId, data: { weight_abc1: 'not-a-number' } })
         .expect(422)
     })
 
@@ -385,13 +386,13 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(201)
 
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(409)
     })
 
@@ -414,12 +415,12 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId: noSpecAppt.id, data: {} })
+        .send({ appointmentId: noSpecAppt.id, templateId: randomUUID(), data: {} })
         .expect(404)
     })
 
     it('creates a generalist record (null specialty) via the clinic generalist template', async () => {
-      await templateRepository.save(
+      const generalistTemplate = await templateRepository.save(
         templateRepository.create({
           clinicId: SEED_CLINIC_ID,
           specialtyId: null,
@@ -449,7 +450,7 @@ describe('MedicalRecordsController (integration)', () => {
       const { body } = await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId: generalistAppt.id, data: {} })
+        .send({ appointmentId: generalistAppt.id, templateId: generalistTemplate.id, data: {} })
         .expect(201)
 
       expect(body.specialtyId).toBeNull()
@@ -460,15 +461,176 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${userToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(403)
     })
 
     it('returns 401 for unauthenticated requests', async () => {
       await request(app.getHttpServer())
         .post('/medical-records')
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(401)
+    })
+
+    it('returns 400 when templateId is missing', async () => {
+      await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, data: {} })
+        .expect(400)
+    })
+
+    it('returns 404 when the template belongs to another clinic', async () => {
+      const otherClinic = await clinicRepository.save(
+        clinicRepository.create({ name: 'Outra', slug: 'mr-outra', isActive: true }),
+      )
+      const alheio = await templateRepository.save(
+        templateRepository.create({
+          clinicId: otherClinic.id,
+          specialtyId,
+          name: 'Alheio',
+          fields: templateFields,
+          isActive: true,
+        }),
+      )
+
+      await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, templateId: alheio.id, data: {} })
+        .expect(404)
+    })
+
+    it('returns 422 when the chosen template is inactive', async () => {
+      await templateRepository.update(templateId, { isActive: false })
+
+      await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, templateId, data: {} })
+        .expect(422)
+    })
+
+    it('returns 422 when the chosen template is from another specialty', async () => {
+      const outra = await specialtyRepository.save(
+        specialtyRepository.create({ name: 'Dermatologia' }),
+      )
+      const deOutra = await templateRepository.save(
+        templateRepository.create({
+          clinicId: SEED_CLINIC_ID,
+          specialtyId: outra.id,
+          name: 'Prontuário Dermatologia',
+          fields: templateFields,
+          isActive: true,
+        }),
+      )
+
+      await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, templateId: deOutra.id, data: {} })
+        .expect(422)
+    })
+
+    // A FK composta é MATCH SIMPLE: com specialty nula dos dois lados o banco
+    // nem checa. Aqui a validação do use-case é a única barreira.
+    it('returns 422 when a generalist template belongs to another profession', async () => {
+      const doNutricionista = await templateRepository.save(
+        templateRepository.create({
+          clinicId: SEED_CLINIC_ID,
+          specialtyId: null,
+          councilType: CouncilType.CRN,
+          name: 'Prontuário de Nutrição',
+          fields: templateFields,
+          isActive: true,
+        }),
+      )
+      const generalistAppt = await appointmentRepository.save(
+        appointmentRepository.create({
+          clinicId: SEED_CLINIC_ID,
+          professionalId,
+          patientId,
+          specialtyId: null,
+          scheduleId: (await scheduleRepository.findOneByOrFail({ professionalId })).id,
+          date: '2026-01-08',
+          startTime: '10:00',
+          endTime: '10:30',
+          status: AppointmentStatus.SCHEDULED,
+          reason: null,
+          cancellationReason: null,
+        }),
+      )
+
+      await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId: generalistAppt.id, templateId: doNutricionista.id, data: {} })
+        .expect(422)
+    })
+
+    // O teste-âncora: dois modelos na mesma especialidade, e cada prontuário
+    // congela o que foi de fato escolhido — não um resolvido pelo servidor.
+    it('snapshots whichever of the specialty templates was chosen', async () => {
+      const retorno = await templateRepository.save(
+        templateRepository.create({
+          clinicId: SEED_CLINIC_ID,
+          specialtyId,
+          name: 'Retorno',
+          fields: [
+            {
+              key: 'evolucao_xy12',
+              label: 'Evolução',
+              type: MedicalRecordFieldType.TEXTAREA,
+              required: false,
+              order: 1,
+              options: null,
+              placeholder: null,
+              helpText: null,
+              canonical: false,
+              canonicalKey: null,
+            },
+          ],
+          isActive: true,
+        }),
+      )
+
+      const { body: comRetorno } = await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, templateId: retorno.id, data: { evolucao_xy12: 'estável' } })
+        .expect(201)
+
+      expect(comRetorno.templateId).toBe(retorno.id)
+      expect(comRetorno.templateSchemaSnapshot.map((f: any) => f.key)).toEqual(['evolucao_xy12'])
+
+      // A outra consulta, com o outro modelo do mesmo escopo.
+      const segundaConsulta = await appointmentRepository.save(
+        appointmentRepository.create({
+          clinicId: SEED_CLINIC_ID,
+          professionalId,
+          patientId,
+          specialtyId,
+          scheduleId: (await scheduleRepository.findOneByOrFail({ professionalId })).id,
+          date: '2026-01-09',
+          startTime: '10:30',
+          endTime: '11:00',
+          status: AppointmentStatus.SCHEDULED,
+          reason: null,
+          cancellationReason: null,
+        }),
+      )
+
+      const { body: comPadrao } = await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId: segundaConsulta.id, templateId, data: {} })
+        .expect(201)
+
+      expect(comPadrao.templateId).toBe(templateId)
+      expect(comPadrao.templateSchemaSnapshot.map((f: any) => f.key)).toEqual([
+        'weight_abc1',
+        'notes_def2',
+      ])
     })
 
     it('enforces FK composta: template specialty must match appointment specialty', async () => {
@@ -495,7 +657,7 @@ describe('MedicalRecordsController (integration)', () => {
       const { body } = await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(201)
       recordId = body.id
     })
@@ -550,7 +712,7 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(201)
 
       const { body } = await request(app.getHttpServer())
@@ -574,7 +736,7 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(201)
 
       const { body } = await request(app.getHttpServer())
@@ -593,7 +755,7 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${doctorToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(201)
 
       const { body } = await request(app.getHttpServer())
@@ -622,7 +784,7 @@ describe('MedicalRecordsController (integration)', () => {
       const { body } = await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(201)
       recordId = body.id
     })
@@ -705,7 +867,7 @@ describe('MedicalRecordsController (integration)', () => {
       const { body } = await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(201)
       recordId = body.id
     })
@@ -747,7 +909,7 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: { weight_abc1: 75 } })
+        .send({ appointmentId, templateId, data: { weight_abc1: 75 } })
         .expect(201)
 
       const { body } = await request(app.getHttpServer())
@@ -773,7 +935,7 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: { weight_abc1: 75 } })
+        .send({ appointmentId, templateId, data: { weight_abc1: 75 } })
         .expect(201)
 
       const { body } = await request(app.getHttpServer())
@@ -800,7 +962,7 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: { weight_abc1: 75 } })
+        .send({ appointmentId, templateId, data: { weight_abc1: 75 } })
         .expect(201)
 
       const { body: antes } = await request(app.getHttpServer())

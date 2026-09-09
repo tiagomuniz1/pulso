@@ -13,7 +13,7 @@ import { ICurrentUser } from '../../auth/types/current-user.type'
 import { IAppointmentsRepository } from '../../appointments/repositories/appointments.repository.interface'
 import { IProfessionalsRepository } from '../../professionals/repositories/professionals.repository.interface'
 import { getPrimaryCouncilType } from '../../professionals/utils/get-primary-council-type.util'
-import { FindTemplateByClinicAndSpecialtyUseCase } from '../../medical-record-templates/use-cases/find-template-by-clinic-and-specialty.use-case'
+import { FindTemplateByClinicAndIdUseCase } from '../../medical-record-templates/use-cases/find-template-by-clinic-and-id.use-case'
 import { IMedicalRecordsRepository } from '../repositories/medical-records.repository.interface'
 import { ValidateRecordDataService } from '../services/validate-record-data.service'
 import { MedicalRecord } from '../entities/medical-record.entity'
@@ -50,7 +50,7 @@ export class CreateMedicalRecordUseCase extends BaseUseCase {
     private readonly medicalRecordsRepository: IMedicalRecordsRepository,
     private readonly appointmentsRepository: IAppointmentsRepository,
     private readonly professionalsRepository: IProfessionalsRepository,
-    private readonly findTemplateByClinicAndSpecialtyUseCase: FindTemplateByClinicAndSpecialtyUseCase,
+    private readonly findTemplateByClinicAndIdUseCase: FindTemplateByClinicAndIdUseCase,
     private readonly validateRecordDataService: ValidateRecordDataService,
     private readonly cacheService: CacheService,
   ) {
@@ -70,36 +70,48 @@ export class CreateMedicalRecordUseCase extends BaseUseCase {
       }
     }
 
-    // Generalist appointment carries a null specialty → resolves the clinic's generalist
-    // template for the appointment's professional's own profession (a CRM doctor and a CRN
-    // nutritionist each have their own generalist template, never the wrong one's).
+    // A consulta manda no ESCOPO; o profissional escolhe QUAL modelo dentro dele.
+    // Consulta generalista tem especialidade nula e o escopo passa a ser a
+    // profissão do profissional que atende — um médico e uma nutricionista têm
+    // cada um o seu generalista, nunca o do outro.
     const specialtyId = appointment.specialtyId
-    let councilType: CouncilType | undefined
+    let expectedCouncilType: CouncilType | undefined
     if (!specialtyId) {
       const appointmentProfessional = await this.professionalsRepository.findById(
         appointment.professionalId,
         clinicId,
       )
       if (!appointmentProfessional) throw new NotFoundException('Professional not found')
-      councilType = getPrimaryCouncilType(appointmentProfessional)
+      expectedCouncilType = getPrimaryCouncilType(appointmentProfessional)
     }
 
-    const template = await this.findTemplateByClinicAndSpecialtyUseCase.execute(
-      clinicId,
-      specialtyId,
-      councilType,
-    )
-    if (!template) {
-      throw new NotFoundException('No active template found for this specialty')
+    // Modelo de outra clínica e modelo excluído caem no mesmo 404 de propósito:
+    // responder diferente revelaria a existência de registro alheio.
+    const template = await this.findTemplateByClinicAndIdUseCase.execute(clinicId, dto.templateId)
+    if (!template) throw new NotFoundException('Template not found')
+
+    // 422 e não 404: o modelo existe e é legível, é a regra de negócio que
+    // recusa usá-lo. Desativar é como a clínica aposenta um modelo sem apagar os
+    // prontuários que já nasceram dele.
+    if (!template.isActive) {
+      throw new UnprocessableEntityException('Template is not active')
     }
 
-    if (template.specialtyId !== specialtyId) {
-      this.logger.error('Template specialty mismatch', {
-        templateId: template.id,
-        templateSpecialtyId: template.specialtyId,
-        appointmentSpecialtyId: specialtyId,
-      })
-      throw new UnprocessableEntityException('Template does not belong to the appointment specialty')
+    // Antes isto era trava de sanidade contra dado corrompido; agora que o
+    // `templateId` vem do cliente, é A validação de entrada. Sem ela dava para
+    // preencher uma consulta de ginecologia com o modelo de nutrição, e no ramo
+    // generalista nem a FK composta protege (é MATCH SIMPLE, e os dois lados são
+    // nulos).
+    if (specialtyId) {
+      if (template.specialtyId !== specialtyId) {
+        throw new UnprocessableEntityException(
+          'Template does not belong to the appointment specialty',
+        )
+      }
+    } else if (template.specialtyId !== null || template.councilType !== expectedCouncilType) {
+      throw new UnprocessableEntityException(
+        'Template does not belong to the appointment profession',
+      )
     }
 
     this.validateRecordDataService.validate(dto.data, template.fields)

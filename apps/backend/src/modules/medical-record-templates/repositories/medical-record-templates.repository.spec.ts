@@ -1,4 +1,4 @@
-import { IsNull, Repository } from 'typeorm'
+import { Repository } from 'typeorm'
 import { faker } from '@faker-js/faker'
 import { MedicalRecordTemplate } from '../entities/medical-record-template.entity'
 import { MedicalRecordTemplatesRepository } from './medical-record-templates.repository'
@@ -118,6 +118,41 @@ describe('MedicalRecordTemplatesRepository', () => {
         councilType: 'crn',
       })
     })
+
+    it('filters by isActive when the flag is provided', async () => {
+      const qb = makeQueryBuilder()
+      qb.getManyAndCount.mockResolvedValue([[makeTemplate()], 1])
+      repo.createQueryBuilder.mockReturnValue(qb as any)
+
+      await repository.findAll(clinicId, 1, 20, undefined, undefined, undefined, undefined, true)
+
+      expect(qb.andWhere).toHaveBeenCalledWith('template.isActive = :isActive', { isActive: true })
+    })
+
+    it('filters for the inactive ones when isActive is false', async () => {
+      const qb = makeQueryBuilder()
+      qb.getManyAndCount.mockResolvedValue([[], 0])
+      repo.createQueryBuilder.mockReturnValue(qb as any)
+
+      await repository.findAll(clinicId, 1, 20, undefined, undefined, undefined, undefined, false)
+
+      expect(qb.andWhere).toHaveBeenCalledWith('template.isActive = :isActive', { isActive: false })
+    })
+
+    // Sem o flag a gestão precisa enxergar ativos e inativos juntos — um default
+    // silencioso esconderia do ADMIN justamente o que ele precisa reativar.
+    it('does not filter by isActive when the flag is omitted', async () => {
+      const qb = makeQueryBuilder()
+      qb.getManyAndCount.mockResolvedValue([[], 0])
+      repo.createQueryBuilder.mockReturnValue(qb as any)
+
+      await repository.findAll(clinicId, 1, 20)
+
+      expect(qb.andWhere).not.toHaveBeenCalledWith(
+        'template.isActive = :isActive',
+        expect.anything(),
+      )
+    })
   })
 
   describe('findById', () => {
@@ -128,46 +163,6 @@ describe('MedicalRecordTemplatesRepository', () => {
       const result = await repository.findById(template.id, clinicId)
 
       expect(repo.findOneBy).toHaveBeenCalledWith({ id: template.id, clinicId })
-      expect(result).toBe(template)
-    })
-  })
-
-  describe('findByClinicAndSpecialty', () => {
-    it('looks up by clinicId and specialtyId', async () => {
-      const template = makeTemplate()
-      repo.findOneBy.mockResolvedValue(template)
-
-      const result = await repository.findByClinicAndSpecialty(clinicId, 'spec-1')
-
-      expect(repo.findOneBy).toHaveBeenCalledWith({ clinicId, specialtyId: 'spec-1' })
-      expect(result).toBe(template)
-    })
-
-    it('resolves the generalist template with IsNull() for both columns when councilType is omitted', async () => {
-      const template = makeTemplate()
-      repo.findOneBy.mockResolvedValue(template)
-
-      const result = await repository.findByClinicAndSpecialty(clinicId, null)
-
-      expect(repo.findOneBy).toHaveBeenCalledWith({
-        clinicId,
-        specialtyId: IsNull(),
-        councilType: IsNull(),
-      })
-      expect(result).toBe(template)
-    })
-
-    it('resolves the generalist template scoped by council type when provided', async () => {
-      const template = makeTemplate({ specialtyId: null, councilType: 'crn' })
-      repo.findOneBy.mockResolvedValue(template)
-
-      const result = await repository.findByClinicAndSpecialty(clinicId, null, 'crn' as any)
-
-      expect(repo.findOneBy).toHaveBeenCalledWith({
-        clinicId,
-        specialtyId: IsNull(),
-        councilType: 'crn',
-      })
       expect(result).toBe(template)
     })
   })

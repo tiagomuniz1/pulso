@@ -1,11 +1,4 @@
-import {
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  Logger,
-  NotFoundException,
-  UnprocessableEntityException,
-} from '@nestjs/common'
+import { Injectable, Logger, UnprocessableEntityException } from '@nestjs/common'
 import { DataSource } from 'typeorm'
 import {
   CouncilType,
@@ -14,16 +7,14 @@ import {
   MedicalRecordTemplateSectionDto,
   MedicalRecordTemplateFieldDto,
   MedicalRecordTemplateResponseDto,
-  UserRole,
 } from '@app/shared'
 import { BaseUseCase } from '../../../common/base.use-case'
+import { toTemplateNameConflict } from '../utils/template-name-conflict.util'
 import { CacheService } from '../../../cache/cache.service'
 import { ICurrentUser } from '../../auth/types/current-user.type'
 import { IClinicSpecialtiesRepository } from '../../clinic-specialties/repositories/clinic-specialties.repository.interface'
 import { ISpecialtiesRepository } from '../../specialties/repositories/specialties.repository.interface'
 import { IMedicalRecordCanonicalFieldsRepository } from '../../medical-record-canonical-fields/repositories/medical-record-canonical-fields.repository.interface'
-import { IProfessionalsRepository } from '../../professionals/repositories/professionals.repository.interface'
-import { getPrimaryCouncilType } from '../../professionals/utils/get-primary-council-type.util'
 import {
   MedicalRecordTemplate,
   MedicalRecordTemplateField,
@@ -47,7 +38,6 @@ export class CreateMedicalRecordTemplateUseCase extends BaseUseCase {
     private readonly clinicSpecialtiesRepository: IClinicSpecialtiesRepository,
     private readonly specialtiesRepository: ISpecialtiesRepository,
     private readonly canonicalFieldsRepository: IMedicalRecordCanonicalFieldsRepository,
-    private readonly professionalsRepository: IProfessionalsRepository,
     private readonly cacheService: CacheService,
   ) {
     super(dataSource)
@@ -69,27 +59,23 @@ export class CreateMedicalRecordTemplateUseCase extends BaseUseCase {
       if (!link) throw new UnprocessableEntityException('Specialty is not linked to this clinic')
     }
 
-    const existing = await this.templatesRepository.findByClinicAndSpecialty(
-      clinicId,
-      specialtyId,
-      councilType,
-    )
-    if (existing) {
-      throw new ConflictException(
-        specialtyId
-          ? 'A template already exists for this specialty'
-          : 'A template already exists for this profession',
-      )
-    }
-
     const sections = this.resolveSections(dto.sections ?? [])
     const validSectionKeys = new Set(sections.map((s) => s.key))
     const fields = await this.resolveFields(dto.fields, validSectionKeys)
 
-    const created = await this.templatesRepository.create(
-      { specialtyId, councilType, name: dto.name, fields, sections },
-      clinicId,
-    )
+    // A clínica pode ter vários modelos no mesmo escopo, mas não dois com o
+    // mesmo nome: sem modelo padrão, o nome é o único discriminador que o
+    // profissional vê no seletor. Deixado a cargo do índice único parcial — ler
+    // antes de escrever teria janela de corrida e daria 500 quando perdesse.
+    let created: MedicalRecordTemplate
+    try {
+      created = await this.templatesRepository.create(
+        { specialtyId, councilType, name: dto.name, fields, sections },
+        clinicId,
+      )
+    } catch (error) {
+      throw toTemplateNameConflict(error)
+    }
 
     try {
       await this.cacheService.delByPattern(`medical_record_templates:list:${clinicId}*`)

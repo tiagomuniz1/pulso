@@ -12,7 +12,6 @@ import { IProfessionalsRepository } from '../../professionals/repositories/profe
 const mockTemplatesRepository: jest.Mocked<IMedicalRecordTemplatesRepository> = {
   findAll: jest.fn(),
   findById: jest.fn(),
-  findByClinicAndSpecialty: jest.fn(),
   create: jest.fn(),
   update: jest.fn(),
   delete: jest.fn(),

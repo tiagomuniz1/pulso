@@ -20,4 +20,11 @@ export class MedicalRecordTemplateListQueryDto extends PaginationDto {
   @IsOptional()
   @IsEnum(CouncilType)
   councilType?: CouncilType
+
+  // Sem default: a gestão precisa dos desativados para reativá-los, e o seletor
+  // da consulta pede `isActive=true`. `?isActive=false` traz só os desativados.
+  @IsOptional()
+  @Transform(({ value }) => value === 'true')
+  @IsBoolean()
+  isActive?: boolean
 }
