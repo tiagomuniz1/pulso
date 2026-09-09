@@ -60,6 +60,9 @@ describe('Medical record — sectioned template real', () => {
                 cy.visit(`/${CLINIC_SLUG}/appointments/${appointment.id}`)
                 cy.get('[data-testid="tab-prontuario"]', { timeout: 10000 }).click()
                 cy.get('[data-testid="fill-medical-record-button"]', { timeout: 10000 }).click()
+                // Escolha explícita do modelo: a clínica pode ter vários no
+                // mesmo escopo, e nenhum é padrão.
+                cy.get(`[data-testid="template-option-${template.id}"]`, { timeout: 10000 }).click()
                 cy.get('[data-testid="medical-record-form"]').should('be.visible')
 
                 cy.get('[data-testid="medical-record-form-tabs"]').should('be.visible')

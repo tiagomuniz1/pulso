@@ -15,6 +15,7 @@ import {
   UserRole,
 } from '@app/shared'
 import { BaseUseCase } from '../../../common/base.use-case'
+import { toTemplateNameConflict } from '../utils/template-name-conflict.util'
 import { CacheService } from '../../../cache/cache.service'
 import { ICurrentUser } from '../../auth/types/current-user.type'
 import { ISpecialtiesRepository } from '../../specialties/repositories/specialties.repository.interface'
@@ -73,7 +74,9 @@ export class UpdateMedicalRecordTemplateUseCase extends BaseUseCase {
       if (error instanceof OptimisticLockVersionMismatchError) {
         throw new ConflictException('Record was modified by another process. Please try again.')
       }
-      throw error
+      // Renomear para um nome que já existe no mesmo escopo esbarra no índice
+      // único — sem este ramo viraria 500.
+      throw toTemplateNameConflict(error)
     }
 
     try {

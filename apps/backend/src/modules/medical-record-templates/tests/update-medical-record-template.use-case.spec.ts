@@ -13,7 +13,6 @@ import { UpdateMedicalRecordTemplateUseCase } from '../use-cases/update-medical-
 const mockTemplatesRepository: jest.Mocked<IMedicalRecordTemplatesRepository> = {
   findAll: jest.fn(),
   findById: jest.fn(),
-  findByClinicAndSpecialty: jest.fn(),
   create: jest.fn(),
   update: jest.fn(),
   delete: jest.fn(),

@@ -201,9 +201,36 @@ describe('MedicalRecordTemplatesController (integration)', () => {
       await createTemplate(adminToken, { ...freeFieldsPayload(), specialtyId: other.id }).expect(422)
     })
 
-    it('returns 409 when a template already exists for the specialty', async () => {
+    // "Primeira consulta", "Retorno" e "Pré-natal" são formulários diferentes da
+    // mesma especialidade. Antes o segundo caía em 409.
+    it('returns 201 for a second template in the same specialty', async () => {
       await createTemplate(adminToken, freeFieldsPayload()).expect(201)
-      await createTemplate(adminToken, freeFieldsPayload()).expect(409)
+      await createTemplate(adminToken, { ...freeFieldsPayload(), name: 'Retorno' }).expect(201)
+    })
+
+    it('returns 409 when the name is already taken within the specialty', async () => {
+      await createTemplate(adminToken, freeFieldsPayload()).expect(201)
+
+      const { body } = await createTemplate(adminToken, freeFieldsPayload()).expect(409)
+
+      expect(body.detail).toContain('name')
+    })
+
+    // O índice usa lower(name): quem lê o seletor não distingue as duas grafias.
+    it('returns 409 for a name that differs only in case', async () => {
+      await createTemplate(adminToken, { ...freeFieldsPayload(), name: 'Retorno' }).expect(201)
+      await createTemplate(adminToken, { ...freeFieldsPayload(), name: 'retorno' }).expect(409)
+    })
+
+    // O nome é único dentro do escopo que o seletor lista, não na clínica toda:
+    // "Retorno" de Cardiologia e de Dermatologia nunca aparecem juntos.
+    it('returns 201 for the same name under a different specialty', async () => {
+      await createTemplate(adminToken, { ...freeFieldsPayload(), name: 'Retorno' }).expect(201)
+      await createTemplate(adminToken, {
+        ...freeFieldsPayload(),
+        specialtyId: otherSpecialtyId,
+        name: 'Retorno',
+      }).expect(201)
     })
 
     it('returns 201 for a generalist template (no specialtyId) without a clinic-specialty link', async () => {
@@ -218,13 +245,21 @@ describe('MedicalRecordTemplatesController (integration)', () => {
       expect(body.specialtyName).toBeNull()
     })
 
-    it('returns 409 when a generalist template already exists for the clinic', async () => {
+    it('returns 201 for a second generalist template in the same profession', async () => {
       const { specialtyId: _omit, ...generalistPayload } = freeFieldsPayload()
 
       await createTemplate(adminToken, { ...generalistPayload, name: 'Clínico geral' }).expect(201)
-      await createTemplate(adminToken, { ...generalistPayload, name: 'Outro clínico geral' }).expect(
-        409,
-      )
+      await createTemplate(adminToken, {
+        ...generalistPayload,
+        name: 'Outro clínico geral',
+      }).expect(201)
+    })
+
+    it('returns 409 when the name is already taken within the profession', async () => {
+      const { specialtyId: _omit, ...generalistPayload } = freeFieldsPayload()
+
+      await createTemplate(adminToken, { ...generalistPayload, name: 'Clínico geral' }).expect(201)
+      await createTemplate(adminToken, { ...generalistPayload, name: 'Clínico geral' }).expect(409)
     })
 
     it('returns 422 when a select field has no options', async () => {
@@ -376,6 +411,41 @@ describe('MedicalRecordTemplatesController (integration)', () => {
     // O profissional lê o generalista da PRÓPRIA profissão. Antes lia
     // qualquer um, e sem ficha lia tudo — o modelo é da clínica, mas ele só
     // consulta o que se aplica ao trabalho dele.
+    // O seletor da consulta pede isActive=true; desativar é como a clínica
+    // aposenta um modelo sem apagar os prontuários que nasceram dele.
+    it('filters by isActive', async () => {
+      const { body: ativo } = await createTemplate(adminToken, freeFieldsPayload()).expect(201)
+      const { body: inativo } = await createTemplate(adminToken, {
+        ...freeFieldsPayload(),
+        name: 'Aposentado',
+      }).expect(201)
+
+      await request(app.getHttpServer())
+        .patch(`/medical-record-templates/${inativo.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ isActive: false })
+        .expect(200)
+
+      const { body: ativos } = await request(app.getHttpServer())
+        .get('/medical-record-templates?isActive=true')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200)
+      expect(ativos.data.map((t: any) => t.id)).toEqual([ativo.id])
+
+      const { body: inativos } = await request(app.getHttpServer())
+        .get('/medical-record-templates?isActive=false')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200)
+      expect(inativos.data.map((t: any) => t.id)).toEqual([inativo.id])
+
+      // Sem o filtro a gestão continua vendo os dois — é como o ADMIN reativa.
+      const { body: todos } = await request(app.getHttpServer())
+        .get('/medical-record-templates')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200)
+      expect(todos.total).toBe(2)
+    })
+
     it('deixa o médico ler o generalista da própria profissão', async () => {
       const { specialtyId: _omit, ...generalistPayload } = freeFieldsPayload()
       await createTemplate(adminToken, { ...generalistPayload, name: 'Clínico geral' }).expect(201)
@@ -478,6 +548,21 @@ describe('MedicalRecordTemplatesController (integration)', () => {
         .expect(404)
     })
 
+
+    // Sem o catch do 23505 no update isto viraria 500.
+    it('returns 409 when renaming onto a name that already exists in the scope', async () => {
+      await createTemplate(adminToken, { ...freeFieldsPayload(), name: 'Retorno' }).expect(201)
+      const { body: created } = await createTemplate(adminToken, {
+        ...freeFieldsPayload(),
+        name: 'Primeira consulta',
+      }).expect(201)
+
+      await request(app.getHttpServer())
+        .patch(`/medical-record-templates/${created.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'Retorno' })
+        .expect(409)
+    })
 
     it('returns 403 when a CRM professional updates a template outside their own specialty', async () => {
       const { body: created } = await createTemplate(adminToken, {

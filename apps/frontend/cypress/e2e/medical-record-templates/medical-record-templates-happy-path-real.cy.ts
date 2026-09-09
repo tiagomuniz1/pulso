@@ -1,6 +1,7 @@
 // Stack real ponta a ponta — cobre o escopo por specialtyId (CRM) vs. councilType
-// (demais profissões) e a constraint real de "no máximo um generalista por
-// profissão por clínica" (409). Erros, loading e validação seguem mockados em
+// (demais profissões) e a constraint real de nome único dentro do escopo (409).
+// Vários modelos na mesma especialidade são permitidos; dois com o mesmo nome,
+// não. Erros, loading e validação seguem mockados em
 // medical-record-templates-create.cy.ts / medical-record-templates-professional-create.cy.ts.
 
 import { CLINIC_SLUG, CLINIC_ID } from '../../support/clinic'
@@ -17,11 +18,12 @@ describe('Medical record templates — happy path real', () => {
   it('ADMIN creates a template for a clinic specialty', () => {
     cy.seedSpecialty().then((specialty) => {
       cy.linkSpecialtyToClinicViaApi(CLINIC_ID, specialty.id, specialty.platformAdminToken)
+      const nome = `Anamnese Real ${Date.now()}`
 
       cy.loginAsClinicUser(ADMIN_EMAIL, ADMIN_PASSWORD, CLINIC_SLUG).then((adminToken) => {
         cy.visit(`/${CLINIC_SLUG}/medical-record-templates/new`)
         cy.get('[data-testid="template-form-specialty"]', { timeout: 10000 }).should('be.visible')
-        cy.get('[data-testid="template-form-name"]').type(`Anamnese Real ${Date.now()}`)
+        cy.get('[data-testid="template-form-name"]').type(nome)
         cy.get('[data-testid="template-form-specialty"]').select(specialty.id)
         cy.get('[data-testid="template-form-add-field"]').click()
         cy.get('[data-testid="field-editor-label-0"]').type('Sintoma')
@@ -34,7 +36,9 @@ describe('Medical record templates — happy path real', () => {
           url: `${Cypress.env('API_URL')}/medical-record-templates?specialtyId=${specialty.id}`,
           headers: { Authorization: `Bearer ${adminToken}` },
         }).then((listResponse) => {
-          const created = listResponse.body.data[0]
+          // Por nome, não por posição: com vários modelos na mesma especialidade
+          // o primeiro da lista deixou de ser previsível.
+          const created = listResponse.body.data.find((t: { name: string }) => t.name === nome)
           expect(created).to.exist
           expect(created.specialtyId).to.eq(specialty.id)
 

@@ -2,12 +2,15 @@ jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
 jest.mock('@/lib/slug-context', () => ({ useSlug: jest.fn(() => 'clinic-slug'), useBasePath: () => '/clinic-slug' }))
 jest.mock('@/stores/auth.store')
 jest.mock('../services/medical-record-templates.service')
+jest.mock('@/components/features/clinic-specialties/services/clinic-specialties.service')
 
 import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { useRouter } from 'next/navigation'
 import { UserRole, MedicalRecordFieldType, CouncilType } from '@app/shared'
 import { useAuthStore } from '@/stores/auth.store'
 import { medicalRecordTemplatesService } from '../services/medical-record-templates.service'
+import { clinicSpecialtiesService } from '@/components/features/clinic-specialties/services/clinic-specialties.service'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { TemplateList } from './template-list'
 
@@ -15,8 +18,18 @@ import { TemplateList } from './template-list'
 
 function mockAuthStoreAs(role: UserRole) {
   ;(useAuthStore as unknown as jest.Mock).mockImplementation(
-    (selector: (s: { user: { id: string; fullName: string; email: string; role: UserRole } }) => unknown) =>
-      selector({ user: { id: 'user-uuid', fullName: 'Test User', email: 'test@example.com', role } }),
+    (selector: (s: {
+      user: { id: string; fullName: string; email: string; role: UserRole; clinicId: string }
+    }) => unknown) =>
+      selector({
+        user: {
+          id: 'user-uuid',
+          fullName: 'Test User',
+          email: 'test@example.com',
+          role,
+          clinicId: 'clinic-uuid',
+        },
+      }),
   )
 }
 
@@ -84,7 +97,7 @@ describe('TemplateList (integration)', () => {
       )
     })
 
-    it('shows the profession for a generalist (null specialty) template and leaves specialty blank', async () => {
+    it('shows the profession for a generalist (null specialty) template and names it Generalista', async () => {
       ;(medicalRecordTemplatesService.getAll as jest.Mock).mockResolvedValue(
         makePaginated([makeDto({ specialtyId: null, specialtyName: null, councilType: CouncilType.CRM })]),
       )
@@ -94,7 +107,7 @@ describe('TemplateList (integration)', () => {
       await waitFor(() => expect(screen.getByTestId('template-list-table')).toBeInTheDocument())
 
       expect(screen.getByTestId('template-profession-uuid-1')).toHaveTextContent('Medicina')
-      expect(screen.getByTestId('template-specialty-uuid-1')).toHaveTextContent('—')
+      expect(screen.getByTestId('template-specialty-uuid-1')).toHaveTextContent('Generalista')
       expect(screen.getByTestId('template-card-uuid-1')).toHaveTextContent('Medicina')
     })
 
@@ -185,7 +198,7 @@ describe('TemplateList (integration)', () => {
   describe('profession and specialty columns', () => {
     beforeEach(() => mockAuthStoreAs(UserRole.ADMIN))
 
-    it('shows the profession for a non-CRM (specialty-less) template and leaves specialty blank', async () => {
+    it('shows the profession for a non-CRM (specialty-less) template and names it Generalista', async () => {
       ;(medicalRecordTemplatesService.getAll as jest.Mock).mockResolvedValue(
         makePaginated([makeDto({ specialtyId: null, specialtyName: null, councilType: CouncilType.CRN })]),
       )
@@ -195,7 +208,7 @@ describe('TemplateList (integration)', () => {
       await waitFor(() => {
         expect(screen.getByTestId('template-profession-uuid-1')).toHaveTextContent('Nutrição')
       })
-      expect(screen.getByTestId('template-specialty-uuid-1')).toHaveTextContent('—')
+      expect(screen.getByTestId('template-specialty-uuid-1')).toHaveTextContent('Generalista')
     })
 
     it('shows Medicina as the profession for a CRM template with a specialty', async () => {
@@ -207,6 +220,114 @@ describe('TemplateList (integration)', () => {
         expect(screen.getByTestId('template-profession-uuid-1')).toHaveTextContent('Medicina')
       })
       expect(screen.getByTestId('template-specialty-uuid-1')).toHaveTextContent('Cardiologia')
+    })
+  })
+
+  describe('paginação e filtro', () => {
+    beforeEach(() => {
+      mockAuthStoreAs(UserRole.ADMIN)
+      ;(clinicSpecialtiesService.getAll as jest.Mock).mockResolvedValue({
+        data: [
+          { id: 'cs-1', clinicId: 'clinic-uuid', specialtyId: 'spec-uuid', name: 'Cardiologia', description: null, linkedAt: '2024-01-01T00:00:00.000Z' },
+        ],
+        total: 1,
+        page: 1,
+        limit: 100,
+      })
+    })
+
+    // A listagem não paginava e o backend corta em 20 — com vários modelos por
+    // especialidade, o resto sumia sem aviso.
+    it('walks through the pages', async () => {
+      ;(medicalRecordTemplatesService.getAll as jest.Mock).mockResolvedValue({
+        data: [makeDto()],
+        total: 45,
+        page: 1,
+        limit: 20,
+      })
+
+      renderWithProviders(<TemplateList />)
+
+      await waitFor(() => expect(screen.getByTestId('template-list-pagination')).toBeInTheDocument())
+      expect(screen.getByTestId('template-list-page-info')).toHaveTextContent('Página 1 de 3')
+      expect(screen.getByTestId('template-list-prev-page')).toBeDisabled()
+
+      await userEvent.click(screen.getByTestId('template-list-next-page'))
+
+      await waitFor(() => {
+        expect(medicalRecordTemplatesService.getAll).toHaveBeenCalledWith(
+          expect.objectContaining({ page: 2, limit: 20 }),
+        )
+      })
+      expect(screen.getByTestId('template-list-page-info')).toHaveTextContent('Página 2 de 3')
+
+      await userEvent.click(screen.getByTestId('template-list-prev-page'))
+      await waitFor(() => {
+        expect(screen.getByTestId('template-list-page-info')).toHaveTextContent('Página 1 de 3')
+      })
+    })
+
+    it('filters by specialty', async () => {
+      ;(medicalRecordTemplatesService.getAll as jest.Mock).mockResolvedValue(makePaginated())
+
+      renderWithProviders(<TemplateList />)
+      // As especialidades da clínica chegam depois do select: escolher antes
+      // erraria por opção inexistente.
+      await screen.findByRole('option', { name: 'Cardiologia' })
+
+      await userEvent.selectOptions(screen.getByTestId('template-list-filter-scope'), 'spec-uuid')
+
+      await waitFor(() => {
+        expect(medicalRecordTemplatesService.getAll).toHaveBeenCalledWith(
+          expect.objectContaining({ specialtyId: 'spec-uuid' }),
+        )
+      })
+    })
+
+    // Escopo por profissão e por especialidade são mutuamente exclusivos no
+    // backend — o seletor é um só para a UI não pedir uma combinação que o
+    // servidor descarta em silêncio.
+    it('filters by profession without sending a specialty', async () => {
+      ;(medicalRecordTemplatesService.getAll as jest.Mock).mockResolvedValue(makePaginated())
+
+      renderWithProviders(<TemplateList />)
+      await waitFor(() => expect(screen.getByTestId('template-list-filter-scope')).toBeInTheDocument())
+
+      await userEvent.selectOptions(
+        screen.getByTestId('template-list-filter-scope'),
+        `generalist:${CouncilType.CRN}`,
+      )
+
+      await waitFor(() => {
+        const ultima = (medicalRecordTemplatesService.getAll as jest.Mock).mock.calls.at(-1)![0]
+        expect(ultima).toMatchObject({ councilType: CouncilType.CRN })
+        expect(ultima.specialtyId).toBeUndefined()
+      })
+    })
+
+    // Trocar o filtro na página 3 deixaria a tela vazia num resultado que tem
+    // itens.
+    it('goes back to the first page when the filter changes', async () => {
+      ;(medicalRecordTemplatesService.getAll as jest.Mock).mockResolvedValue({
+        data: [makeDto()],
+        total: 45,
+        page: 1,
+        limit: 20,
+      })
+
+      renderWithProviders(<TemplateList />)
+      await waitFor(() => expect(screen.getByTestId('template-list-next-page')).toBeInTheDocument())
+      await userEvent.click(screen.getByTestId('template-list-next-page'))
+      await waitFor(() => {
+        expect(screen.getByTestId('template-list-page-info')).toHaveTextContent('Página 2 de 3')
+      })
+
+      await screen.findByRole('option', { name: 'Cardiologia' })
+      await userEvent.selectOptions(screen.getByTestId('template-list-filter-scope'), 'spec-uuid')
+
+      await waitFor(() => {
+        expect(screen.getByTestId('template-list-page-info')).toHaveTextContent('Página 1 de 3')
+      })
     })
   })
 })

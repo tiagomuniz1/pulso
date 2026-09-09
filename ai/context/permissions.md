@@ -185,7 +185,13 @@ Isso existe porque quem é dono da clínica com frequência também atende. Um �
 | Editar / Ativar-Desativar | ✓ | ✗ | ✗ | ✗ |
 | Excluir | ✓ | ✗ | ✗ | ✗ |
 
-> **O modelo é da clínica, não do profissional.** A tabela `medical_record_templates` não tem `professional_id`: o escopo é `clinicId + specialtyId` **ou**, para o generalista, `clinicId + councilType` — no máximo um por especialidade e um por profissão, por clínica. Dois ginecologistas da mesma clínica compartilham o mesmo modelo, e editar mudaria o formulário do colega. Por isso **criar, editar e excluir são gestão do ADMIN**.
+> **O modelo é da clínica, não do profissional.** A tabela `medical_record_templates` não tem `professional_id`: o escopo é `clinicId + specialtyId` **ou**, para o generalista, `clinicId + councilType`. Dois ginecologistas da mesma clínica compartilham os mesmos modelos, e editar mudaria o formulário do colega. Por isso **criar, editar e excluir são gestão do ADMIN**.
+
+> **A clínica pode ter vários modelos no mesmo escopo, e quem escolhe é o profissional, no atendimento.** Primeira consulta, retorno e pré-natal são formulários diferentes; um modelo só por especialidade obrigava a escolher entre eles ou a inchar um que servia mal aos três. Não existe modelo padrão: a escolha é explícita a cada prontuário, inclusive quando só há um modelo — e o `templateId` escolhido vai no `POST /medical-records`, porque com vários no mesmo escopo o servidor não tem como adivinhar, e qualquer palpite ficaria congelado no snapshot do prontuário.
+
+> **O que é único agora é o nome, dentro do escopo.** Sem modelo padrão, o nome é o único discriminador que o profissional vê no seletor: dois "Retorno" na mesma especialidade seriam duas linhas idênticas e uma escolha impossível de fazer. A comparação ignora maiúsculas e espaços nas pontas, e o mesmo nome em especialidades diferentes é permitido — o recorte é o que o seletor lista, não a clínica inteira.
+
+> **Desativar é como a clínica aposenta um modelo.** Um modelo inativo sai do seletor e o backend recusa criar prontuário com ele (`422`), mas os prontuários que já nasceram dele continuam íntegros: o schema fica congelado no registro, não é lido do modelo.
 
 > **O profissional só consulta o próprio escopo:** as especialidades que exerce e o generalista da própria profissão. O recorte é do servidor, aplicado na consulta ao banco para o total da paginação bater com o que ele enxerga — e a chave do cache carrega o escopo, senão ele leria o catálogo inteiro guardado para o ADMIN. Profissional sem ficha não enxerga modelo nenhum: sem especialidade e sem conselho não há escopo, e o catálogo inteiro seria o oposto do recorte.
 
@@ -353,10 +359,10 @@ Endpoint **público** (sem autenticação, `@Public`) consumido ao bipar o QR Co
 ## Resumo por perfil
 
 ### ADMIN
-Acesso administrativo irrestrito. Gerencia usuários, profissionais, pacientes, agendas e todas as consultas. Único perfil que pode criar usuários, ativar/desativar contas e excluir registros. Cria e edita templates de prontuário da clínica. Pode criar, editar e excluir qualquer prontuário. **Não emite receita, atestado, pedido de exame nem indicação de vacina, e não envia foto — a menos que também tenha ficha de profissional**, e nesse caso apenas nas próprias consultas (ver "Cargo e Ofício").
+Acesso administrativo irrestrito. Gerencia usuários, profissionais, pacientes, agendas e todas as consultas. Único perfil que pode criar usuários, ativar/desativar contas e excluir registros. Cria, edita e exclui os modelos de prontuário da clínica — quantos quiser por especialidade e por profissão, desde que com nomes distintos dentro do escopo. Pode criar, editar e excluir qualquer prontuário. **Não emite receita, atestado, pedido de exame nem indicação de vacina, e não envia foto — a menos que também tenha ficha de profissional**, e nesse caso apenas nas próprias consultas (ver "Cargo e Ofício").
 
 ### PROFESSIONAL
-Acessa o sistema para gerenciar a própria agenda, criar e acompanhar as próprias consultas. Pode editar os próprios dados de usuário e de profissional. Não vê dados de outros profissionais, agendas de outros ou consultas de outros profissionais. Cria e edita prontuários das próprias consultas (bloqueado após conclusão). Cria e edita o próprio template de prontuário — médico (CRM) através de uma das próprias especialidades, demais profissões direto para a profissão — sem acesso aos templates de outros profissionais nem à exclusão.
+Acessa o sistema para gerenciar a própria agenda, criar e acompanhar as próprias consultas. Pode editar os próprios dados de usuário e de profissional. Não vê dados de outros profissionais, agendas de outros ou consultas de outros profissionais. Cria e edita prontuários das próprias consultas (bloqueado após conclusão), escolhendo a cada um qual modelo da clínica usar. **Não cria nem edita modelo de prontuário** — isso é gestão do ADMIN, porque o modelo é da clínica e mexer nele mudaria o formulário dos colegas da mesma especialidade. Consulta apenas os modelos do próprio escopo: as especialidades que exerce e o generalista da própria profissão.
 
 ### USER (Recepcionista)
 Acessa o sistema para consultar dados operacionais. Pode ver a lista de pacientes, profissionais e consultas (somente leitura). Pode ver a disponibilidade de qualquer profissional. Pode editar o próprio cadastro de usuário. Não cria, cancela ou conclui consultas. Não acessa prontuários nem templates.

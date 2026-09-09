@@ -31,8 +31,11 @@ export class FindAllMedicalRecordTemplatesUseCase extends BaseUseCase {
     currentUser: ICurrentUser,
   ): Promise<PaginatedMedicalRecordTemplatesResponseDto> {
     const clinicId = currentUser.clinicId!
-    const { page = 1, limit = 20, specialtyId, generalist, councilType } = query
-    const filterKey = councilType ?? (generalist ? 'generalist' : specialtyId ?? 'all')
+    const { page = 1, limit = 20, specialtyId, generalist, councilType, isActive } = query
+    // `isActive` entra na chave: sem isso a lista "só ativos" do seletor e a
+    // lista completa da gestão colidiriam na mesma entrada de cache.
+    const scopeFilterKey = councilType ?? (generalist ? 'generalist' : specialtyId ?? 'all')
+    const filterKey = `${scopeFilterKey}:${isActive ?? 'any'}`
 
     // O modelo é da clínica, mas o profissional só consulta o que se aplica ao
     // trabalho dele: as especialidades que exerce e o generalista da própria
@@ -70,6 +73,7 @@ export class FindAllMedicalRecordTemplatesUseCase extends BaseUseCase {
       generalist,
       councilType,
       scope,
+      isActive,
     )
 
     const specialtyIds = [

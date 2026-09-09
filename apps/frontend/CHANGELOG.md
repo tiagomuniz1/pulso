@@ -1,5 +1,21 @@
 # Changelog — Frontend
 
+## [1.13.0] - 2026-09-09
+
+### Added
+- **Escolha do modelo ao preencher o prontuário.** A clínica pode ter vários no mesmo escopo, e nenhum é padrão: o modal abre num seletor com nome, número de campos, seções e a data da última alteração — que é o que distingue dois modelos que agora dividem a especialidade. A escolha é explícita mesmo quando só existe um
+- **Trocar de modelo com algo digitado pede confirmação** e descarta o preenchido. Não há o que aproveitar: as chaves de campo têm sufixo aleatório, então dois modelos nunca compartilham chave nem para o mesmo rótulo
+- Paginação, filtro por escopo e coluna "Atualizado em" na listagem de modelos. A paginação não existia e o backend corta em 20 — a partir do 21º modelo o resto sumia sem aviso
+
+### Changed
+- **Sem nenhum modelo, o botão "Preencher prontuário" não aparece** e a tela diz a quem pedir. Antes o botão aparecia e a má notícia só vinha depois do clique
+- **Falha ao carregar os modelos passa a ser tratada como falha**, com "tentar novamente" — antes o erro era ignorado e a tela dizia que não existia modelo, mandando o profissional atrás do administrador por um problema de rede
+- **As seções de um prontuário salvo vêm do modelo que ficou gravado**, e não do primeiro da especialidade. O snapshot congela só os campos; com vários modelos, aquilo agrupava um prontuário pelas seções de outro
+- A mensagem de 409 ao criar modelo passa a falar de nome repetido, que é o que a regra é agora. Na edição, o 409 tem duas causas — nome e lock otimista — e a tela distingue: mandar recarregar a página não resolveria um nome repetido
+
+### Fixed
+- Campo apontando para uma seção que não existe mais **sumia da tela**, sem erro nenhum. Como as seções vêm do modelo vivo e os campos do snapshot, bastava renomear uma seção para perder de vista o que já tinha sido escrito. Agora esses campos caem na aba Geral
+
 ## [1.12.0] - 2026-09-09
 
 ### Changed

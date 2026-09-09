@@ -11,7 +11,7 @@ import { CreateMedicalRecordTemplateUseCase } from './use-cases/create-medical-r
 import { UpdateMedicalRecordTemplateUseCase } from './use-cases/update-medical-record-template.use-case'
 import { FindAllMedicalRecordTemplatesUseCase } from './use-cases/find-all-medical-record-templates.use-case'
 import { FindMedicalRecordTemplateByIdUseCase } from './use-cases/find-medical-record-template-by-id.use-case'
-import { FindTemplateByClinicAndSpecialtyUseCase } from './use-cases/find-template-by-clinic-and-specialty.use-case'
+import { FindTemplateByClinicAndIdUseCase } from './use-cases/find-template-by-clinic-and-id.use-case'
 import { DeleteMedicalRecordTemplateUseCase } from './use-cases/delete-medical-record-template.use-case'
 import { IMedicalRecordTemplatesRepository } from './repositories/medical-record-templates.repository.interface'
 import { MedicalRecordTemplatesRepository } from './repositories/medical-record-templates.repository'
@@ -31,10 +31,10 @@ import { MedicalRecordTemplatesRepository } from './repositories/medical-record-
     UpdateMedicalRecordTemplateUseCase,
     FindAllMedicalRecordTemplatesUseCase,
     FindMedicalRecordTemplateByIdUseCase,
-    FindTemplateByClinicAndSpecialtyUseCase,
+    FindTemplateByClinicAndIdUseCase,
     DeleteMedicalRecordTemplateUseCase,
     { provide: IMedicalRecordTemplatesRepository, useClass: MedicalRecordTemplatesRepository },
   ],
-  exports: [FindTemplateByClinicAndSpecialtyUseCase],
+  exports: [FindTemplateByClinicAndIdUseCase],
 })
 export class MedicalRecordTemplatesModule {}

@@ -13,6 +13,8 @@ export interface ITemplateListParams {
   specialtyId?: string
   generalist?: boolean
   councilType?: CouncilType
+  /** Omitido traz ativos e inativos — é assim que a gestão reativa um modelo. */
+  isActive?: boolean
 }
 
 export const medicalRecordTemplatesService = {
@@ -23,6 +25,7 @@ export const medicalRecordTemplatesService = {
     if (params?.specialtyId) searchParams.set('specialtyId', params.specialtyId)
     if (params?.generalist) searchParams.set('generalist', 'true')
     if (params?.councilType) searchParams.set('councilType', params.councilType)
+    if (params?.isActive !== undefined) searchParams.set('isActive', String(params.isActive))
     const query = searchParams.toString()
     return apiClient.get<PaginatedMedicalRecordTemplatesResponseDto>(
       `/medical-record-templates${query ? `?${query}` : ''}`,

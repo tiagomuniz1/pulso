@@ -20,13 +20,9 @@ export abstract class IMedicalRecordTemplatesRepository {
     generalist?: boolean,
     councilType?: CouncilType,
     scope?: TemplateReadScope,
+    isActive?: boolean,
   ): Promise<[MedicalRecordTemplate[], number]>
   abstract findById(id: string, clinicId: string): Promise<MedicalRecordTemplate | null>
-  abstract findByClinicAndSpecialty(
-    clinicId: string,
-    specialtyId: string | null,
-    councilType?: CouncilType | null,
-  ): Promise<MedicalRecordTemplate | null>
   abstract create(
     data: Partial<MedicalRecordTemplate>,
     clinicId: string,

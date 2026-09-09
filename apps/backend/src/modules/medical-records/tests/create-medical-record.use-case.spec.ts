@@ -9,7 +9,7 @@ import { AppointmentStatus, CouncilType, MedicalRecordFieldType, UserRole } from
 import { ICurrentUser } from '../../auth/types/current-user.type'
 import { IAppointmentsRepository } from '../../appointments/repositories/appointments.repository.interface'
 import { IProfessionalsRepository } from '../../professionals/repositories/professionals.repository.interface'
-import { FindTemplateByClinicAndSpecialtyUseCase } from '../../medical-record-templates/use-cases/find-template-by-clinic-and-specialty.use-case'
+import { FindTemplateByClinicAndIdUseCase } from '../../medical-record-templates/use-cases/find-template-by-clinic-and-id.use-case'
 import { IMedicalRecordsRepository } from '../repositories/medical-records.repository.interface'
 import { ValidateRecordDataService } from '../services/validate-record-data.service'
 import { CreateMedicalRecordUseCase } from '../use-cases/create-medical-record.use-case'
@@ -39,6 +39,8 @@ const makeTemplate = (overrides = {}) => ({
   id: templateId,
   specialtyId,
   clinicId,
+  councilType: null,
+  isActive: true,
   fields: [
     {
       key: 'notes_0ab1',
@@ -110,7 +112,7 @@ const mockProfessionalsRepository: jest.Mocked<IProfessionalsRepository> = {
   delete: jest.fn(),
 }
 
-const mockFindTemplate = { execute: jest.fn() } as unknown as jest.Mocked<FindTemplateByClinicAndSpecialtyUseCase>
+const mockFindTemplate = { execute: jest.fn() } as unknown as jest.Mocked<FindTemplateByClinicAndIdUseCase>
 
 const mockValidate = { validate: jest.fn() } as unknown as jest.Mocked<ValidateRecordDataService>
 
@@ -144,7 +146,7 @@ describe('CreateMedicalRecordUseCase', () => {
   })
 
   it('creates a medical record for ADMIN', async () => {
-    const dto = { appointmentId, data: {}, notes: undefined }
+    const dto = { appointmentId, templateId, data: {}, notes: undefined }
     const result = await useCase.execute(dto, adminUser)
     expect(result.appointmentId).toBe(appointmentId)
     expect(result.patientName).toBe('Patient Name')
@@ -155,19 +157,19 @@ describe('CreateMedicalRecordUseCase', () => {
 
   it('creates a medical record for DOCTOR (own appointment)', async () => {
     mockProfessionalsRepository.findByUserId.mockResolvedValue({ id: professionalId } as any)
-    const dto = { appointmentId, data: {} }
+    const dto = { appointmentId, templateId, data: {} }
     await useCase.execute(dto, doctorUser)
     expect(mockMedicalRecordsRepository.create).toHaveBeenCalled()
   })
 
   it('throws ForbiddenException when DOCTOR creates for another doctor appointment', async () => {
     mockProfessionalsRepository.findByUserId.mockResolvedValue({ id: 'other-doctor' } as any)
-    await expect(useCase.execute({ appointmentId, data: {} }, doctorUser)).rejects.toThrow(ForbiddenException)
+    await expect(useCase.execute({ appointmentId, templateId, data: {} }, doctorUser)).rejects.toThrow(ForbiddenException)
   })
 
   it('throws NotFoundException when appointment not found', async () => {
     mockAppointmentsRepository.findById.mockResolvedValue(null)
-    await expect(useCase.execute({ appointmentId, data: {} }, adminUser)).rejects.toThrow(NotFoundException)
+    await expect(useCase.execute({ appointmentId, templateId, data: {} }, adminUser)).rejects.toThrow(NotFoundException)
   })
 
   it('creates a generalist record when the appointment has no specialty (null)', async () => {
@@ -176,17 +178,18 @@ describe('CreateMedicalRecordUseCase', () => {
       id: professionalId,
       registrations: [{ id: 'reg-1', councilType: CouncilType.CRM, isPrimary: true }],
     } as any)
-    ;(mockFindTemplate.execute as jest.Mock).mockResolvedValue(makeTemplate({ specialtyId: null }))
+    ;(mockFindTemplate.execute as jest.Mock).mockResolvedValue(
+      makeTemplate({ specialtyId: null, councilType: CouncilType.CRM }),
+    )
     mockMedicalRecordsRepository.create.mockResolvedValue({
       ...makeRecord(),
       specialtyId: null,
       specialty: null,
     } as any)
 
-    const result = await useCase.execute({ appointmentId, data: {} }, adminUser)
+    const result = await useCase.execute({ appointmentId, templateId, data: {} }, adminUser)
 
     expect(mockProfessionalsRepository.findById).toHaveBeenCalledWith(professionalId, clinicId)
-    expect(mockFindTemplate.execute).toHaveBeenCalledWith(clinicId, null, CouncilType.CRM)
     const createArg = mockMedicalRecordsRepository.create.mock.calls[0][0]
     expect(createArg.specialtyId).toBeNull()
     expect(result.specialtyId).toBeNull()
@@ -197,7 +200,7 @@ describe('CreateMedicalRecordUseCase', () => {
     mockAppointmentsRepository.findById.mockResolvedValue(makeAppointment({ specialtyId: null }) as any)
     mockProfessionalsRepository.findById.mockResolvedValue(null)
 
-    await expect(useCase.execute({ appointmentId, data: {} }, adminUser)).rejects.toThrow(
+    await expect(useCase.execute({ appointmentId, templateId, data: {} }, adminUser)).rejects.toThrow(
       NotFoundException,
     )
   })
@@ -212,33 +215,83 @@ describe('CreateMedicalRecordUseCase', () => {
       makeTemplate({ specialtyId: null, councilType: CouncilType.CRN }),
     )
 
-    await useCase.execute({ appointmentId, data: {} }, adminUser)
+    await useCase.execute({ appointmentId, templateId, data: {} }, adminUser)
 
-    expect(mockFindTemplate.execute).toHaveBeenCalledWith(clinicId, null, CouncilType.CRN)
+    expect(mockFindTemplate.execute).toHaveBeenCalledWith(clinicId, templateId)
   })
 
-  it('throws NotFoundException when template not found', async () => {
+  // Modelo inexistente e modelo de outra clínica chegam iguais aqui — o
+  // repositório escopa por clínica e devolve null nos dois casos.
+  it('throws NotFoundException when the chosen template is not in the clinic', async () => {
     ;(mockFindTemplate.execute as jest.Mock).mockResolvedValue(null)
-    await expect(useCase.execute({ appointmentId, data: {} }, adminUser)).rejects.toThrow(NotFoundException)
+    await expect(useCase.execute({ appointmentId, templateId, data: {} }, adminUser)).rejects.toThrow(NotFoundException)
   })
 
-  it('throws UnprocessableEntityException when template specialty mismatches', async () => {
+  // Desativar é como a clínica aposenta um modelo. 422 e não 404: ele existe e é
+  // legível, é a regra que recusa usá-lo num prontuário novo.
+  it('throws UnprocessableEntityException when the chosen template is inactive', async () => {
+    ;(mockFindTemplate.execute as jest.Mock).mockResolvedValue(makeTemplate({ isActive: false }))
+    await expect(useCase.execute({ appointmentId, templateId, data: {} }, adminUser)).rejects.toThrow(UnprocessableEntityException)
+    expect(mockMedicalRecordsRepository.create).not.toHaveBeenCalled()
+  })
+
+  it('throws UnprocessableEntityException when the chosen template is from another specialty', async () => {
     ;(mockFindTemplate.execute as jest.Mock).mockResolvedValue(makeTemplate({ specialtyId: 'other-specialty' }))
-    await expect(useCase.execute({ appointmentId, data: {} }, adminUser)).rejects.toThrow(UnprocessableEntityException)
+    await expect(useCase.execute({ appointmentId, templateId, data: {} }, adminUser)).rejects.toThrow(UnprocessableEntityException)
+  })
+
+  // A consulta é generalista, mas o modelo escolhido é de uma especialidade.
+  it('throws UnprocessableEntityException when a specialty template is chosen for a generalist appointment', async () => {
+    mockAppointmentsRepository.findById.mockResolvedValue(makeAppointment({ specialtyId: null }) as any)
+    mockProfessionalsRepository.findById.mockResolvedValue({
+      id: professionalId,
+      registrations: [{ id: 'reg-1', councilType: CouncilType.CRM, isPrimary: true }],
+    } as any)
+    ;(mockFindTemplate.execute as jest.Mock).mockResolvedValue(makeTemplate({ specialtyId: 'spec-1' }))
+
+    await expect(useCase.execute({ appointmentId, templateId, data: {} }, adminUser)).rejects.toThrow(UnprocessableEntityException)
+  })
+
+  // O caso que a FK composta não pega: os dois lados com specialty nula, então o
+  // banco nem checa. Uma nutricionista escolhendo o generalista do médico.
+  it('throws UnprocessableEntityException when the generalist template belongs to another profession', async () => {
+    mockAppointmentsRepository.findById.mockResolvedValue(makeAppointment({ specialtyId: null }) as any)
+    mockProfessionalsRepository.findById.mockResolvedValue({
+      id: professionalId,
+      registrations: [{ id: 'reg-1', councilType: CouncilType.CRN, isPrimary: true }],
+    } as any)
+    ;(mockFindTemplate.execute as jest.Mock).mockResolvedValue(
+      makeTemplate({ specialtyId: null, councilType: CouncilType.CRM }),
+    )
+
+    await expect(useCase.execute({ appointmentId, templateId, data: {} }, adminUser)).rejects.toThrow(UnprocessableEntityException)
+    expect(mockMedicalRecordsRepository.create).not.toHaveBeenCalled()
+  })
+
+  // O prontuário congela o modelo escolhido, não um resolvido pelo servidor.
+  it('snapshots the chosen template', async () => {
+    const chosen = makeTemplate({ id: 'chosen-template', fields: [{ key: 'x', label: 'X' }] })
+    ;(mockFindTemplate.execute as jest.Mock).mockResolvedValue(chosen)
+
+    await useCase.execute({ appointmentId, templateId: 'chosen-template', data: {} }, adminUser)
+
+    const createArg = mockMedicalRecordsRepository.create.mock.calls[0][0]
+    expect(createArg.templateId).toBe('chosen-template')
+    expect(createArg.templateSchemaSnapshot).toBe(chosen.fields)
   })
 
   it('throws ConflictException when record already exists', async () => {
     mockMedicalRecordsRepository.findByAppointment.mockResolvedValue(makeRecord() as any)
-    await expect(useCase.execute({ appointmentId, data: {} }, adminUser)).rejects.toThrow(ConflictException)
+    await expect(useCase.execute({ appointmentId, templateId, data: {} }, adminUser)).rejects.toThrow(ConflictException)
   })
 
   it('invalidates patient cache on create', async () => {
-    await useCase.execute({ appointmentId, data: {} }, adminUser)
+    await useCase.execute({ appointmentId, templateId, data: {} }, adminUser)
     expect(mockCache.delByPattern).toHaveBeenCalledWith(`medical_records:patient:${patientId}*`)
   })
 
   it('does not throw when cache invalidation fails', async () => {
     mockCache.delByPattern.mockRejectedValue(new Error('redis error'))
-    await expect(useCase.execute({ appointmentId, data: {} }, adminUser)).resolves.toBeDefined()
+    await expect(useCase.execute({ appointmentId, templateId, data: {} }, adminUser)).resolves.toBeDefined()
   })
 })

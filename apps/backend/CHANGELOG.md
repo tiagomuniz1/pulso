@@ -1,5 +1,24 @@
 # Changelog — Backend
 
+## [1.13.0] - 2026-09-09
+
+### Added
+
+#### Vários modelos de prontuário por escopo
+- **A clínica pode ter quantos modelos quiser por especialidade e por profissão.** Primeira consulta, retorno e pré-natal são formulários diferentes; um modelo só obrigava a escolher entre eles ou a inchar um que servia mal aos três. Os dois índices únicos parciais de escopo caíram (`UQ_template_clinic_specialty`, `UQ_template_clinic_council_type`) e voltaram como índices comuns, que continuam sendo o caminho de leitura do seletor
+- **`templateId` passa a ser obrigatório no `POST /medical-records`.** Não é conveniência: o frontend resolvia o modelo pegando `data[0]` de uma lista ordenada por `createdAt` e o backend re-resolvia por conta própria com `findOneBy` sem ordenação. Com um modelo por escopo os dois sempre coincidiam; com vários poderiam divergir, e o prontuário nasceria com um schema diferente do que foi preenchido na tela, congelado para sempre no `templateSchemaSnapshot`
+- **O nome passa a ser único dentro do escopo** (`lower(name)`, parcial em `deleted_at IS NULL`). Sem modelo padrão, o nome é o único discriminador que o profissional vê no seletor, e dois "Retorno" na mesma especialidade seriam indistinguíveis. Traduzido do `23505`, sem read-then-write — inclusive no rename, que sem isso viraria 500
+- **`GET /medical-record-templates?isActive=` filtra por situação**, sem default: a gestão precisa enxergar os desativados para reativá-los, e o seletor da consulta pede só os ativos. O filtro entra na chave do cache, senão as duas listas colidiriam na mesma entrada
+
+### Changed
+- **A validação do modelo escolhido substitui a resolução automática** em `create-medical-record.use-case.ts`: `404` para modelo fora da clínica ou excluído (mesma resposta nos dois casos, para não revelar existência alheia), `422` para modelo desativado, `422` para modelo de outra especialidade e `422` para generalista de outra profissão. Este último é o caso que a FK composta não pega — ela é MATCH SIMPLE e, com `specialty_id` nulo dos dois lados, o banco nem checa
+- **`is_active` passa a valer.** A mensagem de erro já prometia "No active template found" e nada filtrava: um modelo desativado continuava virando prontuário novo. Agora desativar é como a clínica aposenta um modelo, sem tocar nos prontuários que nasceram dele — o schema deles está congelado no registro
+- `FindTemplateByClinicAndSpecialtyUseCase` deu lugar a `FindTemplateByClinicAndIdUseCase`: o contrato antigo, "o modelo daquela especialidade" no singular, deixou de existir
+- Removidos os resíduos do commit que moveu a gestão para o ADMIN: imports e a injeção de `IProfessionalsRepository` que ninguém mais usava em `create-medical-record-template.use-case.ts`
+
+### Preserved
+- `UQ_template_id_specialty` e a FK composta `medical_records (template_id, specialty_id)` seguem intactas — com N modelos o par continua trivialmente único, e a FK deixa de ser redundante para virar o backstop de banco da validação
+
 ## [1.12.0] - 2026-09-09
 
 ### Changed
