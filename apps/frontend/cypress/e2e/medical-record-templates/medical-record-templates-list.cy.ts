@@ -104,15 +104,19 @@ describe('Medical Record Templates List', () => {
     cy.get('[data-testid="template-list-new-button"]').should('be.visible')
   })
 
-  it('shows new template button for PROFESSIONAL (can create own template)', () => {
+  // Criar deixou de ser do profissional: o modelo é da clínica, e dois médicos
+  // da mesma especialidade compartilham o mesmo. Gerir é do ADMIN.
+  it('não mostra o botão de novo modelo para PROFESSIONAL', () => {
     cy.intercept('GET', `${Cypress.env('API_URL')}/medical-record-templates*`, {
       statusCode: 200,
-      body: emptyPaginated,
+      body: paginatedResponse,
     }).as('getTemplates')
 
     visitClinic('/medical-record-templates', mockProfessional)
     cy.wait('@getTemplates')
-    cy.get('[data-testid="template-list-new-button"]').should('be.visible')
+
+    cy.get('[data-testid="template-list"]').should('be.visible')
+    cy.get('[data-testid="template-list-new-button"]').should('not.exist')
   })
 
   it('view details link navigates to template page', () => {

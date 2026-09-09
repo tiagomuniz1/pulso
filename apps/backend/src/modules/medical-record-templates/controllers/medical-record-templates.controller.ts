@@ -36,8 +36,13 @@ export class MedicalRecordTemplatesController {
     private readonly deleteMedicalRecordTemplateUseCase: DeleteMedicalRecordTemplateUseCase,
   ) {}
 
+  // Modelo de prontuário é da CLÍNICA, não do profissional: a tabela não tem
+  // `professional_id`, e dois médicos da mesma especialidade compartilham o
+  // mesmo modelo. Editar mudaria o formulário do colega, então criar, editar e
+  // excluir são gestão do ADMIN. Ao profissional cabe consultar — e apenas o
+  // que se aplica ao trabalho dele (ver os use-cases de leitura).
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.PROFESSIONAL)
+  @Roles(UserRole.ADMIN)
   @HttpCode(201)
   create(
     @Body() dto: CreateMedicalRecordTemplateDto,
@@ -65,7 +70,7 @@ export class MedicalRecordTemplatesController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.ADMIN, UserRole.PROFESSIONAL)
+  @Roles(UserRole.ADMIN)
   update(
     @Param('id') id: string,
     @Body() dto: UpdateMedicalRecordTemplateDto,

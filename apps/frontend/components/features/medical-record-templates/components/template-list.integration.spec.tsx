@@ -159,14 +159,12 @@ describe('TemplateList (integration)', () => {
   describe('as PROFESSIONAL', () => {
     beforeEach(() => mockAuthStoreAs(UserRole.PROFESSIONAL))
 
-    it('shows the new template button (professionals can create their own template)', async () => {
-      ;(medicalRecordTemplatesService.getAll as jest.Mock).mockResolvedValue(makePaginated([]))
-
+    // Criar deixou de ser do profissional: o modelo é da clínica, e dois
+    // médicos da mesma especialidade compartilham o mesmo. Gerir é do ADMIN.
+    it('não mostra o botão de novo modelo ao profissional', () => {
       renderWithProviders(<TemplateList />)
 
-      await waitFor(() => expect(screen.getByTestId('template-list-empty')).toBeInTheDocument())
-
-      expect(screen.getByTestId('template-list-new-button')).toBeInTheDocument()
+      expect(screen.queryByTestId('template-list-new-button')).not.toBeInTheDocument()
     })
   })
 

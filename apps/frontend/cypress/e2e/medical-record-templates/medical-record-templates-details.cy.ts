@@ -122,65 +122,7 @@ describe('Medical Record Templates Details', () => {
     cy.get('[data-testid="template-details-delete-button"]').should('be.visible')
   })
 
-  it('never shows delete for PROFESSIONAL, even when owning the template', () => {
-    cy.intercept('GET', `${Cypress.env('API_URL')}/medical-record-templates/${MOCK_TEMPLATE_ID}`, {
-      statusCode: 200,
-      body: mockTemplate,
-    }).as('getTemplate')
-    // A posse do escopo do modelo é decidida pela ficha do próprio usuário.
-    cy.intercept('GET', `${Cypress.env('API_URL')}/professionals/me`, {
-      statusCode: 200,
-      body: {
-        id: 'professional-uuid',
-        user: { id: mockProfessional.id, fullName: mockProfessional.fullName, email: mockProfessional.email },
-        registrations: [{ id: 'reg-1', councilType: 'crm', number: '123456', state: 'SP', isPrimary: true }],
-        specialties: [{ id: 'uuid-spec-1', name: 'Cardiologia', registryNumber: null }],
-        bio: null,
-        createdAt: '2024-01-15T10:00:00.000Z',
-        updatedAt: '2024-01-15T10:00:00.000Z',
-      },
-    }).as('getMyProfessional')
 
-    visitClinic(`/medical-record-templates/${MOCK_TEMPLATE_ID}`, mockProfessional)
-    cy.wait('@getTemplate')
-    cy.wait('@getMyProfessional')
-
-    cy.get('[data-testid="template-details-edit-button"]').should('be.visible')
-    cy.get('[data-testid="template-details-delete-button"]').should('not.exist')
-  })
-
-  it('does NOT show edit for PROFESSIONAL who does not own the template scope', () => {
-    cy.intercept('GET', `${Cypress.env('API_URL')}/medical-record-templates/${MOCK_TEMPLATE_ID}`, {
-      statusCode: 200,
-      body: mockTemplate,
-    }).as('getTemplate')
-    cy.intercept('GET', `${Cypress.env('API_URL')}/professionals*`, {
-      statusCode: 200,
-      body: {
-        data: [
-          {
-            id: 'professional-uuid',
-            user: { id: mockProfessional.id, fullName: mockProfessional.fullName, email: mockProfessional.email },
-            registrations: [{ id: 'reg-1', councilType: 'crm', number: '123456', state: 'SP', isPrimary: true }],
-            specialties: [{ id: 'uuid-spec-other', name: 'Dermatologia', registryNumber: null }],
-            bio: null,
-            createdAt: '2024-01-15T10:00:00.000Z',
-            updatedAt: '2024-01-15T10:00:00.000Z',
-          },
-        ],
-        total: 1,
-        page: 1,
-        limit: 20,
-      },
-    }).as('getMyProfessional')
-
-    visitClinic(`/medical-record-templates/${MOCK_TEMPLATE_ID}`, mockProfessional)
-    cy.wait('@getTemplate')
-    cy.wait('@getMyProfessional')
-
-    cy.get('[data-testid="template-details-edit-button"]').should('not.exist')
-    cy.get('[data-testid="template-details-delete-button"]').should('not.exist')
-  })
 
   it('opens delete dialog when delete clicked', () => {
     cy.intercept('GET', `${Cypress.env('API_URL')}/medical-record-templates/${MOCK_TEMPLATE_ID}`, {
@@ -245,4 +187,22 @@ describe('Medical Record Templates Details', () => {
     cy.wait('@deleteTemplate')
     cy.get('[data-testid="template-details-delete-error"]').should('be.visible')
   })
+
+  // Modelo de prontuário é da clínica, não do profissional: gerir é do ADMIN.
+  // O componente nem busca mais a ficha do usuário — a posse do escopo deixou
+  // de existir como conceito aqui.
+  it('nunca mostra editar nem excluir para PROFESSIONAL', () => {
+    cy.intercept('GET', `${Cypress.env('API_URL')}/medical-record-templates/${MOCK_TEMPLATE_ID}`, {
+      statusCode: 200,
+      body: mockTemplate,
+    }).as('getTemplate')
+
+    visitClinic(`/medical-record-templates/${MOCK_TEMPLATE_ID}`, mockProfessional)
+    cy.wait('@getTemplate')
+
+    cy.get('[data-testid="template-details"]').should('be.visible')
+    cy.get('[data-testid="template-details-edit-button"]').should('not.exist')
+    cy.get('[data-testid="template-details-delete-button"]').should('not.exist')
+  })
+
 })

@@ -283,9 +283,6 @@ describe('MedicalRecordTemplatesController (integration)', () => {
       }).expect(422)
     })
 
-    it('returns 404 when a PROFESSIONAL user has no professional profile', async () => {
-      await createTemplate(doctorToken, freeFieldsPayload()).expect(404)
-    })
 
     it('returns 403 when USER tries to create', async () => {
       await createTemplate(userToken, freeFieldsPayload()).expect(403)
@@ -298,13 +295,6 @@ describe('MedicalRecordTemplatesController (integration)', () => {
         .expect(401)
     })
 
-    it('CRM professional creates a template for their own specialty', async () => {
-      const { body } = await createTemplate(crmWithSpecialtyToken, freeFieldsPayload()).expect(201)
-
-      expect(body.specialtyId).toBe(specialtyId)
-      expect(body.specialtyName).toBe('Cardiologia')
-      expect(body.councilType).toBeNull()
-    })
 
     it('returns 403 when a CRM professional creates a template for a specialty that is not their own', async () => {
       await createTemplate(crmWithSpecialtyToken, { ...freeFieldsPayload(), specialtyId: otherSpecialtyId }).expect(
@@ -312,40 +302,9 @@ describe('MedicalRecordTemplatesController (integration)', () => {
       )
     })
 
-    it('CRM professional without a specialtyId targets the clinic CRM-generalist template', async () => {
-      const { specialtyId: _omit, ...generalistPayload } = freeFieldsPayload()
 
-      const { body } = await createTemplate(crmWithSpecialtyToken, {
-        ...generalistPayload,
-        name: 'Prontuário geral',
-      }).expect(201)
 
-      expect(body.specialtyId).toBeNull()
-      expect(body.councilType).toBe(CouncilType.CRM)
-    })
 
-    it('non-CRM professional creates a template scoped to their own profession', async () => {
-      const { specialtyId: _omit, ...generalistPayload } = freeFieldsPayload()
-
-      const { body } = await createTemplate(crnToken, {
-        ...generalistPayload,
-        name: 'Prontuário de Nutrição',
-      }).expect(201)
-
-      expect(body.specialtyId).toBeNull()
-      expect(body.councilType).toBe(CouncilType.CRN)
-    })
-
-    it('returns 422 when a non-CRM professional provides a specialtyId', async () => {
-      await createTemplate(crnToken, freeFieldsPayload()).expect(422)
-    })
-
-    it('returns 409 when the non-CRM professional-scoped template already exists', async () => {
-      const { specialtyId: _omit, ...generalistPayload } = freeFieldsPayload()
-
-      await createTemplate(crnToken, { ...generalistPayload, name: 'Nutrição 1' }).expect(201)
-      await createTemplate(crnToken, { ...generalistPayload, name: 'Nutrição 2' }).expect(409)
-    })
 
     it('ADMIN creates a profession-scoped template by providing councilType explicitly', async () => {
       const { specialtyId: _omit, ...generalistPayload } = freeFieldsPayload()
@@ -414,17 +373,55 @@ describe('MedicalRecordTemplatesController (integration)', () => {
       expect(body.data[0].specialtyName).toBeNull()
     })
 
-    it('allows a DOCTOR to fetch the generalist template', async () => {
+    // O profissional lê o generalista da PRÓPRIA profissão. Antes lia
+    // qualquer um, e sem ficha lia tudo — o modelo é da clínica, mas ele só
+    // consulta o que se aplica ao trabalho dele.
+    it('deixa o médico ler o generalista da própria profissão', async () => {
       const { specialtyId: _omit, ...generalistPayload } = freeFieldsPayload()
       await createTemplate(adminToken, { ...generalistPayload, name: 'Clínico geral' }).expect(201)
 
       const { body } = await request(app.getHttpServer())
         .get('/medical-record-templates?generalist=true')
-        .set('Authorization', `Bearer ${doctorToken}`)
+        .set('Authorization', `Bearer ${crmWithSpecialtyToken}`)
         .expect(200)
 
       expect(body.total).toBe(1)
       expect(body.data[0].specialtyId).toBeNull()
+    })
+
+    it('não mostra ao médico o modelo de especialidade que ele não exerce', async () => {
+      await createTemplate(adminToken, freeFieldsPayload()).expect(201)
+
+      const { body } = await request(app.getHttpServer())
+        .get('/medical-record-templates')
+        .set('Authorization', `Bearer ${crmOtherSpecialtyToken}`)
+        .expect(200)
+
+      expect(body.data.every((t: { specialtyId: string | null }) => t.specialtyId !== specialtyId)).toBe(true)
+    })
+
+    it('mostra ao médico o modelo da especialidade que ele exerce', async () => {
+      await createTemplate(adminToken, freeFieldsPayload()).expect(201)
+
+      const { body } = await request(app.getHttpServer())
+        .get('/medical-record-templates')
+        .set('Authorization', `Bearer ${crmWithSpecialtyToken}`)
+        .expect(200)
+
+      expect(body.data.some((t: { specialtyId: string | null }) => t.specialtyId === specialtyId)).toBe(true)
+    })
+
+    // Sem ficha não há especialidade nem profissão: não há escopo algum, e o
+    // catálogo inteiro seria o oposto do recorte.
+    it('não mostra nada a quem não tem ficha de profissional', async () => {
+      await createTemplate(adminToken, freeFieldsPayload()).expect(201)
+
+      const { body } = await request(app.getHttpServer())
+        .get('/medical-record-templates')
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .expect(200)
+
+      expect(body.total).toBe(0)
     })
   })
 
@@ -470,15 +467,6 @@ describe('MedicalRecordTemplatesController (integration)', () => {
       expect(body.fields[1].key).toMatch(/^altura_[a-z0-9]{4}$/)
     })
 
-    it('returns 404 when a PROFESSIONAL user has no professional profile', async () => {
-      const { body: created } = await createTemplate(adminToken, freeFieldsPayload()).expect(201)
-
-      await request(app.getHttpServer())
-        .patch(`/medical-record-templates/${created.id}`)
-        .set('Authorization', `Bearer ${doctorToken}`)
-        .send({ name: 'New name' })
-        .expect(404)
-    })
 
     it('returns 404 for a template from another clinic', async () => {
       const { body: created } = await createTemplate(adminToken, freeFieldsPayload()).expect(201)
@@ -490,17 +478,6 @@ describe('MedicalRecordTemplatesController (integration)', () => {
         .expect(404)
     })
 
-    it('CRM professional updates a template for their own specialty', async () => {
-      const { body: created } = await createTemplate(crmWithSpecialtyToken, freeFieldsPayload()).expect(201)
-
-      const { body } = await request(app.getHttpServer())
-        .patch(`/medical-record-templates/${created.id}`)
-        .set('Authorization', `Bearer ${crmWithSpecialtyToken}`)
-        .send({ name: 'Novo nome' })
-        .expect(200)
-
-      expect(body.name).toBe('Novo nome')
-    })
 
     it('returns 403 when a CRM professional updates a template outside their own specialty', async () => {
       const { body: created } = await createTemplate(adminToken, {
@@ -515,21 +492,6 @@ describe('MedicalRecordTemplatesController (integration)', () => {
         .expect(403)
     })
 
-    it('non-CRM professional updates their own profession-wide template', async () => {
-      const { specialtyId: _omit, ...generalistPayload } = freeFieldsPayload()
-      const { body: created } = await createTemplate(crnToken, {
-        ...generalistPayload,
-        name: 'Prontuário de Nutrição',
-      }).expect(201)
-
-      const { body } = await request(app.getHttpServer())
-        .patch(`/medical-record-templates/${created.id}`)
-        .set('Authorization', `Bearer ${crnToken}`)
-        .send({ name: 'Novo nome' })
-        .expect(200)
-
-      expect(body.name).toBe('Novo nome')
-    })
 
     it("returns 403 when a professional updates another profession's template", async () => {
       const { specialtyId: _omit, ...generalistPayload } = freeFieldsPayload()
@@ -583,4 +545,33 @@ describe('MedicalRecordTemplatesController (integration)', () => {
         .expect(403)
     })
   })
+
+  // Modelo de prontuário é da clínica (a tabela não tem `professional_id`), e
+  // dois médicos da mesma especialidade compartilham o mesmo modelo — editar
+  // mudaria o formulário do colega. Gerir é do ADMIN.
+  describe('gestão é do ADMIN', () => {
+    it('403 para o profissional ao criar', async () => {
+      await createTemplate(doctorToken, freeFieldsPayload()).expect(403)
+    })
+
+    it('403 para o profissional ao editar', async () => {
+      const { body } = await createTemplate(adminToken, freeFieldsPayload()).expect(201)
+
+      await request(app.getHttpServer())
+        .patch(`/medical-record-templates/${body.id}`)
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .send({ name: 'Outro nome' })
+        .expect(403)
+    })
+
+    it('403 para o profissional ao excluir', async () => {
+      const { body } = await createTemplate(adminToken, freeFieldsPayload()).expect(201)
+
+      await request(app.getHttpServer())
+        .delete(`/medical-record-templates/${body.id}`)
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .expect(403)
+    })
+  })
+
 })

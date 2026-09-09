@@ -179,13 +179,15 @@ Isso existe porque quem é dono da clínica com frequência também atende. Um �
 
 | Ação | ADMIN | PROFESSIONAL | USER | PATIENT |
 |---|:---:|:---:|:---:|:---:|
-| Criar template | ✓ qualquer | ✓ só o próprio escopo | ✗ | ✗ |
-| Listar templates | ✓ | ✓ (leitura) | ✗ | ✗ |
-| Ver por ID | ✓ | ✓ (leitura) | ✗ | ✗ |
-| Editar / Ativar-Desativar | ✓ qualquer | ✓ só o próprio escopo | ✗ | ✗ |
+| Criar template | ✓ | ✗ | ✗ | ✗ |
+| Listar templates | ✓ todos | ✓ leitura, **só o próprio escopo** | ✗ | ✗ |
+| Ver por ID | ✓ qualquer | ✓ leitura, **só o próprio escopo** | ✗ | ✗ |
+| Editar / Ativar-Desativar | ✓ | ✗ | ✗ | ✗ |
 | Excluir | ✓ | ✗ | ✗ | ✗ |
 
-> Templates são escopados por `clinicId + specialtyId` **ou**, para o template generalista (sem especialidade), por `clinicId + councilType` — no máximo um por profissão por clínica. Todo profissional pode criar e editar o próprio modelo: médico (CRM) através de uma das próprias especialidades (ou sem especialidade, gerando o generalista do CRM); as demais profissões (CRN, CREFITO, CRP, CRO, CRFA) direto para a profissão, sem passar por especialidade. "Próprio escopo" = especialidade que o profissional possui, ou `councilType` que bate com o próprio registro principal. ADMIN pode criar/editar qualquer template, inclusive um generalista de profissão não-médica. Excluir continua exclusivo do ADMIN.
+> **O modelo é da clínica, não do profissional.** A tabela `medical_record_templates` não tem `professional_id`: o escopo é `clinicId + specialtyId` **ou**, para o generalista, `clinicId + councilType` — no máximo um por especialidade e um por profissão, por clínica. Dois ginecologistas da mesma clínica compartilham o mesmo modelo, e editar mudaria o formulário do colega. Por isso **criar, editar e excluir são gestão do ADMIN**.
+
+> **O profissional só consulta o próprio escopo:** as especialidades que exerce e o generalista da própria profissão. O recorte é do servidor, aplicado na consulta ao banco para o total da paginação bater com o que ele enxerga — e a chave do cache carrega o escopo, senão ele leria o catálogo inteiro guardado para o ADMIN. Profissional sem ficha não enxerga modelo nenhum: sem especialidade e sem conselho não há escopo, e o catálogo inteiro seria o oposto do recorte.
 
 ---
 
@@ -328,7 +330,8 @@ O esquema que o sistema usa para dizer o que falta, e a conduta que o profission
 | Pacientes | ✓ | ✗ | ✓ |
 | Profissionais | ✓ | ✓ | ✓ |
 | Agendas | ✓ | ✓ | ✗ |
-| Modelos de prontuário | ✓ | ✗ | ✗ |
+| Modelos de prontuário | ✓ | ✓ (só leitura) | ✗ |
+| Modelos de receita | ✓ | ✓ | ✗ |
 | Consultas | ✓ | ✓ | ✓ |
 
 > Prontuários não têm item próprio na sidebar — são acessados a partir do diálogo de detalhes da consulta e do histórico na página do paciente.

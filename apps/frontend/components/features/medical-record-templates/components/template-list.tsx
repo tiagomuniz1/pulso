@@ -26,8 +26,10 @@ function specialtyLabel(template: ITemplateModel): string {
 export function TemplateList() {
   const basePath = useBasePath()
   const role = useAuthStore((s) => s.user?.role)
+  // Modelo de prontuário é da clínica, não do profissional: criar e editar são
+  // gestão do ADMIN. Ao médico cabe consultar — e a listagem que ele recebe já
+  // vem recortada pelo backend às especialidades que ele exerce.
   const isAdmin = role === UserRole.ADMIN
-  const isProfessional = role === UserRole.PROFESSIONAL
 
   const { data: paginated, isPending, isError } = useTemplates()
 
@@ -42,7 +44,7 @@ export function TemplateList() {
             </p>
           )}
         </div>
-        {(isAdmin || isProfessional) && (
+        {isAdmin && (
           <Link href={`${basePath}/medical-record-templates/new`} className="block sm:inline-block">
             <Button variant="primary" data-testid="template-list-new-button" className="w-full sm:w-auto">
               + Novo modelo

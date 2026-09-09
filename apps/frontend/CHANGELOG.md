@@ -1,5 +1,11 @@
 # Changelog — Frontend
 
+## [1.12.0] - 2026-09-09
+
+### Changed
+- **"+ Novo modelo" e "Editar" saem da tela do profissional** em Modelos de prontuário: o modelo é da clínica, e gerir é do ADMIN. A listagem que o profissional recebe já vem recortada pelo servidor às especialidades que ele exerce
+- O detalhe do modelo não busca mais a ficha do usuário: a posse do escopo deixou de existir
+
 ## [1.11.0] - 2026-09-08
 
 ### Added

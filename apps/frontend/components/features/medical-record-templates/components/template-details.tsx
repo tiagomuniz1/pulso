@@ -41,14 +41,6 @@ function specialtyLabel(template: ITemplateModel): string {
 // Ownership mirrors the backend's rule in AssertProfessionalOwnsTemplateScope: a specialty
 // template belongs to whoever has that specialty; a profession-wide (generalist) template
 // belongs to whoever's own primary registration matches its councilType.
-function ownsTemplateScope(template: ITemplateModel, myProfessional: IProfessionalModel | undefined): boolean {
-  if (!myProfessional) return false
-  if (template.specialtyId) {
-    return myProfessional.specialties.some((s) => s.id === template.specialtyId)
-  }
-  return template.councilType === getPrimaryCouncilType(myProfessional.registrations)
-}
-
 function FieldCard({ field, index }: { field: ITemplateFieldModel; index: number }) {
   return (
     <div
@@ -125,8 +117,6 @@ export function TemplateDetails({ templateId }: TemplateDetailsProps) {
   const basePath = useBasePath()
   const role = useAuthStore((s) => s.user?.role)
   const isAdmin = role === UserRole.ADMIN
-  const isProfessional = role === UserRole.PROFESSIONAL
-  const { data: myProfessional } = useMyProfessional()
 
   const { data: template, isPending, isError } = useTemplate(templateId)
   const { mutate: deleteTemplate, isPending: isDeleting } = useDeleteTemplate()
@@ -163,7 +153,8 @@ export function TemplateDetails({ templateId }: TemplateDetailsProps) {
   const sortedSections = [...template.sections].sort((a, b) => a.order - b.order)
 
   const totalFields = template.fields.length
-  const canEdit = isAdmin || (isProfessional && ownsTemplateScope(template, myProfessional ?? undefined))
+  // Editar mudaria o formulário que a clínica inteira usa — é gestão do ADMIN.
+  const canEdit = isAdmin
 
   return (
     <div className="flex flex-col gap-6" data-testid="template-details">

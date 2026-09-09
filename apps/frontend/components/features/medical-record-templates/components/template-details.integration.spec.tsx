@@ -373,6 +373,14 @@ describe('TemplateDetails (integration)', () => {
   })
 
   describe('as PROFESSIONAL', () => {
+
+    // Editar mudaria o formulário que a clínica inteira usa — é gestão do
+    // ADMIN. O profissional consulta, não gere.
+    it('nunca mostra o botão de editar ao profissional', () => {
+      renderWithProviders(<TemplateDetails templateId="uuid-1" />)
+
+      expect(screen.queryByTestId('template-details-edit-button')).not.toBeInTheDocument()
+    })
     beforeEach(() => mockAuthStoreAs(UserRole.PROFESSIONAL))
 
     it('never shows the delete button, even when owning the template scope', async () => {
@@ -386,14 +394,6 @@ describe('TemplateDetails (integration)', () => {
       expect(screen.queryByTestId('template-details-delete-button')).not.toBeInTheDocument()
     })
 
-    it('shows the edit button when the professional owns the template specialty', async () => {
-      mockMyProfessional({ specialties: [{ id: 'spec-uuid', name: 'Cardiologia' }] })
-      ;(medicalRecordTemplatesService.getById as jest.Mock).mockResolvedValue(makeDto())
-
-      renderWithProviders(<TemplateDetails templateId="uuid-1" />)
-
-      await waitFor(() => expect(screen.getByTestId('template-details-edit-button')).toBeInTheDocument())
-    })
 
     it('does not show the edit button when the professional does not own the template specialty', async () => {
       mockMyProfessional({ specialties: [{ id: 'other-spec-uuid', name: 'Dermatologia' }] })
@@ -406,19 +406,6 @@ describe('TemplateDetails (integration)', () => {
       expect(screen.queryByTestId('template-details-edit-button')).not.toBeInTheDocument()
     })
 
-    it('shows the edit button for a generalist template matching the professional own council type', async () => {
-      mockMyProfessional({
-        registrations: [{ id: 'reg-1', councilType: CouncilType.CRN, number: '999', state: 'SP', isPrimary: true }],
-        specialties: [],
-      })
-      ;(medicalRecordTemplatesService.getById as jest.Mock).mockResolvedValue(
-        makeDto({ specialtyId: null, specialtyName: null, councilType: CouncilType.CRN }),
-      )
-
-      renderWithProviders(<TemplateDetails templateId="uuid-1" />)
-
-      await waitFor(() => expect(screen.getByTestId('template-details-edit-button')).toBeInTheDocument())
-    })
 
     it('does not show the edit button for a generalist template of a different council type', async () => {
       mockMyProfessional({

@@ -58,7 +58,7 @@ export class CreateMedicalRecordTemplateUseCase extends BaseUseCase {
     currentUser: ICurrentUser,
   ): Promise<MedicalRecordTemplateResponseDto> {
     const clinicId = currentUser.clinicId!
-    const { specialtyId, councilType } = await this.resolveScope(dto, currentUser, clinicId)
+    const { specialtyId, councilType } = this.resolveScope(dto)
 
     // Generalist template (no specialty) has no clinic-specialty link to validate.
     if (specialtyId) {
@@ -113,38 +113,13 @@ export class CreateMedicalRecordTemplateUseCase extends BaseUseCase {
   // their own specialties (or none, for the clinic's shared CRM-generalist template); every
   // other council type is barred from specialties entirely and always targets their own
   // profession-wide template.
-  private async resolveScope(
-    dto: CreateMedicalRecordTemplateDto,
-    currentUser: ICurrentUser,
-    clinicId: string,
-  ): Promise<ResolvedScope> {
+  /**
+   * O escopo vem do que o ADMIN informou. Não há mais ramo por profissional:
+   * criar modelo é gestão da clínica, e a rota só aceita ADMIN.
+   */
+  private resolveScope(dto: CreateMedicalRecordTemplateDto): ResolvedScope {
     const specialtyId = dto.specialtyId ?? null
-
-    if (currentUser.role !== UserRole.PROFESSIONAL) {
-      return { specialtyId, councilType: specialtyId ? null : (dto.councilType ?? CouncilType.CRM) }
-    }
-
-    const professional = await this.professionalsRepository.findByUserId(currentUser.id, clinicId)
-    if (!professional) throw new NotFoundException('Professional not found')
-
-    const primaryCouncilType = getPrimaryCouncilType(professional)
-
-    if (primaryCouncilType !== CouncilType.CRM) {
-      if (specialtyId) {
-        throw new UnprocessableEntityException('Specialties are not applicable to this profession')
-      }
-      return { specialtyId: null, councilType: primaryCouncilType }
-    }
-
-    if (!specialtyId) return { specialtyId: null, councilType: CouncilType.CRM }
-
-    const ownsSpecialty = professional.professionalSpecialties.some(
-      (professionalSpecialty) => professionalSpecialty.specialtyId === specialtyId,
-    )
-    if (!ownsSpecialty) {
-      throw new ForbiddenException('You can only create a template for your own specialty')
-    }
-    return { specialtyId, councilType: null }
+    return { specialtyId, councilType: specialtyId ? null : (dto.councilType ?? CouncilType.CRM) }
   }
 
   private resolveSections(
