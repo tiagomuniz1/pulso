@@ -139,6 +139,8 @@ interface CreateMedicalRecordTemplateInput {
 
 interface CreateMedicalRecordInput {
   appointmentId: string
+  /** Obrigatório desde que a clínica passou a ter vários modelos por escopo. */
+  templateId: string
   data: Record<string, unknown>
   notes?: string
 }
@@ -735,6 +737,34 @@ Cypress.Commands.add('createCanonicalFieldViaApi', (input: CreateCanonicalFieldI
  * one-line change, not a hunt through a dozen files. Pass `overrides` to give a
  * specific endpoint a real body; everything else answers empty.
  */
+/** O modelo devolvido por padrão pelos stubs da aba de prontuário. */
+export const STUB_TEMPLATE = {
+  id: 'stub-template-uuid',
+  specialtyId: null,
+  specialtyName: null,
+  councilType: 'crm',
+  name: 'Modelo padrão',
+  sections: [],
+  fields: [
+    {
+      key: 'observacoes_stub',
+      label: 'Observações',
+      type: 'textarea',
+      required: false,
+      order: 0,
+      options: null,
+      placeholder: null,
+      helpText: null,
+      canonical: false,
+      canonicalKey: null,
+      sectionKey: null,
+    },
+  ],
+  isActive: true,
+  createdAt: '2026-01-01T10:00:00.000Z',
+  updatedAt: '2026-01-01T10:00:00.000Z',
+}
+
 export interface AppointmentDetailWidgetStubs {
   medicalRecord?: unknown
   templates?: unknown
@@ -763,10 +793,27 @@ Cypress.Commands.add('stubAppointmentDetailWidgets', (overrides: AppointmentDeta
     body: overrides.medicalRecord ?? null,
   }).as('getMedicalRecord')
 
+  // Um modelo mínimo por padrão: sem nenhum, a aba de prontuário nem oferece o
+  // botão de preencher, e o default deste comando é "a aba monta e não explode".
+  // Passe `templates` para um cenário específico — inclusive lista vazia.
   cy.intercept('GET', `${api}/medical-record-templates*`, {
     statusCode: 200,
-    body: overrides.templates ?? { data: [], total: 0, page: 1, limit: 1 },
+    body: overrides.templates ?? {
+      data: [STUB_TEMPLATE],
+      total: 1,
+      page: 1,
+      limit: 50,
+    },
   }).as('getTemplates')
+
+  // O glob acima NÃO cobre `/medical-record-templates/:id` — no minimatch o `*`
+  // não atravessa a barra. É por essa rota que a tela busca as seções de um
+  // prontuário já salvo, e sem stub ela bate no backend com token mock e derruba
+  // o app num loop de redirect.
+  cy.intercept('GET', `${api}/medical-record-templates/*`, {
+    statusCode: 200,
+    body: STUB_TEMPLATE,
+  }).as('getTemplateById')
 
   cy.intercept('GET', `${api}/prescriptions*`, {
     statusCode: 200,

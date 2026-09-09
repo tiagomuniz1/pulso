@@ -1,4 +1,5 @@
 import { visitClinic, CLINIC_ID } from '../../support/clinic'
+import { STUB_TEMPLATE } from '../../support/commands'
 
 const PROFESSIONAL_ID = '00000000-0000-4000-b000-000000000001'
 const APPT_ID = '00000000-0000-4000-d000-000000000002'
@@ -92,10 +93,11 @@ function stubMedicalRecord(body: object | null = null) {
   }).as('getMedicalRecord')
 }
 
+// Um modelo: sem nenhum, a aba nem oferece o botão de preencher.
 function stubTemplates() {
   cy.intercept('GET', `${Cypress.env('API_URL')}/medical-record-templates*`, {
     statusCode: 200,
-    body: { data: [], total: 0, page: 1, limit: 1 },
+    body: { data: [STUB_TEMPLATE], total: 1, page: 1, limit: 50 },
   }).as('getTemplates')
 }
 

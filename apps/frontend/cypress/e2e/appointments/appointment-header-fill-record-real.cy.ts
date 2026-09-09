@@ -44,7 +44,10 @@ describe('Appointment header — fill record shortcut real', () => {
               cy.get('[data-testid="header-fill-record-button"]').should('be.visible').click()
 
               cy.get('[data-testid="tab-prontuario"]').should('have.attr', 'aria-selected', 'true')
-              cy.get('[data-testid="fill-medical-record-button"]', { timeout: 10000 }).should('be.visible')
+              // Este spec prova o atalho do cabeçalho, não o preenchimento — e a
+              // clínica de teste não tem modelo para esta especialidade, então a
+              // aba explica isso em vez de oferecer o botão.
+              cy.get('[data-testid="no-template-empty-state"]', { timeout: 10000 }).should('be.visible')
 
               cy.request({
                 method: 'PATCH',

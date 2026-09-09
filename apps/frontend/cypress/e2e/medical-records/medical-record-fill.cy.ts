@@ -69,7 +69,7 @@ const mockTemplate = {
   ],
   total: 1,
   page: 1,
-  limit: 1,
+  limit: 50,
 }
 
 const mockCreatedRecord = {
@@ -168,10 +168,11 @@ describe('Medical Record Fill', () => {
     cy.get('[data-testid="fill-medical-record-button"]').should('be.visible')
   })
 
-  it('shows a no-template alert when the specialty has no template', () => {
+  // Antes o botão aparecia e a má notícia só vinha depois do clique.
+  it('hides the fill button and explains when the specialty has no template', () => {
     cy.intercept('GET', `${Cypress.env('API_URL')}/medical-record-templates*`, {
       statusCode: 200,
-      body: { data: [], total: 0, page: 1, limit: 1 },
+      body: { data: [], total: 0, page: 1, limit: 50 },
     }).as('getNoTemplate')
 
     visitClinic(`/appointments/${APPT_UUID}`, mockProfessionalUser)
@@ -179,9 +180,9 @@ describe('Medical Record Fill', () => {
     cy.wait('@getRecord')
 
     cy.get('[data-testid="tab-prontuario"]').click()
-    cy.get('[data-testid="fill-medical-record-button"]').click()
     cy.wait('@getNoTemplate')
-    cy.get('[data-testid="no-template-alert"]').should('be.visible')
+    cy.get('[data-testid="no-template-empty-state"]').should('be.visible')
+    cy.get('[data-testid="fill-medical-record-button"]').should('not.exist')
   })
 
   it('shows a skeleton while resolving the template, then a generic error on submit failure', () => {
@@ -201,6 +202,7 @@ describe('Medical Record Fill', () => {
     cy.wait('@getTemplateSlow')
     cy.get('[data-testid="medical-record-form-skeleton"]').should('not.exist')
 
+    cy.get(`[data-testid="template-option-${TPL_UUID}"]`).click()
     cy.get(`[data-testid="dynamic-field-symptom"]`).type('Dor no peito')
 
     cy.intercept('POST', `${Cypress.env('API_URL')}/medical-records`, {

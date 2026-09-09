@@ -134,7 +134,7 @@ describe('Medical Record Templates Create', () => {
     cy.get('[data-testid="field-editor-options-error-0"]').should('be.visible')
   })
 
-  it('shows global error on 409 conflict', () => {
+  it('shows a name conflict on 409', () => {
     cy.intercept('POST', `${Cypress.env('API_URL')}/medical-record-templates`, {
       statusCode: 409,
       body: { title: 'Conflict' },
@@ -149,14 +149,14 @@ describe('Medical Record Templates Create', () => {
     cy.get('[data-testid="template-form-submit"]').click()
 
     cy.wait('@createTemplate')
-    // The rule is one template per specialty, never per name — a message about
-    // the name sends the user off renaming, which cannot clear the conflict.
+    // A clínica pode ter vários modelos na mesma especialidade; o que ela não
+    // pode é dois com o mesmo nome. Renomear resolve, e a mensagem diz isso.
     cy.get('[data-testid="template-form-global-error"]')
       .should('be.visible')
-      .and('contain', 'já tem um modelo para esta especialidade')
+      .and('contain', 'Já existe um modelo com esse nome nesta especialidade')
   })
 
-  it('names the profession, not the specialty, when the conflicting template is the generalist one', () => {
+  it('names the profession, not the specialty, when the conflict is on a generalist template', () => {
     cy.intercept('POST', `${Cypress.env('API_URL')}/medical-record-templates`, {
       statusCode: 409,
       body: { title: 'Conflict' },
@@ -172,7 +172,7 @@ describe('Medical Record Templates Create', () => {
     cy.wait('@createTemplate')
     cy.get('[data-testid="template-form-global-error"]')
       .should('be.visible')
-      .and('contain', 'modelo generalista para esta profissão')
+      .and('contain', 'Já existe um modelo com esse nome nesta profissão')
   })
 
   // Real-backend happy path lives in medical-record-templates-happy-path-real.cy.ts.
