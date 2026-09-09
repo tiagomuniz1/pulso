@@ -30,7 +30,19 @@ export default function EditSchedulePage() {
       {
         onError: (error: IApiError) => {
           if (error.status === 409) {
-            setGlobalError('Esta agenda conflita com outra já existente para este profissional.')
+            // O backend devolve 409 por três motivos nesta rota: consulta futura,
+            // sobreposição com outra agenda e edição concorrente. Traduzir os três
+            // para "conflita com outra agenda" mandava quem editava procurar uma
+            // sobreposição que não existia — foi o que aconteceu ao tentar mudar
+            // a duração de uma agenda que só tinha uma consulta marcada.
+            const detalhe = error.detail ?? ''
+            setGlobalError(
+              detalhe.includes('future appointments')
+                ? 'Esta agenda já tem consultas marcadas e por isso não pode ser alterada. Cancele ou remarque as consultas futuras dela e tente de novo.'
+                : detalhe.includes('modified by another process')
+                  ? 'Esta agenda foi alterada por outra pessoa. Recarregue a página e tente novamente.'
+                  : 'Esta agenda conflita com outra já existente para este profissional.',
+            )
           } else if (error.errors) {
             error.errors.forEach(({ field, message }) => {
               setError(field, { message })

@@ -121,6 +121,56 @@ describe('Schedules Update', () => {
     cy.location('pathname').should('include', '/edit')
   })
 
+  // O backend devolve 409 por três motivos nesta rota. Traduzir todos para
+  // "conflita com outra agenda" mandava quem editava procurar uma sobreposição
+  // inexistente — foi o que aconteceu ao tentar mudar a duração de uma agenda
+  // que só tinha uma consulta marcada.
+  it('names the real reason when the schedule has future appointments', () => {
+    cy.intercept('PATCH', `${Cypress.env('API_URL')}/schedules/${mockSchedule.id}`, {
+      statusCode: 409,
+      body: {
+        status: 409,
+        title: 'Conflict',
+        detail: 'Schedule has future appointments and cannot be modified',
+      },
+    }).as('updateSchedule')
+
+    visitClinic(`/schedules/${mockSchedule.id}/edit`, mockProfessionalUser)
+    cy.wait('@getSchedule')
+
+    cy.get('[data-testid="schedule-form-slot"]').type('{selectall}40')
+    cy.get('[data-testid="schedule-form-submit"]').click()
+
+    cy.wait('@updateSchedule')
+    cy.get('[data-testid="schedule-form-error"]')
+      .should('be.visible')
+      .and('contain', 'já tem consultas marcadas')
+      .and('contain', 'Cancele ou remarque')
+    cy.get('[data-testid="schedule-form-error"]').should('not.contain', 'conflita')
+  })
+
+  it('tells the user to reload when someone else saved first', () => {
+    cy.intercept('PATCH', `${Cypress.env('API_URL')}/schedules/${mockSchedule.id}`, {
+      statusCode: 409,
+      body: {
+        status: 409,
+        title: 'Conflict',
+        detail: 'Record was modified by another process. Please try again.',
+      },
+    }).as('updateSchedule')
+
+    visitClinic(`/schedules/${mockSchedule.id}/edit`, mockProfessionalUser)
+    cy.wait('@getSchedule')
+
+    cy.get('[data-testid="schedule-form-start-time"]').clear().type('09:00')
+    cy.get('[data-testid="schedule-form-submit"]').click()
+
+    cy.wait('@updateSchedule')
+    cy.get('[data-testid="schedule-form-error"]')
+      .should('be.visible')
+      .and('contain', 'alterada por outra pessoa')
+  })
+
   it('disables submit button while request is in flight', () => {
     cy.intercept('PATCH', `${Cypress.env('API_URL')}/schedules/${mockSchedule.id}`, (req) => {
       req.reply({ delay: 2000, statusCode: 200, body: updatedSchedule })

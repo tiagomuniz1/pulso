@@ -1,5 +1,11 @@
 # Changelog — Frontend
 
+## [1.13.1] - 2026-09-09
+
+### Fixed
+- **A recusa de uma duração de consulta agora explica a conta e o que fazer.** Ao cadastrar uma agenda das 09:00 às 18:00 com 40 minutos, a tela dizia apenas "O intervalo de tempo deve ser divisível pela duração do slot", ancorado no campo da duração — lia-se como "40 minutos é proibido", quando 40 é perfeitamente válido em outra janela. Agora: *"A janela das 09:00 às 18:00 tem 9h e não fecha em blocos de 40 min — sobrariam 20 min no fim. Para resolver, use 20, 30 ou 45 min, ou termine às 18:20 para manter 40 min."* As sugestões priorizam durações que uma clínica de fato usa: 36 minutos divide, mas ninguém marca consulta assim
+- **O 409 ao editar agenda dizia sempre "conflita com outra agenda"**, e o backend devolve 409 por três motivos distintos nessa rota. Quem tentava mudar a duração de uma agenda com consulta marcada era mandado procurar uma sobreposição inexistente. Agora cada causa tem sua mensagem, e a de consulta futura diz o que destrava: cancelar ou remarcar as consultas daquela agenda
+
 ## [1.13.0] - 2026-09-09
 
 ### Added
