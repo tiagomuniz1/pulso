@@ -27,7 +27,6 @@ import {
 } from '../entities/medical-record-template.entity'
 import { IMedicalRecordTemplatesRepository } from '../repositories/medical-record-templates.repository.interface'
 import { generateFieldKey } from '../utils/generate-field-key.util'
-import { assertProfessionalOwnsTemplateScope } from '../utils/assert-professional-owns-template-scope.util'
 
 @Injectable()
 export class UpdateMedicalRecordTemplateUseCase extends BaseUseCase {
@@ -53,12 +52,6 @@ export class UpdateMedicalRecordTemplateUseCase extends BaseUseCase {
 
     const template = await this.templatesRepository.findById(id, clinicId)
     if (!template) throw new NotFoundException('Template not found')
-
-    if (currentUser.role === UserRole.PROFESSIONAL) {
-      const professional = await this.professionalsRepository.findByUserId(currentUser.id, clinicId)
-      if (!professional) throw new NotFoundException('Professional not found')
-      assertProfessionalOwnsTemplateScope(professional, template.specialtyId, template.councilType)
-    }
 
     const updateData: Partial<MedicalRecordTemplate> = {}
     if (dto.name !== undefined) updateData.name = dto.name

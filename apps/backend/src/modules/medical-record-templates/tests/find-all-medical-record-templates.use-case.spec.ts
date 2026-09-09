@@ -1,11 +1,12 @@
 import { DataSource } from 'typeorm'
 import { faker } from '@faker-js/faker'
-import { UserRole } from '@app/shared'
+import { CouncilType, UserRole } from '@app/shared'
 import { CacheService } from '../../../cache/cache.service'
 import { ICurrentUser } from '../../auth/types/current-user.type'
 import { ISpecialtiesRepository } from '../../specialties/repositories/specialties.repository.interface'
 import { IMedicalRecordTemplatesRepository } from '../repositories/medical-record-templates.repository.interface'
 import { FindAllMedicalRecordTemplatesUseCase } from '../use-cases/find-all-medical-record-templates.use-case'
+import { IProfessionalsRepository } from '../../professionals/repositories/professionals.repository.interface'
 
 const mockTemplatesRepository: jest.Mocked<IMedicalRecordTemplatesRepository> = {
   findAll: jest.fn(),
@@ -42,6 +43,10 @@ const makeTemplate = (overrides = {}) => ({
   ...overrides,
 })
 
+const mockProfessionalsRepository = {
+  findByUserId: jest.fn(),
+} as unknown as jest.Mocked<IProfessionalsRepository>
+
 describe('FindAllMedicalRecordTemplatesUseCase', () => {
   let useCase: FindAllMedicalRecordTemplatesUseCase
 
@@ -51,6 +56,7 @@ describe('FindAllMedicalRecordTemplatesUseCase', () => {
       {} as DataSource,
       mockTemplatesRepository,
       mockSpecialtiesRepository,
+      mockProfessionalsRepository,
       mockCacheService,
     )
   })
@@ -73,11 +79,11 @@ describe('FindAllMedicalRecordTemplatesUseCase', () => {
 
     const result = await useCase.execute({ specialtyId: 'spec-1' } as any, currentUser)
 
-    expect(mockTemplatesRepository.findAll).toHaveBeenCalledWith(clinicId, 1, 20, 'spec-1', undefined, undefined)
+    expect(mockTemplatesRepository.findAll).toHaveBeenCalledWith(clinicId, 1, 20, 'spec-1', undefined, undefined, undefined)
     expect(result.data[0].specialtyName).toBe('Cardiologia')
     expect(result.total).toBe(1)
     expect(mockCacheService.set).toHaveBeenCalledWith(
-      `medical_record_templates:list:${clinicId}:1:20:spec-1`,
+      `medical_record_templates:list:${clinicId}:1:20:spec-1:all`,
       result,
       60,
     )
@@ -104,12 +110,12 @@ describe('FindAllMedicalRecordTemplatesUseCase', () => {
 
     const result = await useCase.execute({ generalist: true } as any, currentUser)
 
-    expect(mockTemplatesRepository.findAll).toHaveBeenCalledWith(clinicId, 1, 20, undefined, true, undefined)
+    expect(mockTemplatesRepository.findAll).toHaveBeenCalledWith(clinicId, 1, 20, undefined, true, undefined, undefined)
     expect(mockCacheService.get).toHaveBeenCalledWith(
-      `medical_record_templates:list:${clinicId}:1:20:generalist`,
+      `medical_record_templates:list:${clinicId}:1:20:generalist:all`,
     )
     expect(mockCacheService.set).toHaveBeenCalledWith(
-      `medical_record_templates:list:${clinicId}:1:20:generalist`,
+      `medical_record_templates:list:${clinicId}:1:20:generalist:all`,
       result,
       60,
     )
@@ -124,9 +130,9 @@ describe('FindAllMedicalRecordTemplatesUseCase', () => {
 
     const result = await useCase.execute({ councilType: 'crn' } as any, currentUser)
 
-    expect(mockTemplatesRepository.findAll).toHaveBeenCalledWith(clinicId, 1, 20, undefined, undefined, 'crn')
+    expect(mockTemplatesRepository.findAll).toHaveBeenCalledWith(clinicId, 1, 20, undefined, undefined, 'crn', undefined)
     expect(mockCacheService.get).toHaveBeenCalledWith(
-      `medical_record_templates:list:${clinicId}:1:20:crn`,
+      `medical_record_templates:list:${clinicId}:1:20:crn:all`,
     )
     expect(result.data[0].specialtyId).toBeNull()
   })
@@ -140,7 +146,7 @@ describe('FindAllMedicalRecordTemplatesUseCase', () => {
     const result = await useCase.execute({ page: 2, limit: 10 } as any, currentUser)
 
     expect(mockCacheService.get).toHaveBeenCalledWith(
-      `medical_record_templates:list:${clinicId}:2:10:all`,
+      `medical_record_templates:list:${clinicId}:2:10:all:all`,
     )
     expect(result.data[0].specialtyName).toBeNull()
   })
@@ -164,5 +170,59 @@ describe('FindAllMedicalRecordTemplatesUseCase', () => {
     const result = await useCase.execute({} as any, currentUser)
 
     expect(result.data).toEqual([])
+  })
+
+  // Modelo de prontuário é da clínica, mas o profissional só consulta o que se
+  // aplica ao trabalho dele. O recorte vai ao repositório, não é filtrado
+  // depois, para o total da paginação bater com o que ele enxerga.
+  describe('recorte do profissional', () => {
+    const professionalUser: ICurrentUser = { id: 'u2', role: UserRole.PROFESSIONAL, clinicId }
+
+    function profissional(specialtyIds: string[], council: CouncilType) {
+      ;(mockProfessionalsRepository.findByUserId as jest.Mock).mockResolvedValue({
+        id: 'prof-1',
+        professionalSpecialties: specialtyIds.map((id) => ({ specialtyId: id })),
+        registrations: [{ councilType: council, isPrimary: true }],
+      })
+    }
+
+    beforeEach(() => {
+      ;(mockCacheService.get as jest.Mock).mockResolvedValue(null)
+      mockTemplatesRepository.findAll.mockResolvedValue([[], 0])
+    })
+
+    it('passa as especialidades e a profissão ao repositório', async () => {
+      profissional(['spec-1', 'spec-2'], CouncilType.CRM)
+
+      await useCase.execute({} as any, professionalUser)
+
+      expect(mockTemplatesRepository.findAll).toHaveBeenCalledWith(
+        clinicId, 1, 20, undefined, undefined, undefined,
+        { specialtyIds: ['spec-1', 'spec-2'], councilType: CouncilType.CRM },
+      )
+    })
+
+    it('quem não tem ficha não enxerga escopo algum', async () => {
+      ;(mockProfessionalsRepository.findByUserId as jest.Mock).mockResolvedValue(null)
+
+      await useCase.execute({} as any, professionalUser)
+
+      expect(mockTemplatesRepository.findAll).toHaveBeenCalledWith(
+        clinicId, 1, 20, undefined, undefined, undefined,
+        { specialtyIds: [], councilType: null },
+      )
+    })
+
+    // Sem o escopo na chave, o profissional leria o cache do ADMIN, que contém
+    // o catálogo inteiro da clínica.
+    it('separa o cache por escopo', async () => {
+      profissional(['spec-1'], CouncilType.CRM)
+
+      await useCase.execute({} as any, professionalUser)
+
+      const chave = (mockCacheService.get as jest.Mock).mock.calls[0][0]
+      expect(chave).toContain('spec-1')
+      expect(chave).not.toMatch(/:all$/)
+    })
   })
 })

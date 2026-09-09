@@ -1,5 +1,18 @@
 # Changelog — Backend
 
+## [1.12.0] - 2026-09-09
+
+### Changed
+
+#### Modelo de prontuário é da clínica, não do profissional
+- **Criar e editar passam a ser exclusivos do ADMIN.** A tabela `medical_record_templates` não tem `professional_id`: o escopo é `clinicId + specialtyId` ou, no generalista, `clinicId + councilType`. Dois médicos da mesma especialidade compartilham o mesmo modelo, e editar mudaria o formulário do colega — o código tratava o modelo como se fosse do profissional, contrariando o próprio modelo de dados
+- **A leitura do profissional passa a ser recortada**, o que não existia: ele via todos os modelos da clínica. Agora vê as especialidades que exerce e o generalista da própria profissão. O recorte vai na consulta ao banco, para o total da paginação bater com o que ele enxerga
+- **O escopo entra na chave do cache da listagem** — sem isso o profissional leria o catálogo inteiro guardado para o ADMIN. No "ver por id" a checagem saiu de dentro do `try` do cache: ali um `Forbidden` seria engolido pelo `catch`, que existe para tolerar falha de Redis, não para esconder negativa de acesso
+- Profissional sem ficha não enxerga modelo nenhum: sem especialidade e sem conselho não há escopo, e o catálogo inteiro seria o oposto do recorte
+
+### Removed
+- `assert-professional-owns-template-scope.util.ts` — a posse do escopo pelo profissional deixou de existir como conceito
+
 ## [1.11.0] - 2026-09-08
 
 ### Changed
