@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -8,6 +8,7 @@ import { MedicalRecordFieldType } from '@app/shared'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { Tabs } from '@/components/ui/atoms/tabs/tabs'
+import { groupFieldsBySection } from '../utils/group-fields-by-section.util'
 import { DynamicField } from './dynamic-field'
 import { coerceFieldValue } from '../mappers/coerce-field-value.mapper'
 import type { IRecordFieldModel } from '../types/medical-record-model.types'
@@ -26,6 +27,11 @@ interface MedicalRecordFormProps {
   isPending: boolean
   globalError?: string | null
   onSubmit: (data: Record<string, unknown>, notes?: string) => void
+  /**
+   * Avisa quem contém o formulário se já há algo digitado, para que trocar de
+   * modelo só peça confirmação quando houver o que perder.
+   */
+  onDirtyChange?: (isDirty: boolean) => void
 }
 
 const NOTES_TAB = '__notes__'
@@ -82,16 +88,12 @@ export function MedicalRecordForm({
   isPending,
   globalError,
   onSubmit,
+  onDirtyChange,
 }: MedicalRecordFormProps) {
   const sortedSections = sections.slice().sort((a, b) => a.order - b.order)
   const hasSections = sortedSections.length > 0
 
-  const fieldsBySection = new Map<string | null, IRecordFieldModel[]>()
-  for (const field of schema) {
-    const key = field.sectionKey ?? null
-    if (!fieldsBySection.has(key)) fieldsBySection.set(key, [])
-    fieldsBySection.get(key)!.push(field)
-  }
+  const fieldsBySection = groupFieldsBySection(schema, sortedSections)
   const unsectionedFields = fieldsBySection.get(null) ?? []
 
   // sortedSections[0] is guaranteed to exist here since hasSections requires length > 0.
@@ -123,10 +125,16 @@ export function MedicalRecordForm({
             : ''
   }
 
-  const { handleSubmit, control, formState: { errors } } = useForm<FormValues>({
+  const { handleSubmit, control, formState: { errors, isDirty } } = useForm<FormValues>({
     resolver: zodResolver(zodSchema),
     defaultValues,
   })
+
+  // `isDirty` do react-hook-form compara com `defaultValues`, que é exatamente a
+  // semântica de "o profissional já escreveu alguma coisa".
+  useEffect(() => {
+    onDirtyChange?.(isDirty)
+  }, [isDirty, onDirtyChange])
 
   function onFormSubmit(values: FormValues) {
     const data: Record<string, unknown> = {}

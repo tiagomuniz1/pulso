@@ -45,6 +45,9 @@ describe('toMedicalRecordModel', () => {
     expect(model.professionalName).toBe('Dr. João')
     expect(model.specialtyId).toBe('spec-uuid')
     expect(model.specialtyName).toBe('Cardiologia')
+    // As seções não entram no snapshot — é por este id que a tela busca o modelo
+    // certo para agrupá-las.
+    expect(model.templateId).toBe('tpl-uuid')
     expect(model.notes).toBe('Observação')
   })
 

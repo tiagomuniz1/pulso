@@ -15,6 +15,7 @@ import { TemplateListSkeleton } from './template-list-skeleton'
 import { TemplateDeleteDialog } from './template-delete-dialog'
 import type { MedicalRecordFieldType } from '@app/shared'
 import type { ITemplateFieldModel, ITemplateModel, ITemplateSectionModel } from '../types/template-model.types'
+import { professionLabel, specialtyLabel } from '../utils/template-labels'
 
 const FIELD_TYPE_LABELS: Record<MedicalRecordFieldType, string> = {
   text: 'Texto',
@@ -25,18 +26,6 @@ const FIELD_TYPE_LABELS: Record<MedicalRecordFieldType, string> = {
   select: 'Seleção única',
   multiselect: 'Seleção múltipla',
 } as Record<MedicalRecordFieldType, string>
-
-// Specialties only exist for Medicina (CRM) — a specialty template has no councilType of its
-// own (only specialtyId), so its profession is always CRM. Every other template carries its
-// profession directly via councilType.
-function professionLabel(template: ITemplateModel): string {
-  const councilType = template.specialtyId ? CouncilType.CRM : template.councilType
-  return councilType ? COUNCIL_TYPE_PROFESSION_LABELS[councilType] : '—'
-}
-
-function specialtyLabel(template: ITemplateModel): string {
-  return template.specialtyName ?? '—'
-}
 
 // Ownership mirrors the backend's rule in AssertProfessionalOwnsTemplateScope: a specialty
 // template belongs to whoever has that specialty; a profession-wide (generalist) template

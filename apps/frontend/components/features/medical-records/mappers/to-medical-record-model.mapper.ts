@@ -27,6 +27,7 @@ export function toMedicalRecordModel(dto: MedicalRecordResponseDto): IMedicalRec
     specialtyName: dto.specialtyName,
     appointmentDate: dto.appointmentDate,
     appointmentStartTime: dto.appointmentStartTime,
+    templateId: dto.templateId,
     schema: dto.templateSchemaSnapshot
       .slice()
       .sort((a, b) => a.order - b.order)

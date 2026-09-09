@@ -103,7 +103,7 @@ describe('TemplateDetails (integration)', () => {
       expect(screen.getByText('Sintoma principal')).toBeInTheDocument()
     })
 
-    it('shows the profession for a generalist (null specialty) template and leaves specialty blank', async () => {
+    it('shows the profession for a generalist (null specialty) template and names it Generalista', async () => {
       ;(medicalRecordTemplatesService.getById as jest.Mock).mockResolvedValue(
         makeDto({ specialtyId: null, specialtyName: null, councilType: CouncilType.CRM }),
       )
@@ -113,7 +113,7 @@ describe('TemplateDetails (integration)', () => {
       await waitFor(() => expect(screen.getByTestId('template-details')).toBeInTheDocument())
 
       expect(screen.getByTestId('template-details-profession')).toHaveTextContent('Medicina')
-      expect(screen.getByTestId('template-details-specialty')).toHaveTextContent('—')
+      expect(screen.getByTestId('template-details-specialty')).toHaveTextContent('Generalista')
     })
 
     it('renders error state when fetch fails', async () => {
@@ -438,7 +438,7 @@ describe('TemplateDetails (integration)', () => {
   describe('profession and specialty fields', () => {
     beforeEach(() => mockAuthStoreAs(UserRole.ADMIN))
 
-    it('shows the profession for a non-CRM (specialty-less) template and leaves specialty blank', async () => {
+    it('shows the profession for a non-CRM (specialty-less) template and names it Generalista', async () => {
       ;(medicalRecordTemplatesService.getById as jest.Mock).mockResolvedValue(
         makeDto({ specialtyId: null, specialtyName: null, councilType: CouncilType.CRN }),
       )
@@ -448,7 +448,7 @@ describe('TemplateDetails (integration)', () => {
       await waitFor(() => {
         expect(screen.getByTestId('template-details-profession')).toHaveTextContent('Nutrição')
       })
-      expect(screen.getByTestId('template-details-specialty')).toHaveTextContent('—')
+      expect(screen.getByTestId('template-details-specialty')).toHaveTextContent('Generalista')
     })
   })
 })

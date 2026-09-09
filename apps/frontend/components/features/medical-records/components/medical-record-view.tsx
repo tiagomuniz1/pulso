@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { MedicalRecordFieldType } from '@app/shared'
 import { Tabs } from '@/components/ui/atoms/tabs/tabs'
 import type { IMedicalRecordModel, IRecordFieldModel } from '../types/medical-record-model.types'
+import { groupFieldsBySection } from '../utils/group-fields-by-section.util'
 
 interface IViewSection {
   key: string
@@ -66,12 +67,7 @@ export function MedicalRecordView({ record, sections = [] }: MedicalRecordViewPr
   const sortedSections = sections.slice().sort((a, b) => a.order - b.order)
   const hasSections = sortedSections.length > 0
 
-  const fieldsBySection = new Map<string | null, IRecordFieldModel[]>()
-  for (const field of record.schema) {
-    const key = field.sectionKey ?? null
-    if (!fieldsBySection.has(key)) fieldsBySection.set(key, [])
-    fieldsBySection.get(key)!.push(field)
-  }
+  const fieldsBySection = groupFieldsBySection(record.schema, sortedSections)
   const unsectionedFields = fieldsBySection.get(null) ?? []
 
   const hasNotes = !!record.notes
