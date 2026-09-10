@@ -740,6 +740,71 @@ describe('MedicalRecordsController (integration)', () => {
     })
   })
 
+  describe('GET /medical-records/:id/pdf', () => {
+    let recordId: string
+
+    beforeEach(async () => {
+      const { body } = await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, templateId, data: {} })
+        .expect(201)
+      recordId = body.id
+    })
+
+    // `.buffer(true)` com parser próprio: sem isto o supertest trata o corpo
+    // como texto e os bytes chegam corrompidos, com o `%PDF` intacto por acaso.
+    const baixar = (token: string) =>
+      request(app.getHttpServer())
+        .get(`/medical-records/${recordId}/pdf`)
+        .set('Cookie', `access_token=${token}`)
+        .buffer(true)
+        .parse((res, callback) => {
+          const chunks: Buffer[] = []
+          res.on('data', (chunk: Buffer) => chunks.push(chunk))
+          res.on('end', () => callback(null, Buffer.concat(chunks)))
+        })
+
+    it('returns a PDF for ADMIN', async () => {
+      const res = await baixar(adminToken).expect(200)
+
+      expect(res.headers['content-type']).toMatch(/application\/pdf/)
+      expect(res.headers['content-disposition']).toContain(`prontuario-${recordId}.pdf`)
+      expect(Buffer.from(res.body).slice(0, 4).toString('ascii')).toBe('%PDF')
+    })
+
+    it('returns a PDF for the DOCTOR who wrote it', async () => {
+      const res = await baixar(doctorToken).expect(200)
+      expect(Buffer.from(res.body).slice(0, 4).toString('ascii')).toBe('%PDF')
+    })
+
+    // Baixar segue a regra de ler, e ler alcança a especialidade que ele
+    // exerce. É o caso que o histórico do paciente oferece.
+    it('returns a PDF for a DOCTOR from the same specialty', async () => {
+      const res = await baixar(otherDoctorToken).expect(200)
+      expect(Buffer.from(res.body).slice(0, 4).toString('ascii')).toBe('%PDF')
+    })
+
+    it('returns 404 for a DOCTOR from another specialty', async () => {
+      await baixar(otherSpecialtyDoctorToken).expect(404)
+    })
+
+    it('returns 403 for USER', async () => {
+      await baixar(userToken).expect(403)
+    })
+
+    it('returns 404 when the record does not exist', async () => {
+      await request(app.getHttpServer())
+        .get('/medical-records/00000000-0000-0000-0000-000000000000/pdf')
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(404)
+    })
+
+    it('returns 401 without a cookie', async () => {
+      await request(app.getHttpServer()).get(`/medical-records/${recordId}/pdf`).expect(401)
+    })
+  })
+
   describe('GET /medical-records/by-appointment/:appointmentId', () => {
     it('returns 404 when no record exists for appointment', async () => {
       await request(app.getHttpServer())
