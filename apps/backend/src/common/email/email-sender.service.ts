@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2'
 import * as nodemailer from 'nodemailer'
-import * as CircuitBreaker from 'opossum'
+import CircuitBreaker from 'opossum'
 import { getEnvConfig } from '../../config/env.config'
 import { EMAIL_LOG_CODES, resolveEmailConfigStatus } from './email-config.util'
 import { EmailSendResult } from './email-send-result.type'

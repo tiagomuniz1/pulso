@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { PinpointSMSVoiceV2Client, SendTextMessageCommand } from '@aws-sdk/client-pinpoint-sms-voice-v2'
-import * as CircuitBreaker from 'opossum'
+import CircuitBreaker from 'opossum'
 import { getEnvConfig } from '../../../config/env.config'
 import { ISendSmsParams, ISendSmsResult, ISmsAdapter } from './sms.adapter.interface'
 

@@ -1,5 +1,15 @@
 # Changelog — Backend
 
+## [1.15.2] - 2026-09-10
+
+### Fixed
+- **`esModuleInterop` ligado no backend**, fechando a armadilha que apagou o logo dos PDFs. O `tsconfig` tinha `allowSyntheticDefaultImports` **sem** `esModuleInterop`: a checagem de tipos aceitava `import x from 'pacote-cjs'` e o runtime não recebia o helper que faz isso funcionar. Qualquer import default de pacote CommonJS sem `default` próprio compilava limpo e quebrava ao rodar. O frontend e o `shared` já estavam certos — só o backend divergia
+- **Dois mocks que inventavam o formato do módulo.** O do `ioredis` devolvia `{ default: ... }`, formato que o módulo real não tem; funcionava só por causa da configuração errada. Mock que fabrica formato testa um mundo que não existe — foi assim que o logo sumiu de todos os PDFs sem nenhum teste reclamar
+
+### Changed
+- `import * as X` convertido para import default onde o módulo é chamado ou construído (`opossum`, `cookie-parser`, `supertest`) — com `esModuleInterop`, chamar um namespace import é erro de compilação, e foi o próprio compilador que apontou os 29 arquivos
+- `common/module-interop.spec.ts` falha se alguém desligar o `esModuleInterop`
+
 ## [1.15.1] - 2026-09-10
 
 ### Fixed

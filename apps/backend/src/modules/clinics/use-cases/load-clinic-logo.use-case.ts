@@ -1,29 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { DataSource } from 'typeorm'
+import sharp from 'sharp'
 import { BaseUseCase } from '../../../common/base.use-case'
 import { IStorageAdapter } from '../../../common/adapters/storage.adapter.interface'
 import { IClinicsRepository } from '../repositories/clinics.repository.interface'
 
-/**
- * `require`, e não `import sharp from 'sharp'` — **não troque de volta**.
- *
- * O `tsconfig` tem `allowSyntheticDefaultImports: true` e **não** tem
- * `esModuleInterop`: a checagem de tipos aceita o import default, e o runtime
- * não ganha o helper de interop. O `sharp` é CommonJS sem `__esModule`, então
- * `sharp_1.default` é `undefined` e chamá-lo lança "is not a function".
- *
- * Foi exatamente isso que apagou o logo de todo PDF em produção: o serviço
- * anterior importava assim e engolia o erro num `catch` sem binding. O teste
- * não pegava porque mockava o sharp com `{ __esModule: true, default: ... }` —
- * o mock fabricava justamente o que faltava no mundo real. Por isso o spec
- * deste arquivo usa `sharp` de verdade.
- *
- * A correção de fundo é ligar `esModuleInterop`, o que muda a emissão de todo
- * import default do projeto e merece mudança própria. O `pdfmake` já usa
- * `require` pelo mesmo motivo.
- */
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const sharp = require('sharp')
 
 const CONTENT_TYPE_BY_EXTENSION: Record<string, string> = {
   jpg: 'image/jpeg',

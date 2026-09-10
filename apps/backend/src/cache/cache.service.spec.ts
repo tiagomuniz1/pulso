@@ -9,9 +9,15 @@ const mockRedisInstance = {
   pipeline: jest.fn(),
 }
 
-jest.mock('ioredis', () => {
-  return { default: jest.fn(() => mockRedisInstance) }
-})
+// O mock devolve o construtor direto, porque é isso que o `ioredis` é: o
+// módulo **é** a classe. Antes devolvia `{ default: ... }`, um formato que o
+// módulo real não tem — funcionava só porque o `tsconfig` estava sem
+// `esModuleInterop` e o import default lia `.default` cru.
+//
+// Mock que inventa formato é mock que testa um mundo que não existe: foi
+// exatamente assim que o logo sumiu de todos os PDFs sem nenhum teste
+// reclamar (ver `common/module-interop.spec.ts`).
+jest.mock('ioredis', () => jest.fn(() => mockRedisInstance))
 
 import { CacheService } from './cache.service'
 
