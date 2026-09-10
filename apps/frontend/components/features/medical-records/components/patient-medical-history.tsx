@@ -7,6 +7,7 @@ import { Alert } from '@/components/ui/molecules/alert/alert'
 import { Button } from '@/components/ui/atoms/button/button'
 import { usePatientMedicalHistory } from '../hooks/use-patient-medical-history.hook'
 import { useMedicalRecord } from '../hooks/use-medical-record.hook'
+import { useDownloadMedicalRecordPdf } from '../hooks/use-download-medical-record-pdf.hook'
 import { MedicalRecordView } from './medical-record-view'
 import type { IMedicalRecordModel } from '../types/medical-record-model.types'
 
@@ -37,11 +38,38 @@ function RecordDetailModal({
   onClose: () => void
 }) {
   const { data: record, isLoading } = useMedicalRecord(recordId)
+  const {
+    mutate: downloadPdf,
+    isPending: isDownloading,
+    isError: hasDownloadFailed,
+  } = useDownloadMedicalRecordPdf()
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Prontuário">
       {isLoading && <div data-testid="record-detail-loading" className="py-4 text-sm text-text/50">Carregando...</div>}
-      {record && <MedicalRecordView record={record} />}
+      {record && (
+        <>
+          <div className="mb-4 flex justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => downloadPdf({ id: record.id })}
+              isLoading={isDownloading}
+              disabled={isDownloading}
+              data-testid={`medical-record-download-button-${record.id}`}
+            >
+              Baixar PDF
+            </Button>
+          </div>
+          {hasDownloadFailed && (
+            <Alert variant="error" data-testid="record-detail-download-error" className="mb-4">
+              Não foi possível baixar o prontuário. Tente novamente.
+            </Alert>
+          )}
+          <MedicalRecordView record={record} />
+        </>
+      )}
     </Modal>
   )
 }

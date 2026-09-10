@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { Skeleton } from '@/components/ui/atoms/skeleton/skeleton'
 import { usePatientMedicalHistory } from '@/components/features/medical-records/hooks/use-patient-medical-history.hook'
+import { formatFieldValue } from '@/components/features/medical-records/utils/format-field-value.util'
 import type {
   IMedicalRecordModel,
   IRecordFieldModel,
@@ -20,18 +21,6 @@ function formatarData(iso: string): string {
 }
 
 /** Valor legível de um campo, para exibir e para a busca encontrar. */
-function valorLegivel(campo: IRecordFieldModel, valor: unknown): string {
-  if (valor === null || valor === undefined || valor === '') return '—'
-  if (typeof valor === 'boolean') return valor ? 'Sim' : 'Não'
-  if (Array.isArray(valor)) {
-    return valor
-      .map((v) => campo.options?.find((o) => o.value === v)?.label ?? String(v))
-      .join(', ')
-  }
-  const opcao = campo.options?.find((o) => o.value === valor)
-  return opcao ? opcao.label : String(valor)
-}
-
 /**
  * O que a busca varre de cada atendimento. Inclui rótulo e valor de cada campo,
  * as observações, o nome do médico e a data — quem procura "cesárea" tanto pode
@@ -39,7 +28,7 @@ function valorLegivel(campo: IRecordFieldModel, valor: unknown): string {
  */
 function textoBuscavel(registro: IMedicalRecordModel): string {
   const campos = registro.schema
-    .map((campo) => `${campo.label} ${valorLegivel(campo, registro.data[campo.key])}`)
+    .map((campo) => `${campo.label} ${formatFieldValue(campo, registro.data[campo.key])}`)
     .join(' ')
 
   return [
@@ -206,7 +195,7 @@ export function AppointmentHistorySection({
                                 {campo.label}
                               </dt>
                               <dd className="text-sm text-text">
-                                {valorLegivel(campo, registro.data[campo.key])}
+                                {formatFieldValue(campo, registro.data[campo.key])}
                               </dd>
                             </div>
                           ))}
