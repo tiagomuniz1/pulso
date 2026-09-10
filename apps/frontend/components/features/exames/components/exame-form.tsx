@@ -5,6 +5,7 @@ import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/atoms/button/button'
+import { ModalFormActions } from '@/components/ui/molecules/modal-form-actions/modal-form-actions'
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { ProfessionalSignatureSelect } from '@/components/features/professionals/components/professional-signature-select'
 import type { ICreateExamRequestInput } from '../types/exam-request-input.types'
@@ -168,7 +169,7 @@ export function ExameForm({ appointmentId, professionalId, isPending, globalErro
         </Alert>
       )}
 
-      <div className="flex justify-end">
+      <ModalFormActions>
         <Button
           type="submit"
           isLoading={isPending}
@@ -177,7 +178,7 @@ export function ExameForm({ appointmentId, professionalId, isPending, globalErro
         >
           Solicitar exames
         </Button>
-      </div>
+      </ModalFormActions>
     </form>
   )
 }

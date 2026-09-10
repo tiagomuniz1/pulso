@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/atoms/button/button'
+import { ModalFormActions } from '@/components/ui/molecules/modal-form-actions/modal-form-actions'
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { useVaccines } from '@/components/features/vaccines/hooks/use-vaccines.hook'
 import type { IVaccineModel } from '@/components/features/vaccines/types/vaccine-model.types'
@@ -182,9 +183,11 @@ export function VaccineIndicationForm({
         />
       </div>
 
-      <Button type="submit" isLoading={isPending} disabled={isPending} data-testid="vaccine-indication-submit">
-        Emitir indicação
-      </Button>
+      <ModalFormActions>
+        <Button type="submit" isLoading={isPending} disabled={isPending} data-testid="vaccine-indication-submit">
+          Emitir indicação
+        </Button>
+      </ModalFormActions>
     </form>
   )
 }

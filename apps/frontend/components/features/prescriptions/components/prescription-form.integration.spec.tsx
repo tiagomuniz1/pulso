@@ -85,6 +85,11 @@ describe('PrescriptionForm (integration)', () => {
     expect(screen.getByTestId('prescription-form-tab-ingredient')).toBeInTheDocument()
     expect(screen.getByTestId('prescription-form-notes')).toBeInTheDocument()
     expect(screen.getByTestId('prescription-form-submit')).toBeInTheDocument()
+    // Dentro da barra fixa: solto no corpo do modal, o botão cai abaixo da
+    // dobra assim que o formulário cresce.
+    expect(screen.getByTestId('modal-form-actions')).toContainElement(
+      screen.getByTestId('prescription-form-submit'),
+    )
   })
 
   it('starts in medication tab by default', () => {

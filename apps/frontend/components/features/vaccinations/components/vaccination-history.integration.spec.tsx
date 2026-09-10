@@ -225,6 +225,11 @@ describe('VaccinationHistory (integration)', () => {
       await userEvent.selectOptions(screen.getByTestId('vaccination-form-vaccine'), 'v-1')
       await userEvent.type(screen.getByTestId('vaccination-form-dose'), '1ª dose')
       fireEvent.change(screen.getByTestId('vaccination-form-applied-at'), { target: { value: '2019-04-12' } })
+      // Dentro da barra fixa: solto no corpo do modal, o botão cai abaixo da
+      // dobra assim que o formulário cresce.
+      expect(screen.getByTestId('modal-form-actions')).toContainElement(
+        screen.getByTestId('vaccination-form-submit'),
+      )
       await userEvent.click(screen.getByTestId('vaccination-form-submit'))
 
       await waitFor(() => {

@@ -1,5 +1,10 @@
 # Changelog — Frontend
 
+## [1.13.2] - 2026-09-09
+
+### Fixed
+- **O botão de salvar não some mais quando o formulário do modal cresce.** O `Modal` já limitava a altura e rolava o próprio corpo, mas as ações ficavam dentro da área que rola: num prontuário com muitos campos ou numa receita com vários medicamentos, quem preenchia chegava ao fim da tela sem enxergar o botão e precisava descobrir que havia rolagem. As ações passam a ficar coladas no rodapé do modal, sempre à mão. Vale para prontuário, receita, atestado, pedido de exames, registro de vacina e indicação de vacina
+
 ## [1.13.1] - 2026-09-09
 
 ### Fixed

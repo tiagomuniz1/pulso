@@ -5,6 +5,7 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/atoms/button/button'
+import { ModalFormActions } from '@/components/ui/molecules/modal-form-actions/modal-form-actions'
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { Modal } from '@/components/ui/organisms/modal/modal'
 import { useMedications } from '@/components/features/medications/hooks/use-medications.hook'
@@ -410,7 +411,7 @@ export function PrescriptionForm({ appointmentId, professionalId, isPending, glo
         </Alert>
       )}
 
-      <div className="flex items-center justify-between">
+      <ModalFormActions className="justify-between">
         {fields.length > 0 ? (
           <button
             type="button"
@@ -431,7 +432,7 @@ export function PrescriptionForm({ appointmentId, professionalId, isPending, glo
         >
           Emitir receita
         </Button>
-      </div>
+      </ModalFormActions>
 
       {hasTemplates && (
         <Modal

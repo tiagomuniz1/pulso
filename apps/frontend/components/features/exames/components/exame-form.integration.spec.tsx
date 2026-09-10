@@ -28,6 +28,11 @@ describe('ExameForm (integration)', () => {
     expect(screen.getByTestId('exame-form-item-0')).toBeInTheDocument()
     expect(screen.queryByTestId('exame-form-item-1')).not.toBeInTheDocument()
     expect(screen.getByTestId('exame-form-submit')).toBeInTheDocument()
+    // Dentro da barra fixa: solto no corpo do modal, o botão cai abaixo da
+    // dobra assim que o formulário cresce.
+    expect(screen.getByTestId('modal-form-actions')).toContainElement(
+      screen.getByTestId('exame-form-submit'),
+    )
   })
 
   it('adds a new item when clicking "+ Adicionar exame"', async () => {
