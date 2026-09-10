@@ -87,6 +87,9 @@ describe('Appointments — book', () => {
     cy.intercept('GET', `${Cypress.env('API_URL')}/professionals/${DOC_UUID}`, { statusCode: 200, body: makeProfessional([{ id: SPEC_UUID_1, name: 'Cardiologia' }]) }).as('getProfessional')
     cy.intercept('GET', `${Cypress.env('API_URL')}/appointments/availability*`, { statusCode: 200, body: mockAvailability }).as('getAvailability')
     cy.intercept('GET', `${Cypress.env('API_URL')}/appointments*`, { statusCode: 200, body: { data: [], total: 0, page: 1, limit: 100 } }).as('getAppointments')
+    // A agenda lê o catálogo de rótulos: sem stub a chamada bate no backend
+    // com token mock, dá 401 e o app redireciona para o login.
+    cy.intercept('GET', `${Cypress.env('API_URL')}/appointment-labels*`, { statusCode: 200, body: { data: [], total: 0, page: 1, limit: 100 } })
     cy.intercept('GET', `${Cypress.env('API_URL')}/patients*`, { statusCode: 200, body: mockPatientsList }).as('getPatients')
     cy.intercept('GET', `${Cypress.env('API_URL')}/schedule-exceptions*`, { statusCode: 200, body: { data: [], total: 0, page: 1, limit: 20 } })
     visitClinic('/appointments', mockProfessionalUser)

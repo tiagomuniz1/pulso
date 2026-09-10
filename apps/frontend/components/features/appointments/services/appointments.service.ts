@@ -17,6 +17,8 @@ import type {
 import type { IAppointmentListParams, IAvailabilityParams } from '../types/appointment-input.types'
 
 export const appointmentsService = {
+  setLabel: (id: string, labelId: string | null) =>
+    apiClient.patch<AppointmentResponseDto>(`/appointments/${id}/label`, { labelId }),
   getAll: (params?: IAppointmentListParams): Promise<PaginatedAppointmentsResponseDto> => {
     const sp = new URLSearchParams()
     if (params?.professionalId) sp.set('professionalId', params.professionalId)

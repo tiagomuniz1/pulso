@@ -1,4 +1,4 @@
-import type {
+import type { AppointmentLabelColor,
   AppointmentStatus,
   DayOfWeek,
   PatientGender,
@@ -21,6 +21,12 @@ export interface IAppointmentDetailModel extends IAppointmentModel {
   seriesFutureCount: number | null
 }
 
+export interface IAppointmentLabelRefModel {
+  id: string
+  name: string
+  color: AppointmentLabelColor
+}
+
 export interface IAppointmentModel {
   id: string
   professionalId: string
@@ -39,6 +45,8 @@ export interface IAppointmentModel {
   seriesId: string | null
   seriesSequence: number | null
   seriesTotalOccurrences: number | null
+  /** O rótulo que colore a consulta na agenda. `null` é o caso normal. */
+  label: IAppointmentLabelRefModel | null
   createdAt: Date
   updatedAt: Date
 }

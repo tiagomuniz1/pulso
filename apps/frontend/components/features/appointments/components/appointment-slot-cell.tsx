@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/cn'
+import { LABEL_STRIP_CLASS } from '@/components/features/appointment-labels/constants/label-color-classes'
 import { AppointmentStatus } from '@app/shared'
 import { APPOINTMENT_STATUS_LABELS } from '../types/appointment-model.types'
 import { RecurrenceBadge } from './recurrence-badge'
@@ -71,14 +72,37 @@ export function AppointmentSlotCell({
         data-testid="agenda-slot-booked"
         onClick={onDetailsClick}
         className={cn(
-          'w-full text-left px-3 py-2 rounded-md border text-sm',
+          // `relative` ancora a faixa do rótulo; `overflow-hidden` faz o
+          // arredondamento do próprio bloco recortá-la, sem a faixa precisar
+          // saber o raio — que varia de 2px a 32px conforme o tema da clínica.
+          'relative overflow-hidden w-full text-left px-3 py-2 rounded-md border text-sm',
           'flex items-center gap-2 cursor-pointer transition-colors',
           /* c8 ignore next */
           statusColor[apt.status] ?? 'bg-surface-2 border-line',
+          // Respiro entre a faixa e o horário, só quando há faixa.
+          apt.label && 'pl-4',
           'hover:opacity-80',
         )}
-        aria-label={`Consulta ${apt.patientName} às ${slot.startTime}`}
+        title={apt.label ? `${apt.patientName} — ${apt.label.name}` : apt.patientName}
+        aria-label={
+          apt.label
+            ? `Consulta ${apt.patientName} às ${slot.startTime}, rótulo ${apt.label.name}`
+            : `Consulta ${apt.patientName} às ${slot.startTime}`
+        }
       >
+        {apt.label && (
+          // Absoluta, e não `border-l-4`: uma borda esquerda mais grossa
+          // sobrescreveria a borda de status, que na visão semana é a única
+          // pista de status. Assim a faixa fica por dentro do anel, que
+          // permanece íntegro — e não ocupa espaço no fluxo, então o bloco sem
+          // rótulo não fica com largura diferente.
+          <span
+            aria-hidden="true"
+            data-testid="agenda-slot-label"
+            data-label-color={apt.label.color}
+            className={cn('absolute inset-y-0 left-0 w-1.5', LABEL_STRIP_CLASS[apt.label.color])}
+          />
+        )}
         <span className="font-mono text-xs w-12 shrink-0">{slot.startTime}</span>
         {apt.seriesId && apt.seriesSequence !== null && apt.seriesTotalOccurrences !== null && (
           <RecurrenceBadge

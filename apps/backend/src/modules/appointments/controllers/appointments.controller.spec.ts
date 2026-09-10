@@ -4,6 +4,7 @@ import { AppointmentStatus, UserRole } from '@app/shared'
 import { ICurrentUser } from '../../auth/types/current-user.type'
 import { AppointmentsController } from './appointments.controller'
 import { CancelAppointmentUseCase } from '../use-cases/cancel-appointment.use-case'
+import { SetAppointmentLabelUseCase } from '../use-cases/set-appointment-label.use-case'
 import { CompleteAppointmentUseCase } from '../use-cases/complete-appointment.use-case'
 import { ConfirmAppointmentUseCase } from '../use-cases/confirm-appointment.use-case'
 import { CreateAppointmentUseCase } from '../use-cases/create-appointment.use-case'
@@ -20,6 +21,7 @@ import { FindAppointmentSeriesByIdUseCase } from '../use-cases/find-appointment-
 const mockCreate = { execute: jest.fn() } as unknown as jest.Mocked<CreateAppointmentUseCase>
 const mockCancel = { execute: jest.fn() } as unknown as jest.Mocked<CancelAppointmentUseCase>
 const mockComplete = { execute: jest.fn() } as unknown as jest.Mocked<CompleteAppointmentUseCase>
+const mockSetLabel = { execute: jest.fn() } as unknown as jest.Mocked<SetAppointmentLabelUseCase>
 const mockConfirm = { execute: jest.fn() } as unknown as jest.Mocked<ConfirmAppointmentUseCase>
 const mockNoShow = { execute: jest.fn() } as unknown as jest.Mocked<MarkAppointmentNoShowUseCase>
 const mockFindById = { execute: jest.fn() } as unknown as jest.Mocked<FindAppointmentByIdUseCase>
@@ -63,6 +65,7 @@ describe('AppointmentsController', () => {
       mockCreate,
       mockCancel,
       mockComplete,
+      mockSetLabel,
       mockConfirm,
       mockNoShow,
       mockFindById,
@@ -244,5 +247,25 @@ describe('AppointmentsController', () => {
 
     expect(mockReassign.execute).toHaveBeenCalledWith(id, dto, adminUser)
     expect(result).toBe(response)
+  })
+
+  it('setLabel delegates to SetAppointmentLabelUseCase', async () => {
+    const id = faker.string.uuid()
+    const dto = { labelId: faker.string.uuid() }
+    ;(mockSetLabel.execute as jest.Mock).mockResolvedValue(makeAppointmentResponse())
+
+    await controller.setLabel(id, dto, adminUser)
+
+    expect(mockSetLabel.execute).toHaveBeenCalledWith(id, dto, adminUser)
+  })
+
+  // `null` é desmarcar — precisa chegar ao use-case, não ser tratado como ausência.
+  it('setLabel forwards a null labelId to unset', async () => {
+    const id = faker.string.uuid()
+    ;(mockSetLabel.execute as jest.Mock).mockResolvedValue(makeAppointmentResponse())
+
+    await controller.setLabel(id, { labelId: null }, adminUser)
+
+    expect(mockSetLabel.execute).toHaveBeenCalledWith(id, { labelId: null }, adminUser)
   })
 })

@@ -148,7 +148,7 @@ describe('AppointmentsRepository', () => {
 
       expect(mockRepository.findOne).toHaveBeenCalledWith({
         where: { id: appointment.id, clinicId: CLINIC_ID },
-        relations: ['series'],
+        relations: ['series', 'label'],
       })
       expect(result).toBe(appointment)
     })
@@ -278,7 +278,7 @@ describe('AppointmentsRepository', () => {
 
       expect(mockRepository.find).toHaveBeenCalledWith({
         where: { seriesId, clinicId: CLINIC_ID },
-        relations: ['series'],
+        relations: ['series', 'label'],
         order: { date: 'ASC' },
       })
       expect(result).toEqual([appointment])

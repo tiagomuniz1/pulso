@@ -18,6 +18,8 @@ interface AgendaDayGridProps {
   role: UserRole
   currentDoctorId?: string
   effectiveDoctorId?: string
+  /** Recorte por rótulo, aplicado no cliente. */
+  labelFilter?: string | null
 }
 
 export function AgendaDayGrid({
@@ -26,11 +28,12 @@ export function AgendaDayGrid({
   role,
   currentDoctorId,
   effectiveDoctorId,
+  labelFilter,
 }: AgendaDayGridProps) {
   const [bookingSlot, setBookingSlot] = useState<IAgendaSlot | null>(null)
   const [detailsId, setDetailsId] = useState<string | null>(null)
 
-  const { slots, isLoading, isError } = useDayAgenda(professionalId, date)
+  const { slots, isLoading, isError } = useDayAgenda(professionalId, date, labelFilter)
   const { data: exceptions = [] } = useScheduleExceptions(
     professionalId !== null ? { professionalId: professionalId === 'self' ? undefined : professionalId, from: date, to: date } : undefined,
   )
@@ -60,6 +63,19 @@ export function AgendaDayGrid({
   }
 
   if (slots.length === 0 && exceptions.length === 0) {
+    // Sob filtro a mensagem padrão mentiria: há horários, só nenhum com o
+    // rótulo escolhido.
+    if (labelFilter) {
+      return (
+        <div
+          data-testid="agenda-day-empty-filtered"
+          className="py-12 text-center text-sm text-text/50"
+        >
+          Nenhuma consulta com este rótulo nesta data.
+        </div>
+      )
+    }
+
     return (
       <div data-testid="agenda-day-empty" className="py-12 text-center text-sm text-text/50">
         Sem horários disponíveis nesta data.

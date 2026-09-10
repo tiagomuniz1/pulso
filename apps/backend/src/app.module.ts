@@ -10,6 +10,7 @@ import { UsersModule } from './modules/users/users.module'
 import { PatientsModule } from './modules/patients/patients.module'
 import { ProfessionalsModule } from './modules/professionals/professionals.module'
 import { SchedulesModule } from './modules/schedules/schedules.module'
+import { AppointmentLabelsModule } from './modules/appointment-labels/appointment-labels.module'
 import { AppointmentsModule } from './modules/appointments/appointments.module'
 import { SpecialtiesModule } from './modules/specialties/specialties.module'
 import { ClinicsModule } from './modules/clinics/clinics.module'
@@ -52,6 +53,7 @@ import { RolesGuard } from './modules/auth/guards/roles.guard'
     ProfessionalsModule,
     SchedulesModule,
     AppointmentsModule,
+    AppointmentLabelsModule,
     SpecialtiesModule,
     ClinicsModule,
     ClinicSpecialtiesModule,

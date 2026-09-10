@@ -10,7 +10,9 @@ import { AppointmentSeries } from './entities/appointment-series.entity'
 import { AppointmentsController } from './controllers/appointments.controller'
 import { CreateAppointmentUseCase } from './use-cases/create-appointment.use-case'
 import { CancelAppointmentUseCase } from './use-cases/cancel-appointment.use-case'
+import { AppointmentLabelsModule } from '../appointment-labels/appointment-labels.module'
 import { CompleteAppointmentUseCase } from './use-cases/complete-appointment.use-case'
+import { SetAppointmentLabelUseCase } from './use-cases/set-appointment-label.use-case'
 import { ConfirmAppointmentUseCase } from './use-cases/confirm-appointment.use-case'
 import { MarkAppointmentNoShowUseCase } from './use-cases/mark-appointment-no-show.use-case'
 import { FindAppointmentByIdUseCase } from './use-cases/find-appointment-by-id.use-case'
@@ -31,6 +33,7 @@ import { AppointmentSeriesRepository } from './repositories/appointment-series.r
 
 @Module({
   imports: [
+    AppointmentLabelsModule,
     TypeOrmModule.forFeature([Appointment, AppointmentSeries]),
     CacheModule,
     forwardRef(() => ProfessionalsModule),
@@ -43,6 +46,7 @@ import { AppointmentSeriesRepository } from './repositories/appointment-series.r
     CreateAppointmentUseCase,
     CancelAppointmentUseCase,
     CompleteAppointmentUseCase,
+    SetAppointmentLabelUseCase,
     ConfirmAppointmentUseCase,
     MarkAppointmentNoShowUseCase,
     FindAppointmentByIdUseCase,

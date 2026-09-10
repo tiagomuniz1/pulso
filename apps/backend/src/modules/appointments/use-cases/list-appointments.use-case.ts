@@ -6,6 +6,7 @@ import { CacheService } from '../../../cache/cache.service'
 import { ICurrentUser } from '../../auth/types/current-user.type'
 import { IProfessionalsRepository } from '../../professionals/repositories/professionals.repository.interface'
 import { ListAppointmentsQueryDto } from '../dto/list-appointments-query.dto'
+import { toAppointmentResponse } from '../appointment.mapper'
 import { Appointment } from '../entities/appointment.entity'
 import { IAppointmentsRepository } from '../repositories/appointments.repository.interface'
 
@@ -32,9 +33,9 @@ export class ListAppointmentsUseCase extends BaseUseCase {
       effectiveQuery.professionalId = professional.id
     }
 
-    const { professionalId, patientId, status, from, to, page = 1, limit = 20 } = effectiveQuery
+    const { professionalId, patientId, status, from, to, labelId, hasLabel, page = 1, limit = 20 } = effectiveQuery
 
-    const cacheKey = `appointments:list:${clinicId}:${professionalId ?? 'all'}:${patientId ?? 'all'}:${status ?? 'all'}:${from ?? 'all'}:${to ?? 'all'}:${page}:${limit}`
+    const cacheKey = `appointments:list:${clinicId}:${professionalId ?? 'all'}:${patientId ?? 'all'}:${status ?? 'all'}:${from ?? 'all'}:${to ?? 'all'}:${labelId ?? 'all'}:${hasLabel ?? 'all'}:${page}:${limit}`
 
     try {
       const cached = await this.cacheService.get<PaginatedAppointmentsResponseDto>(cacheKey)
@@ -129,27 +130,11 @@ export class ListAppointmentsUseCase extends BaseUseCase {
     specialtyName: string | null,
     seriesTotalOccurrences: number | null,
   ): AppointmentResponseDto {
-    return {
-      id: appointment.id,
-      professionalId: appointment.professionalId,
+    return toAppointmentResponse(appointment, {
       professionalName,
-      patientId: appointment.patientId,
       patientName,
-      specialtyId: appointment.specialtyId,
       specialtyName,
-      scheduleId: appointment.scheduleId,
-      date: appointment.date,
-      startTime: appointment.startTime,
-      endTime: appointment.endTime,
-      status: appointment.status,
-      insuranceType: appointment.insuranceType,
-      reason: appointment.reason,
-      cancellationReason: appointment.cancellationReason,
-      seriesId: appointment.seriesId ?? null,
-      seriesSequence: appointment.seriesSequence ?? null,
       seriesTotalOccurrences,
-      createdAt: appointment.createdAt,
-      updatedAt: appointment.updatedAt,
-    }
+    })
   }
 }

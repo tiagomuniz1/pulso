@@ -1,6 +1,8 @@
 'use client'
 
 import { UserRole } from '@app/shared'
+import type { IAppointmentLabelModel } from '@/components/features/appointment-labels/types/appointment-label-model.types'
+import { AppointmentLabelPill } from '@/components/features/appointment-labels/components/appointment-label-pill'
 import { Button } from '@/components/ui/atoms/button/button'
 import { getWeekStart } from '@/lib/format-date'
 import type { IProfessionalModel } from '@/components/features/professionals/types/professional-model.types'
@@ -16,6 +18,10 @@ interface AgendaToolbarProps {
   doctors?: IProfessionalModel[]
   selectedDoctorId: string | null
   onDoctorChange: (professionalId: string | null) => void
+  /** Vem do pai: a toolbar é apresentacional e não busca dados. */
+  labels?: IAppointmentLabelModel[]
+  labelFilter?: string | null
+  onLabelChange?: (labelId: string | null) => void
   onBlockTime?: () => void
 }
 
@@ -40,9 +46,13 @@ export function AgendaToolbar({
   doctors,
   selectedDoctorId,
   onDoctorChange,
+  labels = [],
+  labelFilter,
+  onLabelChange,
   onBlockTime,
 }: AgendaToolbarProps) {
   const step = view === 'day' ? 1 : 7
+
 
   function goBack() {
     const d = new Date(currentDate)
@@ -65,7 +75,11 @@ export function AgendaToolbar({
   const blockTimeDisabled = role === UserRole.ADMIN && !selectedDoctorId
 
   return (
-    <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:flex-wrap sm:items-center" data-testid="agenda-toolbar">
+    // O respiro abaixo é do bloco inteiro (barra + legenda). Estava no `<div>`
+    // da barra, então a legenda ficava colada na agenda — folga zero, medida.
+    // Um pouco maior no mobile, onde a legenda desliza e precisa de ar.
+    <div className="mb-5 sm:mb-4">
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center" data-testid="agenda-toolbar">
       <div className="flex items-center gap-1">
         <Button variant="ghost" size="sm" onClick={goBack} data-testid="toolbar-prev" aria-label="Anterior">
           ‹
@@ -119,6 +133,28 @@ export function AgendaToolbar({
         </div>
       )}
 
+      {/* Filtrar é leitura, não gestão: visível para os três perfis. É a recepção
+          que mais precisa achar "os retornos de hoje". Some quando não há
+          catálogo — um filtro sem opções é ruído. */}
+      {onLabelChange && labels.length > 0 && (
+        <div data-testid="toolbar-label-selector">
+          <select
+            data-testid="toolbar-label-select"
+            value={labelFilter ?? ''}
+            onChange={(e) => onLabelChange(e.target.value || null)}
+            className="w-full rounded-md border border-line bg-surface-2 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent sm:w-auto"
+          >
+            <option value="">Todos os rótulos</option>
+            <option value="none">Sem rótulo</option>
+            {labels.map((label) => (
+              <option key={label.id} value={label.id}>
+                {label.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {canBlockTime && (
         <Button
           variant="ghost"
@@ -130,6 +166,32 @@ export function AgendaToolbar({
         >
           Bloquear horário
         </Button>
+      )}
+    </div>
+
+      {/* Cor sozinha não basta, e no toque ela fica sozinha mesmo: não há hover
+          para revelar o `title`. Por isso a legenda aparece também no mobile.
+          Ali ela não embrulha — desliza numa linha só. Embrulhada, oito rótulos
+          custavam 76px numa tela de 375px, sobre uma barra que já tem 152px;
+          numa linha, custa menos da metade e nada fica inalcançável. */}
+      {labels.length > 0 && (
+        <div
+          data-testid="agenda-label-legend"
+          className="mt-3 flex items-center gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-x-visible sm:pb-0"
+        >
+          <span className="shrink-0 text-xs text-text-mute">Rótulos:</span>
+          {labels.map((label) => (
+            <AppointmentLabelPill
+              key={label.id}
+              name={label.name}
+              color={label.color}
+              // Sem encolher: espremida, a pílula deixa o nome vazar do fundo —
+              // foi o que quebrou o rótulo ao lado do select no diálogo.
+              className="shrink-0 whitespace-nowrap"
+              data-testid={`agenda-label-legend-item-${label.id}`}
+            />
+          ))}
+        </div>
       )}
     </div>
   )
