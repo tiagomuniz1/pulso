@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common'
 import axios from 'axios'
 import axiosRetry from 'axios-retry'
-import * as CircuitBreaker from 'opossum'
+import CircuitBreaker from 'opossum'
 import { getEnvConfig } from '../../../config/env.config'
 import { ICaptchaAdapter } from './captcha.adapter.interface'
 
