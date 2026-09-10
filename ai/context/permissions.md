@@ -295,6 +295,26 @@ O esquema que o sistema usa para dizer o que falta, e a conduta que o profission
 
 ---
 
+## Rótulos de Consulta (`/appointment-labels`)
+
+Catálogo por clínica de rótulos coloridos. Cada consulta carrega **um** rótulo, opcional, que pinta uma faixa no bloco da agenda — para o profissional distinguir de relance o que está olhando.
+
+| Ação | ADMIN | PROFESSIONAL | USER | PATIENT |
+|---|:---:|:---:|:---:|:---:|
+| Criar / editar / excluir rótulo | ✓ | ✗ | ✗ | ✗ |
+| Listar / ver rótulos | ✓ | ✓ (leitura) | ✓ (leitura) | ✗ |
+| Marcar o rótulo numa consulta | ✓ qualquer | só na própria | ✗ | ✗ |
+
+> **Gerir o catálogo é do ADMIN, marcar é de quem atende.** Renomear ou recolorir um rótulo muda a agenda de todo mundo na clínica, e é por isso que a gestão é administrativa. Marcar segue o eixo de sempre: o ADMIN em qualquer consulta da clínica, o profissional só na dele.
+
+> **A recepção lê, mas não marca.** Precisa do catálogo para o filtro da agenda — achar "os retornos de hoje" é trabalho de recepção. A consequência prática é que a consulta agendada por ela nasce sem rótulo e alguém rotula depois.
+
+> **A cor não é livre:** é uma paleta curada de dezesseis, e o banco guarda o identificador, nunca um hex. Hex não tem variante para modo escuro, e as cores vivem em variáveis CSS fora do alcance do tema da clínica — é o que impede a faixa de brigar com a marca.
+
+> **Desativar e excluir são coisas diferentes.** Rótulo desativado sai do seletor e **continua colorindo** as consultas que já o usam; excluído some da agenda também. É o mesmo significado que `isActive` tem no resto do sistema: desativar é "pare de usar em coisas novas", excluir é "tire da minha clínica".
+
+---
+
 ## Prontuários (`/medical-records`)
 
 | Ação | ADMIN | PROFESSIONAL | USER | PATIENT |

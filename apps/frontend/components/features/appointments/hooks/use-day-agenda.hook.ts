@@ -45,9 +45,33 @@ export function mergeSlotsByStartTime(
     .sort((a, b) => a.startTime.localeCompare(b.startTime))
 }
 
+/**
+ * Recorta a agenda pelo rótulo, DEPOIS do merge.
+ *
+ * Precisa ser aqui e não no `GET /appointments`: `pickSlot` prefere a consulta
+ * ao horário livre, e não havendo consulta cai no livre. Se o filtro tirasse a
+ * consulta do payload, o horário voltaria a aparecer como "Livre — clique para
+ * agendar" por cima de uma consulta que existe, e a recepção agendaria em cima.
+ * Um filtro visual causaria agendamento duplo.
+ *
+ * Os horários livres somem sob filtro: quem procura "Retorno" quer a lista
+ * curta, não vinte linhas de "Livre" no meio.
+ */
+export function filterSlotsByLabel(
+  slots: IAgendaSlot[],
+  labelFilter?: string | null,
+): IAgendaSlot[] {
+  if (!labelFilter) return slots
+  if (labelFilter === 'none') {
+    return slots.filter((slot) => slot.appointment !== null && slot.appointment.label === null)
+  }
+  return slots.filter((slot) => slot.appointment?.label?.id === labelFilter)
+}
+
 export function useDayAgenda(
   professionalId: string | null,
   date: string,
+  labelFilter?: string | null,
 ): { slots: IAgendaSlot[]; isLoading: boolean; isError: boolean } {
   const isSelf = professionalId === 'self'
   const enabled = professionalId !== null
@@ -95,5 +119,7 @@ export function useDayAgenda(
     appointment: apt,
   }))
 
-  return { slots: mergeSlotsByStartTime(freeSlots, bookedSlots), isLoading, isError }
+  const slots = filterSlotsByLabel(mergeSlotsByStartTime(freeSlots, bookedSlots), labelFilter)
+
+  return { slots, isLoading, isError }
 }

@@ -1,5 +1,23 @@
 # Changelog — Backend
 
+## [1.14.0] - 2026-09-10
+
+### Added
+
+#### Rótulos de consulta
+- **Catálogo por clínica** (`/appointment-labels`), gerido pelo ADMIN e lido pelos três perfis — a recepção precisa dele para o filtro da agenda. Nome único por clínica (`lower(name)`, parcial em `deleted_at IS NULL`): o rótulo aparece na agenda como cor cujo único texto é o nome, e dois "Retorno" seriam indistinguíveis no seletor e na legenda
+- **A cor é um identificador de paleta, nunca um hex.** Hex no banco não tem variante para modo escuro, e a mesma "verde" precisa ser dois valores conforme o tema — quem sabe o modo em vigor é o frontend
+- **`PATCH /appointments/:id/label`** marca e desmarca (`null` desmarca). ADMIN em qualquer consulta da clínica, profissional só na própria. Rótulo inexistente e de outra clínica respondem igual (422), para não revelar o que existe noutro tenant. Sem guarda de status: reetiquetar consulta concluída é inofensivo e às vezes é o que se quer
+- **Filtro `labelId` e `hasLabel`** na listagem de consultas, com `hasLabel` em tri-estado — ausente não filtra, `false` traz só as sem rótulo
+
+### Changed
+- **`AppointmentResponseDto` ganha `label` aninhado**, resolvido por relação e não em lote. O DTO era montado à mão em **dez** lugares: um campo por parâmetro seria esquecido em algum, e se o `PATCH /confirm` devolvesse sem `label` a cor sumiria da agenda ao confirmar a consulta
+- **Extraído `appointments/appointment.mapper.ts`**, que substituiu as dez cópias de `toResponse`. Foi o que tornou o campo novo uma mudança de um arquivo
+- **Renomear ou recolorir um rótulo invalida também as listas de consultas** (`appointments:list:{clinicId}:`): o rótulo viaja embutido no payload, então sem isso a agenda mostraria o nome velho até o TTL expirar
+
+### Notes
+- Rótulo **desativado continua colorindo** as consultas que já o usam; **excluído** vira `null` e some da agenda. Sai de graça do filtro de soft delete que o TypeORM aplica no join
+
 ## [1.13.0] - 2026-09-09
 
 ### Added

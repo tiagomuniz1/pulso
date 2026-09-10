@@ -766,6 +766,7 @@ export const STUB_TEMPLATE = {
 }
 
 export interface AppointmentDetailWidgetStubs {
+  appointmentLabels?: unknown
   medicalRecord?: unknown
   templates?: unknown
   prescriptions?: unknown
@@ -805,6 +806,13 @@ Cypress.Commands.add('stubAppointmentDetailWidgets', (overrides: AppointmentDeta
       limit: 50,
     },
   }).as('getTemplates')
+
+  // A agenda e o diálogo de detalhes leem o catálogo de rótulos. Sem stub a
+  // chamada bate no backend com token mock, dá 401 e derruba a tela num loop.
+  cy.intercept('GET', `${api}/appointment-labels*`, {
+    statusCode: 200,
+    body: overrides.appointmentLabels ?? { data: [], total: 0, page: 1, limit: 100 },
+  }).as('getAppointmentLabels')
 
   // O glob acima NÃO cobre `/medical-record-templates/:id` — no minimatch o `*`
   // não atravessa a barra. É por essa rota que a tela busca as seções de um

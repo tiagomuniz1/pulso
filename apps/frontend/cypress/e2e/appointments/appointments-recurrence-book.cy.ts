@@ -130,6 +130,12 @@ describe('Appointments — recurring series (mocked)', () => {
       statusCode: 200,
       body: { data: [], total: 0, page: 1, limit: 100 },
     })
+    // A agenda lê o catálogo de rótulos: sem stub a chamada bate no backend
+    // com token mock, dá 401 e o app redireciona para o login.
+    cy.intercept('GET', `${Cypress.env('API_URL')}/appointment-labels*`, {
+      statusCode: 200,
+      body: { data: [], total: 0, page: 1, limit: 100 },
+    })
     cy.intercept('GET', `${Cypress.env('API_URL')}/patients*`, { statusCode: 200, body: mockPatientsList })
     cy.intercept('GET', `${Cypress.env('API_URL')}/schedule-exceptions*`, {
       statusCode: 200,

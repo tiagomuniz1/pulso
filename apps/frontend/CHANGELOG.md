@@ -1,5 +1,17 @@
 # Changelog — Frontend
 
+## [1.14.0] - 2026-09-10
+
+### Added
+- **Rótulos de consulta colorindo a agenda.** Cada consulta pode receber um rótulo, que desenha uma faixa de 4px na borda esquerda do bloco — na visão dia e na semana. É o canal visual novo: fundo e borda continuam contando o status
+- **Paleta curada de dezesseis cores**, em variáveis CSS próprias. O tema da clínica sobrescreve exatamente onze variáveis (accent, fundo e raio), então a paleta é imune a ele por construção. Luminosidade constante e croma limitado a 41–49% do croma dos accents: as dezesseis lêem como família subordinada à marca, não como dezesseis adesivos
+- **Tela de gestão** (`/appointment-labels`, só ADMIN), com grade de amostras em vez de `<select>` — um select com dezesseis nomes obriga a abrir, ler, fechar e comparar de memória, e o tom não aparece na lista fechada. Um preview mostra a faixa como ela vai aparecer na agenda
+- **Filtro por rótulo na agenda**, com "Sem rótulo", e legenda sob a barra dizendo o que cada cor significa
+
+### Notes
+- O filtro é aplicado **no cliente**, e isso é correção e não preferência: `pickSlot` prefere a consulta ao horário livre e, não havendo consulta, cai no livre. Um filtro no servidor faria o horário voltar como "Livre — clique para agendar" por cima de uma consulta existente, e a recepção agendaria em cima
+- Cor não é a única portadora: a pílula sempre mostra o nome, e a faixa leva o rótulo para o `title` e o `aria-label` do bloco
+
 ## [1.13.2] - 2026-09-09
 
 ### Fixed

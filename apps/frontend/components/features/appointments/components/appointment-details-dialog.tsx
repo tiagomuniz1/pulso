@@ -11,6 +11,9 @@ import { useAppointment } from '../hooks/use-appointment.hook'
 import { APPOINTMENT_STATUS_LABELS } from '../types/appointment-model.types'
 import { APPOINTMENT_STATUS_BADGE_CLASS } from '@/lib/appointment-status'
 import { formatDateToBR } from '@/lib/format-date'
+import { AppointmentLabelSelect } from '@/components/features/appointment-labels/components/appointment-label-select'
+import { AppointmentLabelPill } from '@/components/features/appointment-labels/components/appointment-label-pill'
+import { useSetAppointmentLabel } from '../hooks/use-set-appointment-label.hook'
 import { RecurrenceBadge } from './recurrence-badge'
 
 interface AppointmentDetailsDialogProps {
@@ -25,12 +28,17 @@ export function AppointmentDetailsDialog({
   appointmentId,
   isOpen,
   onClose,
-  role: _role,
-  currentDoctorId: _currentDoctorId,
+  role,
+  currentDoctorId,
 }: AppointmentDetailsDialogProps) {
   const router = useRouter()
   const basePath = useBasePath()
   const { data: appointment, isLoading, isError } = useAppointment(appointmentId ?? '')
+  const { mutate: setLabel, isPending: salvandoRotulo } = useSetAppointmentLabel()
+
+  // A mesma regra de `canManage` da tela cheia: o ADMIN mexe em qualquer
+  // consulta da clínica, o profissional só na dele.
+  const canLabel = role === UserRole.ADMIN || appointment?.professionalId === currentDoctorId
 
   function handleGoToAppointment() {
     // Only reachable once `appointment` has loaded below, which requires a non-null appointmentId
@@ -101,6 +109,26 @@ export function AppointmentDetailsDialog({
                   </dd>
                 </>
               )}
+
+            <dt className="text-text/50">Rótulo</dt>
+            <dd data-testid="details-label">
+              {canLabel ? (
+                <AppointmentLabelSelect
+                  value={appointment.label}
+                  isPending={salvandoRotulo}
+                  onChange={(labelId) => setLabel({ id: appointment.id, labelId })}
+                  data-testid="details-label-select"
+                />
+              ) : appointment.label ? (
+                <AppointmentLabelPill
+                  name={appointment.label.name}
+                  color={appointment.label.color}
+                  data-testid="details-label-pill"
+                />
+              ) : (
+                '—'
+              )}
+            </dd>
 
             {appointment.reason && (
               <>

@@ -1,3 +1,4 @@
+import { AppointmentLabelColor } from '@app/shared'
 jest.mock('./use-appointments.hook')
 jest.mock('./use-availability.hook')
 
@@ -5,7 +6,7 @@ import { AppointmentStatus } from '@app/shared'
 import { renderHook } from '@testing-library/react'
 import { useAppointments } from './use-appointments.hook'
 import { useAvailability } from './use-availability.hook'
-import { useDayAgenda } from './use-day-agenda.hook'
+import { filterSlotsByLabel, mergeSlotsByStartTime, useDayAgenda } from './use-day-agenda.hook'
 import type { IAppointmentModel, IAvailableSlotModel } from '../types/appointment-model.types'
 
 const makeSlot = (startTime = '08:00'): IAvailableSlotModel => ({
@@ -194,5 +195,62 @@ describe('useDayAgenda', () => {
 
       expect(slots.map((s) => s.startTime)).toEqual(['08:00', '09:00', '16:00'])
     })
+  })
+})
+
+describe('filterSlotsByLabel', () => {
+  const comRotulo = (id: string, labelId: string | null): IAgendaSlot => ({
+    startTime: '08:00',
+    endTime: '08:30',
+    status: 'booked',
+    appointment: {
+      id,
+      label: labelId ? { id: labelId, name: 'Retorno', color: AppointmentLabelColor.GREEN } : null,
+    } as any,
+  })
+  const livre: IAgendaSlot = { startTime: '09:00', endTime: '09:30', status: 'free', appointment: null }
+
+  it('returns everything when there is no filter', () => {
+    const slots = [comRotulo('a', 'l1'), livre]
+
+    expect(filterSlotsByLabel(slots, null)).toBe(slots)
+    expect(filterSlotsByLabel(slots, undefined)).toBe(slots)
+    expect(filterSlotsByLabel(slots, '')).toBe(slots)
+  })
+
+  it('keeps only the appointments carrying the chosen label', () => {
+    const result = filterSlotsByLabel([comRotulo('a', 'l1'), comRotulo('b', 'l2'), livre], 'l1')
+
+    expect(result).toHaveLength(1)
+    expect(result[0]!.appointment!.id).toBe('a')
+  })
+
+  it('keeps only the unlabelled appointments under "none"', () => {
+    const result = filterSlotsByLabel([comRotulo('a', 'l1'), comRotulo('b', null), livre], 'none')
+
+    expect(result).toHaveLength(1)
+    expect(result[0]!.appointment!.id).toBe('b')
+  })
+
+  // Quem filtra por "Retorno" quer a lista curta, não vinte linhas de "Livre".
+  it('drops free slots while a filter is on', () => {
+    expect(filterSlotsByLabel([livre], 'l1')).toHaveLength(0)
+    expect(filterSlotsByLabel([livre], 'none')).toHaveLength(0)
+  })
+
+  // A regressão que justifica o filtro ser no cliente: se ele estivesse no
+  // servidor, a consulta sumiria do payload e `pickSlot` cairia no slot livre —
+  // o horário voltaria como "Livre" por cima de uma consulta que existe, e a
+  // recepção agendaria em cima.
+  it('never turns a hidden appointment back into a free slot', () => {
+    const mesmoHorario: IAgendaSlot[] = [
+      { startTime: '08:00', endTime: '08:30', status: 'free', appointment: null },
+      comRotulo('ocupada', 'l1'),
+    ]
+
+    const merged = mergeSlotsByStartTime([mesmoHorario[0]!], [mesmoHorario[1]!])
+    const result = filterSlotsByLabel(merged, 'outro-label')
+
+    expect(result.some((slot) => slot.status === 'free')).toBe(false)
   })
 })

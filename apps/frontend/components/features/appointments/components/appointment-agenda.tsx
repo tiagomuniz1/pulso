@@ -9,6 +9,7 @@ import { useProfessionals } from '@/components/features/professionals/hooks/use-
 import { useMyProfessional } from '@/components/features/professionals/hooks/use-my-professional.hook'
 import { BlockTimeDialog } from '@/components/features/schedule-exceptions/components/BlockTimeDialog'
 import { getWeekStart, toLocalDateString } from '@/lib/format-date'
+import { useAppointmentLabels } from '@/components/features/appointment-labels/hooks/use-appointment-labels.hook'
 import { AgendaToolbar } from './agenda-toolbar'
 import { AgendaDayGrid } from './agenda-day-grid'
 import { AgendaWeekGrid } from './agenda-week-grid'
@@ -35,6 +36,10 @@ export function AppointmentAgenda() {
   const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(
     () => searchParams.get('doctor'),
   )
+  const [labelFilter, setLabelFilter] = useState<string | null>(() => searchParams.get('label'))
+
+  // Uma query só, que alimenta o seletor e a legenda da toolbar.
+  const { data: labelsPage } = useAppointmentLabels({ isActive: true, limit: 100 })
   const [isBlockDialogOpen, setIsBlockDialogOpen] = useState(false)
 
   // Week view crams 7 columns of time slots into the viewport — illegible on
@@ -72,11 +77,13 @@ export function AppointmentAgenda() {
   const weekStart = toLocalDateString(getWeekStart(currentDate))
 
   const syncUrl = useCallback(
-    (date: Date, v: AgendaView, professionalId: string | null) => {
+    (date: Date, v: AgendaView, professionalId: string | null, label: string | null) => {
       const params = new URLSearchParams()
       params.set('date', toLocalDateString(date))
       params.set('view', v)
       if (professionalId) params.set('doctor', professionalId)
+      // Condicional como o doctor: limpar o filtro tira o parâmetro da URL.
+      if (label) params.set('label', label)
       router.replace(`?${params.toString()}`, { scroll: false })
     },
     [router],
@@ -84,17 +91,22 @@ export function AppointmentAgenda() {
 
   function handleDateChange(date: Date) {
     setCurrentDate(date)
-    syncUrl(date, view, selectedDoctorId)
+    syncUrl(date, view, selectedDoctorId, labelFilter)
   }
 
   function handleViewChange(v: AgendaView) {
     setView(v)
-    syncUrl(currentDate, v, selectedDoctorId)
+    syncUrl(currentDate, v, selectedDoctorId, labelFilter)
   }
 
   function handleDoctorChange(professionalId: string | null) {
     setSelectedDoctorId(professionalId)
-    syncUrl(currentDate, view, professionalId)
+    syncUrl(currentDate, view, professionalId, labelFilter)
+  }
+
+  function handleLabelChange(label: string | null) {
+    setLabelFilter(label)
+    syncUrl(currentDate, view, selectedDoctorId, label)
   }
 
   return (
@@ -108,6 +120,9 @@ export function AppointmentAgenda() {
         doctors={showDoctorSelector ? (doctors ?? []) : undefined}
         selectedDoctorId={selectedDoctorId}
         onDoctorChange={handleDoctorChange}
+        labels={labelsPage?.data ?? []}
+        labelFilter={labelFilter}
+        onLabelChange={handleLabelChange}
         onBlockTime={() => setIsBlockDialogOpen(true)}
       />
 
@@ -118,6 +133,7 @@ export function AppointmentAgenda() {
           role={role}
           currentDoctorId={currentDoctorId}
           effectiveDoctorId={effectiveDoctorId}
+          labelFilter={labelFilter}
         />
       ) : (
         <AgendaWeekGrid
@@ -126,6 +142,7 @@ export function AppointmentAgenda() {
           role={role}
           currentDoctorId={currentDoctorId}
           effectiveDoctorId={effectiveDoctorId}
+          labelFilter={labelFilter}
         />
       )}
 

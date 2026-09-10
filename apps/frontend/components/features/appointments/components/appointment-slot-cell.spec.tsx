@@ -1,6 +1,7 @@
+import { LABEL_STRIP_CLASS } from '@/components/features/appointment-labels/constants/label-color-classes'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppointmentStatus } from '@app/shared'
+import { AppointmentLabelColor, AppointmentStatus } from '@app/shared'
 import { AppointmentSlotCell } from './appointment-slot-cell'
 import type { IAgendaSlot } from '../types/appointment-model.types'
 
@@ -36,6 +37,7 @@ const makeAppointment = (overrides = {}): NonNullable<IAgendaSlot['appointment']
   seriesId: null,
   seriesSequence: null,
   seriesTotalOccurrences: null,
+  label: null,
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,
@@ -104,6 +106,7 @@ describe('AppointmentSlotCell', () => {
       seriesId: null,
       seriesSequence: null,
       seriesTotalOccurrences: null,
+  label: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     })
@@ -226,5 +229,64 @@ describe('AppointmentSlotCell', () => {
     )
 
     expect(screen.getByText('Patient One')).toHaveAttribute('title', 'Patient One')
+  })
+
+  describe('faixa do rótulo', () => {
+    const comRotulo = (color = AppointmentLabelColor.GREEN) =>
+      makeAppointment({ label: { id: 'l1', name: 'Retorno', color } })
+
+    it('desenha a faixa na cor do rótulo', () => {
+      render(<AppointmentSlotCell slot={makeBookedSlot(comRotulo())}
+          canManage
+          isPast={false}
+          onBookClick={jest.fn()}
+          onDetailsClick={jest.fn()}
+        />)
+
+      const faixa = screen.getByTestId('agenda-slot-label')
+      expect(faixa).toHaveAttribute('data-label-color', AppointmentLabelColor.GREEN)
+      // Compara com o mapa importado, não com a string: assim o teste sobrevive
+      // a um rename de classe e ainda pega o componente pintando a cor errada.
+      expect(faixa).toHaveClass(LABEL_STRIP_CLASS[AppointmentLabelColor.GREEN])
+    })
+
+    it('não desenha faixa quando a consulta não tem rótulo', () => {
+      render(<AppointmentSlotCell slot={makeBookedSlot(makeAppointment())}
+          canManage
+          isPast={false}
+          onBookClick={jest.fn()}
+          onDetailsClick={jest.fn()}
+        />)
+
+      expect(screen.queryByTestId('agenda-slot-label')).not.toBeInTheDocument()
+    })
+
+    // Na visão semana o rótulo textual de status some e a borda é a única pista
+    // de status — a faixa tem de conviver com ela, não substituí-la.
+    it('desenha a faixa também na visão densa', () => {
+      render(<AppointmentSlotCell slot={makeBookedSlot(comRotulo())}
+          canManage
+          isPast={false}
+          dense
+          onBookClick={jest.fn()}
+          onDetailsClick={jest.fn()}
+        />)
+
+      expect(screen.getByTestId('agenda-slot-label')).toBeInTheDocument()
+    })
+
+    // Cor sozinha não pode ser a única portadora da informação.
+    it('leva o nome do rótulo para o title e o aria-label', () => {
+      render(<AppointmentSlotCell slot={makeBookedSlot(comRotulo())}
+          canManage
+          isPast={false}
+          onBookClick={jest.fn()}
+          onDetailsClick={jest.fn()}
+        />)
+
+      const botao = screen.getByTestId('agenda-slot-booked')
+      expect(botao).toHaveAttribute('title', expect.stringContaining('Retorno'))
+      expect(botao.getAttribute('aria-label')).toContain('rótulo Retorno')
+    })
   })
 })

@@ -20,6 +20,9 @@ export function toAppointmentModel(dto: AppointmentResponseDto): IAppointmentMod
     seriesId: dto.seriesId,
     seriesSequence: dto.seriesSequence,
     seriesTotalOccurrences: dto.seriesTotalOccurrences,
+    // Model E mapper, sempre os dois: `insuranceType` está no DTO, não está no
+    // model e não é copiado aqui — some sem erro e sem teste falhando.
+    label: dto.label ? { id: dto.label.id, name: dto.label.name, color: dto.label.color } : null,
     createdAt: new Date(dto.createdAt),
     updatedAt: new Date(dto.updatedAt),
   }

@@ -1,6 +1,8 @@
 'use client'
 
 import { UserRole } from '@app/shared'
+import type { IAppointmentLabelModel } from '@/components/features/appointment-labels/types/appointment-label-model.types'
+import { AppointmentLabelPill } from '@/components/features/appointment-labels/components/appointment-label-pill'
 import { Button } from '@/components/ui/atoms/button/button'
 import { getWeekStart } from '@/lib/format-date'
 import type { IProfessionalModel } from '@/components/features/professionals/types/professional-model.types'
@@ -16,6 +18,10 @@ interface AgendaToolbarProps {
   doctors?: IProfessionalModel[]
   selectedDoctorId: string | null
   onDoctorChange: (professionalId: string | null) => void
+  /** Vem do pai: a toolbar é apresentacional e não busca dados. */
+  labels?: IAppointmentLabelModel[]
+  labelFilter?: string | null
+  onLabelChange?: (labelId: string | null) => void
   onBlockTime?: () => void
 }
 
@@ -40,9 +46,13 @@ export function AgendaToolbar({
   doctors,
   selectedDoctorId,
   onDoctorChange,
+  labels = [],
+  labelFilter,
+  onLabelChange,
   onBlockTime,
 }: AgendaToolbarProps) {
   const step = view === 'day' ? 1 : 7
+
 
   function goBack() {
     const d = new Date(currentDate)
@@ -65,6 +75,7 @@ export function AgendaToolbar({
   const blockTimeDisabled = role === UserRole.ADMIN && !selectedDoctorId
 
   return (
+    <>
     <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:flex-wrap sm:items-center" data-testid="agenda-toolbar">
       <div className="flex items-center gap-1">
         <Button variant="ghost" size="sm" onClick={goBack} data-testid="toolbar-prev" aria-label="Anterior">
@@ -119,6 +130,28 @@ export function AgendaToolbar({
         </div>
       )}
 
+      {/* Filtrar é leitura, não gestão: visível para os três perfis. É a recepção
+          que mais precisa achar "os retornos de hoje". Some quando não há
+          catálogo — um filtro sem opções é ruído. */}
+      {onLabelChange && labels.length > 0 && (
+        <div data-testid="toolbar-label-selector">
+          <select
+            data-testid="toolbar-label-select"
+            value={labelFilter ?? ''}
+            onChange={(e) => onLabelChange(e.target.value || null)}
+            className="w-full rounded-md border border-line bg-surface-2 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent sm:w-auto"
+          >
+            <option value="">Todos os rótulos</option>
+            <option value="none">Sem rótulo</option>
+            {labels.map((label) => (
+              <option key={label.id} value={label.id}>
+                {label.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {canBlockTime && (
         <Button
           variant="ghost"
@@ -132,5 +165,25 @@ export function AgendaToolbar({
         </Button>
       )}
     </div>
+
+      {/* Cor sozinha não basta: a legenda diz o que cada faixa significa sem
+          exigir hover. Escondida no mobile, onde a altura é preciosa. */}
+      {labels.length > 0 && (
+        <div
+          data-testid="agenda-label-legend"
+          className="mt-3 hidden flex-wrap items-center gap-2 sm:flex"
+        >
+          <span className="text-xs text-text-mute">Rótulos:</span>
+          {labels.map((label) => (
+            <AppointmentLabelPill
+              key={label.id}
+              name={label.name}
+              color={label.color}
+              data-testid={`agenda-label-legend-item-${label.id}`}
+            />
+          ))}
+        </div>
+      )}
+    </>
   )
 }

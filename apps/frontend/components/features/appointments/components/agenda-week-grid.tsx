@@ -35,13 +35,14 @@ interface DayColumnProps {
   role: UserRole
   currentDoctorId?: string
   effectiveDoctorId?: string
+  labelFilter?: string | null
 }
 
-function DayColumn({ professionalId, date, dayLabel, role, currentDoctorId, effectiveDoctorId }: DayColumnProps) {
+function DayColumn({ professionalId, date, dayLabel, role, currentDoctorId, effectiveDoctorId, labelFilter }: DayColumnProps) {
   const [bookingSlot, setBookingSlot] = useState<IAgendaSlot | null>(null)
   const [detailsId, setDetailsId] = useState<string | null>(null)
 
-  const { slots, isLoading, isError } = useDayAgenda(professionalId, date)
+  const { slots, isLoading, isError } = useDayAgenda(professionalId, date, labelFilter)
   const { data: exceptions = [] } = useScheduleExceptions(
     { professionalId: professionalId === 'self' ? undefined : professionalId, from: date, to: date },
   )
@@ -114,6 +115,8 @@ interface AgendaWeekGridProps {
   role: UserRole
   currentDoctorId?: string
   effectiveDoctorId?: string
+  /** Recorte por rótulo, aplicado no cliente. */
+  labelFilter?: string | null
 }
 
 export function AgendaWeekGrid({
@@ -122,6 +125,7 @@ export function AgendaWeekGrid({
   role,
   currentDoctorId,
   effectiveDoctorId,
+  labelFilter,
 }: AgendaWeekGridProps) {
   const dates = getWeekDates(startDate)
 
@@ -149,6 +153,7 @@ export function AgendaWeekGrid({
             role={role}
             currentDoctorId={currentDoctorId}
             effectiveDoctorId={effectiveDoctorId}
+            labelFilter={labelFilter}
           />
         )
       })}
