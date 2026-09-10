@@ -34,6 +34,7 @@ const makeDto = (overrides = {}) => ({
       insuranceType: null,
       reason: null,
       cancellationReason: null,
+      label: null,
       seriesId: 'series-uuid',
       seriesSequence: 1,
       seriesTotalOccurrences: 2,

@@ -18,6 +18,7 @@ const makeDto = (overrides: Partial<AppointmentDetailResponseDto> = {}): Appoint
   insuranceType: null,
   reason: null,
   cancellationReason: null,
+  label: null,
   seriesFutureCount: null,
   seriesId: null,
   seriesSequence: null,

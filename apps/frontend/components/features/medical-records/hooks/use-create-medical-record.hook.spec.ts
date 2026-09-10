@@ -22,6 +22,7 @@ const makeModel = () => ({
   professionalName: 'Dr. João',
   specialtyId: 'spec-uuid',
   specialtyName: 'Cardio',
+  templateId: 'template-uuid',
   schema: [],
   data: {},
   notes: null,
@@ -36,7 +37,7 @@ describe('useCreateMedicalRecord', () => {
     ;(createMedicalRecordUseCase as jest.Mock).mockResolvedValue(makeModel())
     const { result } = renderHook(() => useCreateMedicalRecord(), { wrapper })
 
-    const input = { appointmentId: 'appt-uuid', data: { k1: 'val' } }
+    const input = { appointmentId: 'appt-uuid', templateId: 'template-uuid', data: { k1: 'val' } }
     await act(async () => { result.current.mutate(input) })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
@@ -49,7 +50,7 @@ describe('useCreateMedicalRecord', () => {
 
     const { result } = renderHook(() => useCreateMedicalRecord(), { wrapper })
 
-    await act(async () => { result.current.mutate({ appointmentId: 'appt-uuid', data: {} }) })
+    await act(async () => { result.current.mutate({ appointmentId: 'appt-uuid', templateId: 'template-uuid', data: {} }) })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
   })
 
@@ -57,7 +58,7 @@ describe('useCreateMedicalRecord', () => {
     ;(createMedicalRecordUseCase as jest.Mock).mockRejectedValue({ status: 409 })
     const { result } = renderHook(() => useCreateMedicalRecord(), { wrapper })
 
-    await act(async () => { result.current.mutate({ appointmentId: 'appt-uuid', data: {} }) })
+    await act(async () => { result.current.mutate({ appointmentId: 'appt-uuid', templateId: 'template-uuid', data: {} }) })
     await waitFor(() => expect(result.current.isError).toBe(true))
   })
 })

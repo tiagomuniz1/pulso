@@ -7,7 +7,7 @@ import { renderHook } from '@testing-library/react'
 import { useAppointments } from './use-appointments.hook'
 import { useAvailability } from './use-availability.hook'
 import { filterSlotsByLabel, mergeSlotsByStartTime, useDayAgenda } from './use-day-agenda.hook'
-import type { IAppointmentModel, IAvailableSlotModel } from '../types/appointment-model.types'
+import type { IAgendaSlot, IAppointmentModel, IAvailableSlotModel } from '../types/appointment-model.types'
 
 const makeSlot = (startTime = '08:00'): IAvailableSlotModel => ({
   startTime,
@@ -18,6 +18,7 @@ const makeSlot = (startTime = '08:00'): IAvailableSlotModel => ({
 
 const makeAppointment = (startTime = '09:00'): IAppointmentModel => ({
   id: 'apt-uuid',
+  label: null,
   professionalId: 'doc-uuid',
   professionalName: 'Dr. Test',
   patientId: 'pat-uuid',

@@ -11,8 +11,8 @@ describe('createMedicalRecordUseCase', () => {
   beforeEach(() => jest.clearAllMocks())
 
   it('maps input to DTO, calls service, maps response', async () => {
-    const input = { appointmentId: 'appt-uuid', data: { k1: 'val' } }
-    const mappedDto = { appointmentId: 'appt-uuid', data: { k1: 'val' } }
+    const input = { appointmentId: 'appt-uuid', templateId: 'template-uuid', data: { k1: 'val' } }
+    const mappedDto = { appointmentId: 'appt-uuid', templateId: 'template-uuid', data: { k1: 'val' } }
     const responseDto = { id: 'uuid-1' }
     const model = { id: 'uuid-1' }
 
