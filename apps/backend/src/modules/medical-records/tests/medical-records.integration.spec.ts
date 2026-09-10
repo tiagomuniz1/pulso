@@ -52,6 +52,7 @@ describe('MedicalRecordsController (integration)', () => {
   let adminToken: string
   let doctorToken: string
   let otherDoctorToken: string
+  let otherSpecialtyDoctorToken: string
   let userToken: string
   let professionalId: string
   let otherDoctorId: string
@@ -142,6 +143,16 @@ describe('MedicalRecordsController (integration)', () => {
       }),
     )
 
+    const otherSpecialtyDoctorUser = await userRepository.save(
+      userRepository.create({
+        fullName: 'Nutritionist Doe',
+        email: 'nutri@mr.test',
+        password: hashed,
+        role: UserRole.PROFESSIONAL,
+        clinicId: SEED_CLINIC_ID,
+      }),
+    )
+
     await userRepository.save(
       userRepository.create({
         fullName: 'Regular User',
@@ -156,6 +167,10 @@ describe('MedicalRecordsController (integration)', () => {
       specialtyRepository.create({ name: 'Cardiologia' }),
     )
     specialtyId = specialty.id
+
+    const otherSpecialty = await specialtyRepository.save(
+      specialtyRepository.create({ name: 'Nutrição' }),
+    )
 
     const doctorEntity = doctorRepository.create({
       userId: doctorUser.id,
@@ -174,6 +189,17 @@ describe('MedicalRecordsController (integration)', () => {
     otherDoctorEntity.professionalSpecialties = ([specialty]).map((s: any) => ({ specialtyId: s.id, registryNumber: null })) as any
     const otherDoctorProfile = await doctorRepository.save(otherDoctorEntity)
     otherDoctorId = otherDoctorProfile.id
+
+    // Exerce outra especialidade — é ele quem prova que o recorte por
+    // especialidade recorta mesmo. `otherDoctor` divide a Cardiologia com o
+    // autor e por isso enxerga o prontuário dele.
+    const otherSpecialtyDoctorEntity = doctorRepository.create({
+      userId: otherSpecialtyDoctorUser.id,
+      clinicId: SEED_CLINIC_ID,
+    })
+    otherSpecialtyDoctorEntity.registrations = [{ clinicId: SEED_CLINIC_ID, councilType: CouncilType.CRN, number: '77777', state: 'SP', isPrimary: true }] as any
+    otherSpecialtyDoctorEntity.professionalSpecialties = ([otherSpecialty]).map((s: any) => ({ specialtyId: s.id, registryNumber: null })) as any
+    await doctorRepository.save(otherSpecialtyDoctorEntity)
 
     const patientUser = await userRepository.save(
       userRepository.create({
@@ -278,6 +304,7 @@ describe('MedicalRecordsController (integration)', () => {
     adminToken = await loginAndExtractToken('admin@mr.test')
     doctorToken = await loginAndExtractToken('doctor@mr.test')
     otherDoctorToken = await loginAndExtractToken('other@mr.test')
+    otherSpecialtyDoctorToken = await loginAndExtractToken('nutri@mr.test')
     userToken = await loginAndExtractToken('user@mr.test')
   })
 
@@ -678,10 +705,23 @@ describe('MedicalRecordsController (integration)', () => {
         .expect(200)
     })
 
-    it('returns 404 for DOCTOR accessing another doctor record', async () => {
-      await request(app.getHttpServer())
+    // Ler segue a mesma regra da listagem: o que ele escreveu OU o que foi
+    // escrito numa especialidade que ele exerce. Antes aqui era 404, e o
+    // histórico do paciente listava o prontuário do colega que ninguém
+    // conseguia abrir.
+    it('returns 200 for DOCTOR from the same specialty', async () => {
+      const { body } = await request(app.getHttpServer())
         .get(`/medical-records/${recordId}`)
         .set('Cookie', `access_token=${otherDoctorToken}`)
+        .expect(200)
+
+      expect(body.id).toBe(recordId)
+    })
+
+    it('returns 404 for DOCTOR from another specialty', async () => {
+      await request(app.getHttpServer())
+        .get(`/medical-records/${recordId}`)
+        .set('Cookie', `access_token=${otherSpecialtyDoctorToken}`)
         .expect(404)
     })
 
@@ -697,6 +737,71 @@ describe('MedicalRecordsController (integration)', () => {
         .get(`/medical-records/${recordId}`)
         .set('Cookie', `access_token=${userToken}`)
         .expect(403)
+    })
+  })
+
+  describe('GET /medical-records/:id/pdf', () => {
+    let recordId: string
+
+    beforeEach(async () => {
+      const { body } = await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, templateId, data: {} })
+        .expect(201)
+      recordId = body.id
+    })
+
+    // `.buffer(true)` com parser próprio: sem isto o supertest trata o corpo
+    // como texto e os bytes chegam corrompidos, com o `%PDF` intacto por acaso.
+    const baixar = (token: string) =>
+      request(app.getHttpServer())
+        .get(`/medical-records/${recordId}/pdf`)
+        .set('Cookie', `access_token=${token}`)
+        .buffer(true)
+        .parse((res, callback) => {
+          const chunks: Buffer[] = []
+          res.on('data', (chunk: Buffer) => chunks.push(chunk))
+          res.on('end', () => callback(null, Buffer.concat(chunks)))
+        })
+
+    it('returns a PDF for ADMIN', async () => {
+      const res = await baixar(adminToken).expect(200)
+
+      expect(res.headers['content-type']).toMatch(/application\/pdf/)
+      expect(res.headers['content-disposition']).toContain(`prontuario-${recordId}.pdf`)
+      expect(Buffer.from(res.body).slice(0, 4).toString('ascii')).toBe('%PDF')
+    })
+
+    it('returns a PDF for the DOCTOR who wrote it', async () => {
+      const res = await baixar(doctorToken).expect(200)
+      expect(Buffer.from(res.body).slice(0, 4).toString('ascii')).toBe('%PDF')
+    })
+
+    // Baixar segue a regra de ler, e ler alcança a especialidade que ele
+    // exerce. É o caso que o histórico do paciente oferece.
+    it('returns a PDF for a DOCTOR from the same specialty', async () => {
+      const res = await baixar(otherDoctorToken).expect(200)
+      expect(Buffer.from(res.body).slice(0, 4).toString('ascii')).toBe('%PDF')
+    })
+
+    it('returns 404 for a DOCTOR from another specialty', async () => {
+      await baixar(otherSpecialtyDoctorToken).expect(404)
+    })
+
+    it('returns 403 for USER', async () => {
+      await baixar(userToken).expect(403)
+    })
+
+    it('returns 404 when the record does not exist', async () => {
+      await request(app.getHttpServer())
+        .get('/medical-records/00000000-0000-0000-0000-000000000000/pdf')
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(404)
+    })
+
+    it('returns 401 without a cookie', async () => {
+      await request(app.getHttpServer()).get(`/medical-records/${recordId}/pdf`).expect(401)
     })
   })
 

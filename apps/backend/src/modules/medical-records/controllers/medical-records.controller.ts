@@ -9,7 +9,9 @@ import {
   Patch,
   Post,
   Query,
+  Res,
 } from '@nestjs/common'
+import { Response } from 'express'
 import { Throttle } from '@nestjs/throttler'
 import {
   CreateMedicalRecordDto,
@@ -27,6 +29,7 @@ import { FindMedicalRecordByIdUseCase } from '../use-cases/find-medical-record-b
 import { FindMedicalRecordByAppointmentUseCase } from '../use-cases/find-medical-record-by-appointment.use-case'
 import { FindMedicalRecordsByPatientUseCase } from '../use-cases/find-medical-records-by-patient.use-case'
 import { DeleteMedicalRecordUseCase } from '../use-cases/delete-medical-record.use-case'
+import { GenerateMedicalRecordPdfUseCase } from '../use-cases/generate-medical-record-pdf.use-case'
 import { MedicalRecordListQueryDto } from '../dto/medical-record-list-query.dto'
 
 @Controller('medical-records')
@@ -38,6 +41,7 @@ export class MedicalRecordsController {
     private readonly findMedicalRecordByAppointmentUseCase: FindMedicalRecordByAppointmentUseCase,
     private readonly findMedicalRecordsByPatientUseCase: FindMedicalRecordsByPatientUseCase,
     private readonly deleteMedicalRecordUseCase: DeleteMedicalRecordUseCase,
+    private readonly generateMedicalRecordPdfUseCase: GenerateMedicalRecordPdfUseCase,
   ) {}
 
   @Post()
@@ -77,6 +81,26 @@ export class MedicalRecordsController {
     @CurrentUser() currentUser: ICurrentUser,
   ): Promise<MedicalRecordResponseDto> {
     return this.findMedicalRecordByIdUseCase.execute(id, currentUser)
+  }
+
+  // Baixar é ler: mesmos papéis e mesmo recorte do `GET /:id`, aplicado dentro
+  // do use-case. Ao contrário de receita e atestado, este PDF não leva
+  // assinatura — é cópia do registro, não documento atestado.
+  @Get(':id/pdf')
+  @Roles(UserRole.ADMIN, UserRole.PROFESSIONAL)
+  async downloadPdf(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: ICurrentUser,
+    @Res({ passthrough: false }) res: Response,
+  ): Promise<void> {
+    const buffer = await this.generateMedicalRecordPdfUseCase.execute(id, currentUser)
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="prontuario-${id}.pdf"`,
+      'Content-Length': buffer.length,
+    })
+    res.end(buffer)
   }
 
   @Patch(':id')

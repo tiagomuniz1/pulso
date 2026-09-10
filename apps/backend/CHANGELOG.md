@@ -1,5 +1,20 @@
 # Changelog — Backend
 
+## [1.15.0] - 2026-09-10
+
+### Added
+- **PDF do prontuário** (`GET /medical-records/:id/pdf`). Era o único documento clínico que só existia dentro da tela — receita, atestado, pedido de exame e indicação de vacina já saíam em PDF
+- **Numeração e identificação nas páginas de continuação** de todo documento em PDF. Quando um documento passava de uma página, a segunda saía anônima: sem dizer de que clínica é nem que existe uma página 1. Aparecem só quando fazem falta, então documento de página única sai exatamente como saía
+
+### Changed
+- **Abrir prontuário por ID passa a seguir a mesma regra da listagem.** Listar o histórico do paciente devolvia ao profissional os próprios prontuários **e** os das especialidades que ele exerce, mas abrir um por ID exigia ser o autor. Na prática, o histórico listava o prontuário do colega da mesma especialidade e clicar nele dava 404, com o diálogo abrindo vazio. Editar continua sendo só do autor
+- **A base comum de PDF foi extraída** para `common/pdf/`. Os quatro geradores eram cópias quase literais — fontes, cabeçalho, rodapé de assinatura, CPF, meses, estilos. O `LogoFetcherService`, antes re-registrado nos quatro módulos, agora vem do `PdfModule`
+
+### Notes
+- **O PDF do prontuário não tem snapshot nem assinatura**, ao contrário dos outros quatro. Aqueles congelam clínica, profissional e CPF porque são documentos *emitidos*, conferidos depois contra o que foi assinado. O prontuário é um *registro*, e o PDF é cópia tirada hoje dele: cabeçalho resolvido ao vivo, sem bloco de assinatura, com quem atendeu identificado no topo
+- É o primeiro documento longo de verdade: 3 campos saem em 1 página, 25 `textarea` em 7. Cada par rótulo/valor é indivisível, para não sobrar rótulo no pé de uma página e valor no topo da outra
+- Os títulos das seções vêm do modelo vivo — só o `sectionKey` de cada campo é congelado. Modelo excluído sai em lista plana
+
 ## [1.14.0] - 2026-09-10
 
 ### Added

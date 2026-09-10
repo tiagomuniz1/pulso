@@ -1,11 +1,7 @@
 import { atestadosService } from '../services/atestados.service'
+import { downloadBlob } from '@/lib/download-blob'
 
 export async function downloadAtestadoPdfUseCase(id: string, fileName?: string): Promise<void> {
   const blob = await atestadosService.downloadPdf(id)
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = fileName ?? `atestado-${id}.pdf`
-  anchor.click()
-  URL.revokeObjectURL(url)
+  downloadBlob(blob, fileName ?? `atestado-${id}.pdf`)
 }

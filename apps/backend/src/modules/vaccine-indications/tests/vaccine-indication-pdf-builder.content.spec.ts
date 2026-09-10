@@ -12,6 +12,7 @@ jest.mock('pdfmake/js/index.js', () => ({
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfmake = require('pdfmake/js/index.js')
 import { CouncilType, VaccineIndicationSnapshot } from '@app/shared'
+import { PdfDocumentService } from '../../../common/pdf/pdf-document.service'
 import { VaccineIndicationPdfBuilderService } from '../services/vaccine-indication-pdf-builder.service'
 
 const makeSnapshot = (overrides: Partial<VaccineIndicationSnapshot> = {}): VaccineIndicationSnapshot => ({
@@ -44,9 +45,21 @@ const makeSnapshot = (overrides: Partial<VaccineIndicationSnapshot> = {}): Vacci
   ...overrides,
 })
 
+async function definitionOf(
+  snapshot: VaccineIndicationSnapshot,
+  logo: string | null = null,
+): Promise<object> {
+  const pdfDocumentService = new PdfDocumentService()
+  pdfDocumentService.onModuleInit()
+  const service = new VaccineIndicationPdfBuilderService(pdfDocumentService)
+  await service.build(snapshot, logo)
+  return (pdfmake.createPdf as jest.Mock).mock.calls.at(-1)![0] as object
+}
+
 async function textOf(snapshot: VaccineIndicationSnapshot, logo: string | null = null): Promise<string> {
-  const service = new VaccineIndicationPdfBuilderService()
-  service.onModuleInit()
+  const pdfDocumentService = new PdfDocumentService()
+  pdfDocumentService.onModuleInit()
+  const service = new VaccineIndicationPdfBuilderService(pdfDocumentService)
   await service.build(snapshot, logo)
   const definition = (pdfmake.createPdf as jest.Mock).mock.calls.at(-1)![0]
   return JSON.stringify(definition)
@@ -156,5 +169,16 @@ describe('VaccineIndicationPdfBuilderService — conteúdo do documento', () => 
   it('ignora logo que não é data URI de imagem', async () => {
     const text = await textOf(makeSnapshot(), 'https://exemplo.com/logo.png')
     expect(text).not.toContain('https://exemplo.com/logo.png')
+  })
+
+  // Os dois `toMatchSnapshot` abaixo são a prova de equivalência da extração da
+  // base comum de PDF (`common/pdf/`): um punhado de `toContain` não mostra que
+  // a definição do documento ficou idêntica, e o snapshot mostra.
+  it('mantém a definição do documento estável', async () => {
+    expect(await definitionOf(makeSnapshot())).toMatchSnapshot()
+  })
+
+  it('mantém a definição do documento estável com observações', async () => {
+    expect(await definitionOf(makeSnapshot({ notes: 'Retorno em 30 dias.' }))).toMatchSnapshot()
   })
 })

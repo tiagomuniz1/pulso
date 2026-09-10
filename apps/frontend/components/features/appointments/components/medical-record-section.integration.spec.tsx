@@ -563,4 +563,54 @@ describe('MedicalRecordSection (integration)', () => {
       await waitFor(() => expect(mockTemplatesService.getById).toHaveBeenCalledWith('tpl-retorno'))
     })
   })
+
+  describe('baixar em PDF', () => {
+    beforeEach(() => {
+      mockMedicalRecordsService.getByAppointment.mockResolvedValue(makeRecordDto() as never)
+    })
+
+    it('pede o PDF do prontuário aberto', async () => {
+      mockMedicalRecordsService.downloadPdf.mockResolvedValue(new Blob(['%PDF']))
+      renderWithProviders(<MedicalRecordSection {...defaultProps} />)
+
+      const botao = await screen.findByTestId('medical-record-download-button')
+      await userEvent.click(botao)
+
+      await waitFor(() =>
+        expect(mockMedicalRecordsService.downloadPdf).toHaveBeenCalledWith('record-uuid'),
+      )
+    })
+
+    // `canEdit` exige consulta não concluída, e é justamente depois de
+    // concluída que a cópia costuma ser pedida.
+    it('continua disponível com a consulta concluída, quando editar já não está', async () => {
+      renderWithProviders(
+        <MedicalRecordSection {...defaultProps} appointmentStatus={AppointmentStatus.COMPLETED} />,
+      )
+
+      expect(await screen.findByTestId('medical-record-download-button')).toBeInTheDocument()
+      expect(screen.queryByTestId('edit-medical-record-button')).not.toBeInTheDocument()
+    })
+
+    // Os outros cinco downloads da casa falham em silêncio: o botão volta ao
+    // normal e nada é dito. Este diz.
+    it('avisa quando o download falha, em vez de falhar calado', async () => {
+      mockMedicalRecordsService.downloadPdf.mockRejectedValue({ status: 403 })
+      renderWithProviders(<MedicalRecordSection {...defaultProps} />)
+
+      await userEvent.click(await screen.findByTestId('medical-record-download-button'))
+
+      expect(await screen.findByTestId('medical-record-download-error')).toBeInTheDocument()
+    })
+
+    it('desabilita o botão enquanto o arquivo não chega', async () => {
+      mockMedicalRecordsService.downloadPdf.mockReturnValue(new Promise(() => {}))
+      renderWithProviders(<MedicalRecordSection {...defaultProps} />)
+
+      const botao = await screen.findByTestId('medical-record-download-button')
+      await userEvent.click(botao)
+
+      await waitFor(() => expect(botao).toBeDisabled())
+    })
+  })
 })

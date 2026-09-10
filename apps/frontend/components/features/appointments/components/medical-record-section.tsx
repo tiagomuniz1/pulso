@@ -10,6 +10,7 @@ import { useTemplates } from '@/components/features/medical-record-templates/hoo
 import { useCreateMedicalRecord } from '@/components/features/medical-records/hooks/use-create-medical-record.hook'
 import { useUpdateMedicalRecord } from '@/components/features/medical-records/hooks/use-update-medical-record.hook'
 import { useProfessional } from '@/components/features/professionals/hooks/use-professional.hook'
+import { useDownloadMedicalRecordPdf } from '@/components/features/medical-records/hooks/use-download-medical-record-pdf.hook'
 import { MedicalRecordForm } from '@/components/features/medical-records/components/medical-record-form'
 import { MedicalRecordView } from '@/components/features/medical-records/components/medical-record-view'
 import { MedicalRecordFormSkeleton } from '@/components/features/medical-records/components/medical-record-form-skeleton'
@@ -104,6 +105,11 @@ export function MedicalRecordSection({
 
   const { mutate: createRecord, isPending: isCreating, error: createError } = useCreateMedicalRecord()
   const { mutate: updateRecord, isPending: isUpdating, error: updateError } = useUpdateMedicalRecord()
+  const {
+    mutate: downloadPdf,
+    isPending: isDownloading,
+    isError: hasDownloadFailed,
+  } = useDownloadMedicalRecordPdf()
 
   // Estável para o efeito do formulário não disparar a cada render.
   const handleDirtyChange = useCallback((dirty: boolean) => setIsFormDirty(dirty), [])
@@ -134,6 +140,7 @@ export function MedicalRecordSection({
 
   const isCompleted = appointmentStatus === AppointmentStatus.COMPLETED
   const canEdit = canManage && !isCompleted && !!record
+
 
   function closeFill() {
     setMode(null)
@@ -243,8 +250,22 @@ export function MedicalRecordSection({
 
       {record && (
         <>
-          {canEdit && (
-            <div className="flex justify-end mb-4">
+          {/* Baixar não passa por `canEdit`: aquele exige consulta não
+              concluída, e é depois de concluída que a cópia costuma ser
+              pedida. Quem enxerga a seção pode baixar — o recorte de verdade
+              está no backend. */}
+          <div className="flex justify-end gap-2 mb-4">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => downloadPdf({ id: record.id })}
+              isLoading={isDownloading}
+              disabled={isDownloading}
+              data-testid="medical-record-download-button"
+            >
+              Baixar PDF
+            </Button>
+            {canEdit && (
               <Button
                 type="button"
                 onClick={() => setMode('fill')}
@@ -252,7 +273,12 @@ export function MedicalRecordSection({
               >
                 Editar prontuário
               </Button>
-            </div>
+            )}
+          </div>
+          {hasDownloadFailed && (
+            <Alert variant="error" data-testid="medical-record-download-error" className="mb-4">
+              Não foi possível baixar o prontuário. Tente novamente.
+            </Alert>
           )}
           <MedicalRecordView record={record} sections={sections} />
         </>

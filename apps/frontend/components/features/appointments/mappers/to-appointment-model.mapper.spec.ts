@@ -16,6 +16,7 @@ const makeDto = (overrides = {}) => ({
   status: AppointmentStatus.SCHEDULED,
   reason: null,
   cancellationReason: null,
+  label: null,
   insuranceType: null,
   seriesId: null,
   seriesSequence: null,

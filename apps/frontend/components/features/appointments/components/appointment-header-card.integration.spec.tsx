@@ -21,6 +21,7 @@ function makeAppointment(overrides: Partial<IAppointmentDetailModel> = {}): IApp
     status: AppointmentStatus.SCHEDULED,
     reason: 'Dor no peito',
     cancellationReason: null,
+    label: null,
     seriesFutureCount: null,
   seriesId: null,
     seriesSequence: null,

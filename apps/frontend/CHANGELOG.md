@@ -1,5 +1,15 @@
 # Changelog — Frontend
 
+## [1.15.0] - 2026-09-10
+
+### Added
+- **Botão de baixar o prontuário em PDF**, em dois lugares: a aba da consulta e o diálogo do histórico do paciente, que até agora abria só para ler. Na aba, baixar vale também com a consulta concluída — é justamente aí que a cópia costuma ser pedida
+- **O erro do download aparece na tela.** Os outros cinco downloads da casa falham em silêncio: o botão volta ao normal e nada é dito
+
+### Fixed
+- **O valor de um campo de prontuário é lido igual em toda tela.** Havia duas formatações divergentes: a tela principal mostrava o valor cru de uma lista de opções (`hipertensao_grau_2`) enquanto o histórico mostrava o rótulo ("Hipertensão grau 2"), e nenhuma das duas formatava data. Agora é uma só, irmã da que o PDF usa no servidor
+- **O `typecheck` do projeto voltou a passar.** Estava em 63 erros, todos em fixtures de teste — `label` faltando desde os rótulos de consulta, `templateId` desde os múltiplos modelos de prontuário. Nada afetava o bundle de produção, mas o portão estava vermelho
+
 ## [1.14.0] - 2026-09-10
 
 ### Added

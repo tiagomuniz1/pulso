@@ -1,43 +1,27 @@
-import { Injectable, OnModuleInit } from '@nestjs/common'
-import * as path from 'path'
-import { COUNCIL_TYPE_LABELS, VaccineIndicationSnapshot } from '@app/shared'
-
-// pdfmake 0.3.x server-side singleton — configured once at module init
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfmake = require('pdfmake/js/index.js')
-
-const MONTHS_PT = [
-  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
-]
+import { Injectable } from '@nestjs/common'
+import { VaccineIndicationSnapshot } from '@app/shared'
+import { buildClinicHeader } from '../../../common/pdf/clinic-header.builder'
+import { formatCpf } from '../../../common/pdf/format-cpf.util'
+import {
+  buildContinuationHeader,
+  buildPageNumberFooter,
+} from '../../../common/pdf/page-furniture.builder'
+import { PdfDocumentService } from '../../../common/pdf/pdf-document.service'
+import { PDF_DEFAULT_STYLE, PDF_PAGE_MARGINS, PDF_STYLES } from '../../../common/pdf/pdf-styles'
+import { buildSignatureFooter } from '../../../common/pdf/signature-footer.builder'
 
 @Injectable()
-export class VaccineIndicationPdfBuilderService implements OnModuleInit {
-  onModuleInit() {
-    const pdfmakeDir = path.dirname(require.resolve('pdfmake/package.json'))
-    const fontDir = path.join(pdfmakeDir, 'build', 'fonts', 'Roboto')
-
-    pdfmake.addFonts({
-      Roboto: {
-        normal: path.join(fontDir, 'Roboto-Regular.ttf'),
-        bold: path.join(fontDir, 'Roboto-Medium.ttf'),
-        italics: path.join(fontDir, 'Roboto-Italic.ttf'),
-        bolditalics: path.join(fontDir, 'Roboto-MediumItalic.ttf'),
-      },
-    })
-    pdfmake.setLocalAccessPolicy(() => true)
-    pdfmake.setUrlAccessPolicy(() => false)
-  }
+export class VaccineIndicationPdfBuilderService {
+  constructor(private readonly pdfDocumentService: PdfDocumentService) {}
 
   async build(snapshot: VaccineIndicationSnapshot, logoBase64: string | null): Promise<Buffer> {
-    const docDefinition = this.buildDocDefinition(snapshot, logoBase64)
-    return pdfmake.createPdf(docDefinition).getBuffer()
+    return this.pdfDocumentService.render(this.buildDocDefinition(snapshot, logoBase64))
   }
 
   private buildDocDefinition(snapshot: VaccineIndicationSnapshot, logoBase64: string | null) {
     const content: object[] = []
 
-    content.push(...this.buildHeader(snapshot, logoBase64))
+    content.push(...buildClinicHeader(snapshot.clinic, logoBase64))
     content.push({
       text: 'Indicação de vacina',
       style: 'title',
@@ -47,51 +31,18 @@ export class VaccineIndicationPdfBuilderService implements OnModuleInit {
     content.push(...this.buildPatient(snapshot))
     content.push(...this.buildItems(snapshot))
     if (snapshot.notes) content.push(...this.buildNotes(snapshot.notes))
-    content.push(...this.buildFooter(snapshot))
+    content.push(...buildSignatureFooter(snapshot))
 
     return {
       content,
-      defaultStyle: { font: 'Roboto', fontSize: 10, lineHeight: 1.4 },
-      styles: {
-        title: { fontSize: 16, bold: true },
-        sectionLabel: { fontSize: 10, bold: true, margin: [0, 12, 0, 4] },
-        clinicName: { fontSize: 13, bold: true },
-        itemName: { fontSize: 11, bold: true },
-        footerCity: { fontSize: 10, margin: [0, 24, 0, 32] },
-      },
-      pageMargins: [50, 50, 50, 50],
+      header: buildContinuationHeader(snapshot.clinic),
+      footer: buildPageNumberFooter(),
+      defaultStyle: PDF_DEFAULT_STYLE,
+      // A indicação lista vacinas com destaque próprio — é o único documento
+      // com um estilo além dos comuns.
+      styles: { ...PDF_STYLES, itemName: { fontSize: 11, bold: true } },
+      pageMargins: PDF_PAGE_MARGINS,
     }
-  }
-
-  private buildHeader(snapshot: VaccineIndicationSnapshot, logoBase64: string | null): object[] {
-    const clinicLines: object[] = [{ text: snapshot.clinic.name, style: 'clinicName' }]
-
-    const addr = snapshot.clinic.address
-    if (addr) {
-      const streetLine = [addr.street, addr.number, addr.complement].filter(Boolean).join(', ')
-      const cityLine = [addr.neighborhood, addr.city, addr.state].filter(Boolean).join(' — ')
-      if (streetLine) clinicLines.push({ text: streetLine, fontSize: 9 })
-      if (cityLine) clinicLines.push({ text: cityLine, fontSize: 9 })
-      if (addr.zipCode) clinicLines.push({ text: `CEP ${addr.zipCode}`, fontSize: 9 })
-    }
-
-    const safeLogoBase64 = logoBase64?.startsWith('data:image/') ? logoBase64 : null
-
-    if (safeLogoBase64) {
-      return [
-        {
-          columns: [{ image: safeLogoBase64, width: 150 }, { stack: clinicLines }],
-          columnGap: 24,
-          margin: [0, 0, 0, 4],
-        },
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 495, y2: 0, lineWidth: 0.5, lineColor: '#cccccc' }] },
-      ]
-    }
-
-    return [
-      { stack: clinicLines, margin: [0, 0, 0, 4] },
-      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 495, y2: 0, lineWidth: 0.5, lineColor: '#cccccc' }] },
-    ]
   }
 
   private buildPatient(snapshot: VaccineIndicationSnapshot): object[] {
@@ -100,7 +51,7 @@ export class VaccineIndicationPdfBuilderService implements OnModuleInit {
         text: [
           { text: 'Paciente: ', bold: true },
           { text: snapshot.patient.name },
-          { text: `  ·  CPF ${this.formatCpf(snapshot.patient.documentNumber)}`, fontSize: 9 },
+          { text: `  ·  CPF ${formatCpf(snapshot.patient.documentNumber)}`, fontSize: 9 },
         ],
         margin: [0, 0, 0, 8],
       },
@@ -133,37 +84,5 @@ export class VaccineIndicationPdfBuilderService implements OnModuleInit {
       { text: 'Observações', style: 'sectionLabel' },
       { text: notes, margin: [0, 0, 0, 8] },
     ]
-  }
-
-  private buildFooter(snapshot: VaccineIndicationSnapshot): object[] {
-    const issuedAt = new Date(snapshot.issuedAt)
-    const city = snapshot.clinic.address?.city ?? null
-    const dateFormatted = `${issuedAt.getUTCDate()} de ${MONTHS_PT[issuedAt.getUTCMonth()]} de ${issuedAt.getUTCFullYear()}`
-    const cityDateLine = city ? `${city}, ${dateFormatted}` : dateFormatted
-
-    const councilLabel = COUNCIL_TYPE_LABELS[snapshot.professional.councilType]
-
-    const footerStack: object[] = [
-      { text: cityDateLine, style: 'footerCity' },
-      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5 }], margin: [0, 0, 0, 4] },
-      { text: snapshot.professional.name, bold: true },
-      {
-        text: `${councilLabel} ${snapshot.professional.registrationNumber}${snapshot.professional.registryNumber ? ` · RQE ${snapshot.professional.registryNumber}` : ''}`,
-        fontSize: 9,
-      },
-    ]
-
-    if (snapshot.professional.specialtyName) {
-      footerStack.push({ text: snapshot.professional.specialtyName, fontSize: 9 })
-    }
-
-    return footerStack
-  }
-
-  private formatCpf(cpf: string | null): string {
-    if (!cpf) return 'Não informado'
-    const digits = cpf.replace(/\D/g, '')
-    if (digits.length !== 11) return cpf
-    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
   }
 }

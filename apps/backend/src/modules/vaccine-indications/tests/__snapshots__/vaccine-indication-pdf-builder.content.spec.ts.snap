@@ -1,0 +1,406 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`VaccineIndicationPdfBuilderService — conteúdo do documento mantém a definição do documento estável 1`] = `
+{
+  "content": [
+    {
+      "margin": [
+        0,
+        0,
+        0,
+        4,
+      ],
+      "stack": [
+        {
+          "style": "clinicName",
+          "text": "Clínica Pulso",
+        },
+        {
+          "fontSize": 9,
+          "text": "Rua das Flores, 100, Sala 2",
+        },
+        {
+          "fontSize": 9,
+          "text": "Centro — São Paulo — SP",
+        },
+        {
+          "fontSize": 9,
+          "text": "CEP 01001000",
+        },
+      ],
+    },
+    {
+      "canvas": [
+        {
+          "lineColor": "#cccccc",
+          "lineWidth": 0.5,
+          "type": "line",
+          "x1": 0,
+          "x2": 495,
+          "y1": 0,
+          "y2": 0,
+        },
+      ],
+    },
+    {
+      "alignment": "center",
+      "margin": [
+        0,
+        20,
+        0,
+        16,
+      ],
+      "style": "title",
+      "text": "Indicação de vacina",
+    },
+    {
+      "margin": [
+        0,
+        0,
+        0,
+        8,
+      ],
+      "text": [
+        {
+          "bold": true,
+          "text": "Paciente: ",
+        },
+        {
+          "text": "Clara Monteiro Alves",
+        },
+        {
+          "fontSize": 9,
+          "text": "  ·  CPF 123.456.789-01",
+        },
+      ],
+    },
+    {
+      "margin": [
+        0,
+        0,
+        0,
+        4,
+      ],
+      "text": "Indico as vacinas abaixo, a serem aplicadas em serviço de imunização:",
+    },
+    {
+      "margin": [
+        0,
+        10,
+        0,
+        0,
+      ],
+      "style": "itemName",
+      "text": "1. Tríplice viral (SCR)",
+    },
+    {
+      "fontSize": 9,
+      "margin": [
+        12,
+        2,
+        0,
+        0,
+      ],
+      "text": "1ª dose",
+    },
+    {
+      "margin": [
+        12,
+        2,
+        0,
+        0,
+      ],
+      "text": "Aplicar em serviço de imunização",
+    },
+    {
+      "style": "footerCity",
+      "text": "São Paulo, 4 de setembro de 2026",
+    },
+    {
+      "canvas": [
+        {
+          "lineWidth": 0.5,
+          "type": "line",
+          "x1": 0,
+          "x2": 200,
+          "y1": 0,
+          "y2": 0,
+        },
+      ],
+      "margin": [
+        0,
+        0,
+        0,
+        4,
+      ],
+    },
+    {
+      "bold": true,
+      "text": "Dra. Helena Vasconcelos",
+    },
+    {
+      "fontSize": 9,
+      "text": "CRM 12345/SP",
+    },
+    {
+      "fontSize": 9,
+      "text": "Ginecologia e Obstetrícia",
+    },
+  ],
+  "defaultStyle": {
+    "font": "Roboto",
+    "fontSize": 10,
+    "lineHeight": 1.4,
+  },
+  "footer": [Function],
+  "header": [Function],
+  "pageMargins": [
+    50,
+    50,
+    50,
+    50,
+  ],
+  "styles": {
+    "clinicName": {
+      "bold": true,
+      "fontSize": 13,
+    },
+    "footerCity": {
+      "fontSize": 10,
+      "margin": [
+        0,
+        24,
+        0,
+        32,
+      ],
+    },
+    "itemName": {
+      "bold": true,
+      "fontSize": 11,
+    },
+    "sectionLabel": {
+      "bold": true,
+      "fontSize": 10,
+      "margin": [
+        0,
+        12,
+        0,
+        4,
+      ],
+    },
+    "title": {
+      "bold": true,
+      "fontSize": 16,
+    },
+  },
+}
+`;
+
+exports[`VaccineIndicationPdfBuilderService — conteúdo do documento mantém a definição do documento estável com observações 1`] = `
+{
+  "content": [
+    {
+      "margin": [
+        0,
+        0,
+        0,
+        4,
+      ],
+      "stack": [
+        {
+          "style": "clinicName",
+          "text": "Clínica Pulso",
+        },
+        {
+          "fontSize": 9,
+          "text": "Rua das Flores, 100, Sala 2",
+        },
+        {
+          "fontSize": 9,
+          "text": "Centro — São Paulo — SP",
+        },
+        {
+          "fontSize": 9,
+          "text": "CEP 01001000",
+        },
+      ],
+    },
+    {
+      "canvas": [
+        {
+          "lineColor": "#cccccc",
+          "lineWidth": 0.5,
+          "type": "line",
+          "x1": 0,
+          "x2": 495,
+          "y1": 0,
+          "y2": 0,
+        },
+      ],
+    },
+    {
+      "alignment": "center",
+      "margin": [
+        0,
+        20,
+        0,
+        16,
+      ],
+      "style": "title",
+      "text": "Indicação de vacina",
+    },
+    {
+      "margin": [
+        0,
+        0,
+        0,
+        8,
+      ],
+      "text": [
+        {
+          "bold": true,
+          "text": "Paciente: ",
+        },
+        {
+          "text": "Clara Monteiro Alves",
+        },
+        {
+          "fontSize": 9,
+          "text": "  ·  CPF 123.456.789-01",
+        },
+      ],
+    },
+    {
+      "margin": [
+        0,
+        0,
+        0,
+        4,
+      ],
+      "text": "Indico as vacinas abaixo, a serem aplicadas em serviço de imunização:",
+    },
+    {
+      "margin": [
+        0,
+        10,
+        0,
+        0,
+      ],
+      "style": "itemName",
+      "text": "1. Tríplice viral (SCR)",
+    },
+    {
+      "fontSize": 9,
+      "margin": [
+        12,
+        2,
+        0,
+        0,
+      ],
+      "text": "1ª dose",
+    },
+    {
+      "margin": [
+        12,
+        2,
+        0,
+        0,
+      ],
+      "text": "Aplicar em serviço de imunização",
+    },
+    {
+      "style": "sectionLabel",
+      "text": "Observações",
+    },
+    {
+      "margin": [
+        0,
+        0,
+        0,
+        8,
+      ],
+      "text": "Retorno em 30 dias.",
+    },
+    {
+      "style": "footerCity",
+      "text": "São Paulo, 4 de setembro de 2026",
+    },
+    {
+      "canvas": [
+        {
+          "lineWidth": 0.5,
+          "type": "line",
+          "x1": 0,
+          "x2": 200,
+          "y1": 0,
+          "y2": 0,
+        },
+      ],
+      "margin": [
+        0,
+        0,
+        0,
+        4,
+      ],
+    },
+    {
+      "bold": true,
+      "text": "Dra. Helena Vasconcelos",
+    },
+    {
+      "fontSize": 9,
+      "text": "CRM 12345/SP",
+    },
+    {
+      "fontSize": 9,
+      "text": "Ginecologia e Obstetrícia",
+    },
+  ],
+  "defaultStyle": {
+    "font": "Roboto",
+    "fontSize": 10,
+    "lineHeight": 1.4,
+  },
+  "footer": [Function],
+  "header": [Function],
+  "pageMargins": [
+    50,
+    50,
+    50,
+    50,
+  ],
+  "styles": {
+    "clinicName": {
+      "bold": true,
+      "fontSize": 13,
+    },
+    "footerCity": {
+      "fontSize": 10,
+      "margin": [
+        0,
+        24,
+        0,
+        32,
+      ],
+    },
+    "itemName": {
+      "bold": true,
+      "fontSize": 11,
+    },
+    "sectionLabel": {
+      "bold": true,
+      "fontSize": 10,
+      "margin": [
+        0,
+        12,
+        0,
+        4,
+      ],
+    },
+    "title": {
+      "bold": true,
+      "fontSize": 16,
+    },
+  },
+}
+`;

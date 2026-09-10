@@ -1,102 +1,48 @@
-import { Injectable, OnModuleInit } from '@nestjs/common'
-import * as path from 'path'
-import { COUNCIL_TYPE_LABELS, MedicalCertificateSnapshot, MedicalCertificateType } from '@app/shared'
-
-// pdfmake 0.3.x server-side singleton — configured once at module init
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfmake = require('pdfmake/js/index.js')
-
-const MONTHS_PT = [
-  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
-]
+import { Injectable } from '@nestjs/common'
+import { MedicalCertificateSnapshot, MedicalCertificateType } from '@app/shared'
+import { buildClinicHeader } from '../../../common/pdf/clinic-header.builder'
+import { formatCpf } from '../../../common/pdf/format-cpf.util'
+import { formatDateBR } from '../../../common/pdf/format-date.util'
+import {
+  buildContinuationHeader,
+  buildPageNumberFooter,
+} from '../../../common/pdf/page-furniture.builder'
+import { PdfDocumentService } from '../../../common/pdf/pdf-document.service'
+import { PDF_DEFAULT_STYLE, PDF_PAGE_MARGINS, PDF_STYLES } from '../../../common/pdf/pdf-styles'
+import { buildSignatureFooter } from '../../../common/pdf/signature-footer.builder'
 
 @Injectable()
-export class MedicalCertificatePdfBuilderService implements OnModuleInit {
-  onModuleInit() {
-    const pdfmakeDir = path.dirname(require.resolve('pdfmake/package.json'))
-    const fontDir = path.join(pdfmakeDir, 'build', 'fonts', 'Roboto')
-
-    pdfmake.addFonts({
-      Roboto: {
-        normal: path.join(fontDir, 'Roboto-Regular.ttf'),
-        bold: path.join(fontDir, 'Roboto-Medium.ttf'),
-        italics: path.join(fontDir, 'Roboto-Italic.ttf'),
-        bolditalics: path.join(fontDir, 'Roboto-MediumItalic.ttf'),
-      },
-    })
-    pdfmake.setLocalAccessPolicy(() => true)
-    pdfmake.setUrlAccessPolicy(() => false)
-  }
+export class MedicalCertificatePdfBuilderService {
+  constructor(private readonly pdfDocumentService: PdfDocumentService) {}
 
   async build(snapshot: MedicalCertificateSnapshot, logoBase64: string | null): Promise<Buffer> {
-    const docDefinition = this.buildDocDefinition(snapshot, logoBase64)
-    return pdfmake.createPdf(docDefinition).getBuffer()
+    return this.pdfDocumentService.render(this.buildDocDefinition(snapshot, logoBase64))
   }
 
   private buildDocDefinition(snapshot: MedicalCertificateSnapshot, logoBase64: string | null) {
     const content: object[] = []
 
-    content.push(...this.buildHeader(snapshot, logoBase64))
+    content.push(...buildClinicHeader(snapshot.clinic, logoBase64))
     content.push({ text: 'Atestado', style: 'title', alignment: 'center', margin: [0, 20, 0, 16] })
     content.push(...this.buildBody(snapshot))
     if (snapshot.observations) content.push(...this.buildObservations(snapshot.observations))
-    content.push(...this.buildFooter(snapshot))
+    content.push(...buildSignatureFooter(snapshot))
 
     return {
       content,
-      defaultStyle: { font: 'Roboto', fontSize: 10, lineHeight: 1.4 },
-      styles: {
-        title: { fontSize: 16, bold: true },
-        sectionLabel: { fontSize: 10, bold: true, margin: [0, 12, 0, 4] },
-        clinicName: { fontSize: 13, bold: true },
-        footerCity: { fontSize: 10, margin: [0, 24, 0, 32] },
-      },
-      pageMargins: [50, 50, 50, 50],
+      header: buildContinuationHeader(snapshot.clinic),
+      footer: buildPageNumberFooter(),
+      defaultStyle: PDF_DEFAULT_STYLE,
+      styles: PDF_STYLES,
+      pageMargins: PDF_PAGE_MARGINS,
     }
-  }
-
-  private buildHeader(snapshot: MedicalCertificateSnapshot, logoBase64: string | null): object[] {
-    const clinicLines: object[] = [
-      { text: snapshot.clinic.name, style: 'clinicName' },
-    ]
-
-    const addr = snapshot.clinic.address
-    if (addr) {
-      const streetLine = [addr.street, addr.number, addr.complement].filter(Boolean).join(', ')
-      const cityLine = [addr.neighborhood, addr.city, addr.state].filter(Boolean).join(' — ')
-      if (streetLine) clinicLines.push({ text: streetLine, fontSize: 9 })
-      if (cityLine) clinicLines.push({ text: cityLine, fontSize: 9 })
-      if (addr.zipCode) clinicLines.push({ text: `CEP ${addr.zipCode}`, fontSize: 9 })
-    }
-
-    const safeLogoBase64 = logoBase64?.startsWith('data:image/') ? logoBase64 : null
-
-    if (safeLogoBase64) {
-      return [
-        {
-          columns: [
-            { image: safeLogoBase64, width: 150 },
-            { stack: clinicLines },
-          ],
-          columnGap: 24,
-          margin: [0, 0, 0, 4],
-        },
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 495, y2: 0, lineWidth: 0.5, lineColor: '#cccccc' }] },
-      ]
-    }
-
-    return [
-      { stack: clinicLines, margin: [0, 0, 0, 4] },
-      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 495, y2: 0, lineWidth: 0.5, lineColor: '#cccccc' }] },
-    ]
   }
 
   private buildBody(snapshot: MedicalCertificateSnapshot): object[] {
-    const cpfFormatted = this.formatCpf(snapshot.patient.documentNumber)
+    const cpfFormatted = formatCpf(snapshot.patient.documentNumber)
 
     if (snapshot.type === MedicalCertificateType.LEAVE) {
-      const startDateFormatted = this.formatDateBR(snapshot.startDate!)
+      const startDateFormatted = formatDateBR(snapshot.startDate!)
       const dayLabel = snapshot.daysOff === 1 ? 'dia' : 'dias'
       const lines: object[] = [
         {
@@ -110,7 +56,7 @@ export class MedicalCertificatePdfBuilderService implements OnModuleInit {
       return lines
     }
 
-    const attendanceDateFormatted = this.formatDateBR(snapshot.attendanceDate!)
+    const attendanceDateFormatted = formatDateBR(snapshot.attendanceDate!)
     return [
       {
         text: `Atesto, para os devidos fins, que o(a) paciente ${snapshot.patient.name} (CPF ${cpfFormatted}) compareceu a esta consulta em ${attendanceDateFormatted}, no período das ${snapshot.checkInTime} às ${snapshot.checkOutTime}.`,
@@ -124,44 +70,5 @@ export class MedicalCertificatePdfBuilderService implements OnModuleInit {
       { text: 'Observações', style: 'sectionLabel' },
       { text: observations, margin: [0, 0, 0, 8] },
     ]
-  }
-
-  private buildFooter(snapshot: MedicalCertificateSnapshot): object[] {
-    const issuedAt = new Date(snapshot.issuedAt)
-    const city = snapshot.clinic.address?.city ?? null
-    const dateFormatted = `${issuedAt.getUTCDate()} de ${MONTHS_PT[issuedAt.getUTCMonth()]} de ${issuedAt.getUTCFullYear()}`
-    const cityDateLine = city ? `${city}, ${dateFormatted}` : dateFormatted
-
-    const specialtyLine = snapshot.professional.specialtyName
-      ? { text: snapshot.professional.specialtyName, fontSize: 9 }
-      : null
-
-    const councilLabel = COUNCIL_TYPE_LABELS[snapshot.professional.councilType]
-
-    const footerStack: object[] = [
-      { text: cityDateLine, style: 'footerCity' },
-      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5 }], margin: [0, 0, 0, 4] },
-      { text: snapshot.professional.name, bold: true },
-      {
-        text: `${councilLabel} ${snapshot.professional.registrationNumber}${snapshot.professional.registryNumber ? ` · RQE ${snapshot.professional.registryNumber}` : ''}`,
-        fontSize: 9,
-      },
-    ]
-
-    if (specialtyLine) footerStack.push(specialtyLine)
-
-    return footerStack
-  }
-
-  private formatDateBR(isoDate: string): string {
-    const [year, month, day] = isoDate.split('-')
-    return `${day}/${month}/${year}`
-  }
-
-  private formatCpf(cpf: string | null): string {
-    if (!cpf) return 'Não informado'
-    const digits = cpf.replace(/\D/g, '')
-    if (digits.length !== 11) return cpf
-    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
   }
 }

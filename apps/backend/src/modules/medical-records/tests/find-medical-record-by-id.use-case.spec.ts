@@ -79,13 +79,50 @@ describe('FindMedicalRecordByIdUseCase', () => {
     await expect(useCase.execute(recordId, adminUser)).rejects.toThrow(NotFoundException)
   })
 
-  it('throws NotFoundException when DOCTOR accesses another doctor record', async () => {
-    mockProfessionalsRepository.findByUserId.mockResolvedValue({ id: 'other-doctor' } as any)
+  it('throws NotFoundException when DOCTOR accesses a record from a specialty they do not practise', async () => {
+    mockProfessionalsRepository.findByUserId.mockResolvedValue({
+      id: 'other-doctor',
+      professionalSpecialties: [{ specialtyId: 'another-specialty-uuid' }],
+    } as any)
     await expect(useCase.execute(recordId, doctorUser)).rejects.toThrow(NotFoundException)
   })
 
   it('throws NotFoundException when DOCTOR has no profile', async () => {
     mockProfessionalsRepository.findByUserId.mockResolvedValue(null)
     await expect(useCase.execute(recordId, doctorUser)).rejects.toThrow(NotFoundException)
+  })
+
+  // A regra que alinha o abrir-por-ID com a listagem. Sem isto, o histórico do
+  // paciente lista o prontuário do colega da mesma especialidade e abri-lo cai
+  // em 404 — o diálogo abre vazio, sem erro e sem explicação.
+  it('returns a colleague record when DOCTOR practises the same specialty', async () => {
+    mockProfessionalsRepository.findByUserId.mockResolvedValue({
+      id: 'other-doctor',
+      professionalSpecialties: [{ specialtyId: 'specialty-uuid' }],
+    } as any)
+
+    const result = await useCase.execute(recordId, doctorUser)
+
+    expect(result.id).toBe(recordId)
+  })
+
+  // Generalista não tem especialidade, e `NULL IN (...)` não casa com nada em
+  // SQL: na listagem ele só chega ao autor. Aqui tem de ser igual, senão a
+  // divergência que este caso corrige volta pelo outro lado.
+  it('does not expose a generalist record to a colleague, only to its author', async () => {
+    mockMedicalRecordsRepository.findById.mockResolvedValue(makeRecord({ specialtyId: null }) as any)
+    mockProfessionalsRepository.findByUserId.mockResolvedValue({
+      id: 'other-doctor',
+      professionalSpecialties: [],
+    } as any)
+
+    await expect(useCase.execute(recordId, doctorUser)).rejects.toThrow(NotFoundException)
+
+    mockProfessionalsRepository.findByUserId.mockResolvedValue({
+      id: professionalId,
+      professionalSpecialties: [],
+    } as any)
+
+    await expect(useCase.execute(recordId, doctorUser)).resolves.toMatchObject({ id: recordId })
   })
 })

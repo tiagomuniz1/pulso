@@ -1,4 +1,5 @@
 import { ExamRequestPdfBuilderService } from '../services/exam-request-pdf-builder.service'
+import { PdfDocumentService } from '../../../common/pdf/pdf-document.service'
 import { CouncilType, ExamRequestSnapshot } from '@app/shared'
 
 const makeSnapshot = (overrides: Partial<ExamRequestSnapshot> = {}): ExamRequestSnapshot => ({
@@ -27,8 +28,9 @@ describe('ExamRequestPdfBuilderService', () => {
   let service: ExamRequestPdfBuilderService
 
   beforeEach(() => {
-    service = new ExamRequestPdfBuilderService()
-    service.onModuleInit()
+    const pdfDocumentService = new PdfDocumentService()
+    pdfDocumentService.onModuleInit()
+    service = new ExamRequestPdfBuilderService(pdfDocumentService)
   })
 
   it('generates a valid PDF buffer (starts with %PDF)', async () => {

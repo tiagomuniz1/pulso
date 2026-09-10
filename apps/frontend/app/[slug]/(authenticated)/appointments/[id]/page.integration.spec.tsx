@@ -95,6 +95,7 @@ const makeAppointmentDto = (overrides: object = {}) => ({
   insuranceType: null,
   reason: null,
   cancellationReason: null,
+  label: null,
   // Campos de série: null porque a consulta não pertence a nenhuma.
   seriesFutureCount: null,
   seriesId: null,

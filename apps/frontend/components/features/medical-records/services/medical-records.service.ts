@@ -44,4 +44,6 @@ export const medicalRecordsService = {
 
   update: (id: string, data: UpdateMedicalRecordDto) =>
     apiClient.patch<MedicalRecordResponseDto>(`/medical-records/${id}`, data),
+
+  downloadPdf: (id: string) => apiClient.getBlob(`/medical-records/${id}/pdf`),
 }

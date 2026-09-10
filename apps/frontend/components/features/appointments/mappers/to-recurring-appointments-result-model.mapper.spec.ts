@@ -17,6 +17,7 @@ const makeAppointmentDto = (date: string, sequence: number) => ({
   insuranceType: null,
   reason: null,
   cancellationReason: null,
+  label: null,
   seriesId: 'series-uuid',
   seriesSequence: sequence,
   seriesTotalOccurrences: 2,

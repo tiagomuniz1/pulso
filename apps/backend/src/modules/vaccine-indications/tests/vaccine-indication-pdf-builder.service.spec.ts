@@ -2,6 +2,7 @@
 // O conteúdo é asserido em vaccine-indication-pdf-builder.content.spec.ts.
 import { CouncilType, VaccineIndicationSnapshot } from '@app/shared'
 import { VaccineIndicationPdfBuilderService } from '../services/vaccine-indication-pdf-builder.service'
+import { PdfDocumentService } from '../../../common/pdf/pdf-document.service'
 
 const snapshot: VaccineIndicationSnapshot = {
   issuedAt: '2026-09-04T10:00:00.000Z',
@@ -20,8 +21,9 @@ describe('VaccineIndicationPdfBuilderService', () => {
   let service: VaccineIndicationPdfBuilderService
 
   beforeEach(() => {
-    service = new VaccineIndicationPdfBuilderService()
-    service.onModuleInit()
+    const pdfDocumentService = new PdfDocumentService()
+    pdfDocumentService.onModuleInit()
+    service = new VaccineIndicationPdfBuilderService(pdfDocumentService)
   })
 
   it('gera um PDF válido', async () => {
