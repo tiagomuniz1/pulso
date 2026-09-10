@@ -34,8 +34,9 @@ yarn workspace @app/backend migration:run
 yarn workspace @app/backend migration:generate src/database/migrations/nome_da_migration
 yarn workspace @app/backend migration:revert
 yarn workspace @app/backend seed:run
-NODE_ENV=test yarn workspace @app/backend seed:run
 ```
+
+> **Não semeie o schema `test`.** Ele é da suíte de integração, que cria e desmonta o próprio cenário a cada spec, e as migrations que ela precisa são aplicadas no `globalSetup`. O `seed:run` é de desenvolvimento e **recusa** rodar ali: apontá-lo para o `test` renomeia a clínica que os specs usam e derruba dezenas de testes — num spec diferente a cada execução, porque o schema sobrevive entre elas.
 
 ### Desenvolvimento
 
