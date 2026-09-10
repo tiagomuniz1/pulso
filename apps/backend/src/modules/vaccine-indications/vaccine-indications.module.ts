@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { CacheModule } from '../../cache/cache.module'
-import { LogoFetcherService } from '../../common/services/logo-fetcher.service'
+import { PdfModule } from '../../common/pdf/pdf.module'
 import { AppointmentsModule } from '../appointments/appointments.module'
 import { ProfessionalsModule } from '../professionals/professionals.module'
 import { PatientsModule } from '../patients/patients.module'
@@ -20,6 +20,7 @@ import { VaccineIndicationPdfBuilderService } from './services/vaccine-indicatio
 
 @Module({
   imports: [
+    PdfModule,
     TypeOrmModule.forFeature([VaccineIndication]),
     CacheModule,
     AppointmentsModule,
@@ -35,7 +36,6 @@ import { VaccineIndicationPdfBuilderService } from './services/vaccine-indicatio
     FindVaccineIndicationByIdUseCase,
     DeleteVaccineIndicationUseCase,
     GenerateVaccineIndicationPdfUseCase,
-    LogoFetcherService,
     VaccineIndicationPdfBuilderService,
     { provide: IVaccineIndicationsRepository, useClass: VaccineIndicationsRepository },
   ],

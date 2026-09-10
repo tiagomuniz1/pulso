@@ -1,0 +1,371 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ExamRequestPdfBuilderService — conteúdo do documento mantém a definição do documento estável 1`] = `
+{
+  "content": [
+    {
+      "margin": [
+        0,
+        0,
+        0,
+        4,
+      ],
+      "stack": [
+        {
+          "style": "clinicName",
+          "text": "Clínica Pulso",
+        },
+        {
+          "fontSize": 9,
+          "text": "Rua das Flores, 100, Sala 2",
+        },
+        {
+          "fontSize": 9,
+          "text": "Centro — São Paulo — SP",
+        },
+        {
+          "fontSize": 9,
+          "text": "CEP 01001000",
+        },
+      ],
+    },
+    {
+      "canvas": [
+        {
+          "lineColor": "#cccccc",
+          "lineWidth": 0.5,
+          "type": "line",
+          "x1": 0,
+          "x2": 495,
+          "y1": 0,
+          "y2": 0,
+        },
+      ],
+    },
+    {
+      "alignment": "center",
+      "margin": [
+        0,
+        20,
+        0,
+        16,
+      ],
+      "style": "title",
+      "text": "SOLICITAÇÃO DE EXAMES",
+    },
+    {
+      "style": "sectionLabel",
+      "text": "Paciente",
+    },
+    {
+      "text": "Clara Monteiro Alves",
+    },
+    {
+      "margin": [
+        0,
+        0,
+        0,
+        8,
+      ],
+      "text": "CPF: 123.456.789-01",
+    },
+    {
+      "style": "sectionLabel",
+      "text": "Exames Solicitados",
+    },
+    {
+      "margin": [
+        0,
+        0,
+        0,
+        8,
+      ],
+      "stack": [
+        {
+          "bold": true,
+          "text": "1. Hemograma completo",
+        },
+        {
+          "margin": [
+            12,
+            2,
+            0,
+            0,
+          ],
+          "text": "Jejum de 8 horas",
+        },
+      ],
+    },
+    {
+      "style": "footerCity",
+      "text": "São Paulo, 4 de setembro de 2026",
+    },
+    {
+      "canvas": [
+        {
+          "lineWidth": 0.5,
+          "type": "line",
+          "x1": 0,
+          "x2": 200,
+          "y1": 0,
+          "y2": 0,
+        },
+      ],
+      "margin": [
+        0,
+        0,
+        0,
+        4,
+      ],
+    },
+    {
+      "bold": true,
+      "text": "Dra. Helena Vasconcelos",
+    },
+    {
+      "fontSize": 9,
+      "text": "CRM 12345/SP",
+    },
+    {
+      "fontSize": 9,
+      "text": "Ginecologia e Obstetrícia",
+    },
+  ],
+  "defaultStyle": {
+    "font": "Roboto",
+    "fontSize": 10,
+    "lineHeight": 1.4,
+  },
+  "pageMargins": [
+    50,
+    50,
+    50,
+    50,
+  ],
+  "styles": {
+    "clinicName": {
+      "bold": true,
+      "fontSize": 13,
+    },
+    "footerCity": {
+      "fontSize": 10,
+      "margin": [
+        0,
+        24,
+        0,
+        32,
+      ],
+    },
+    "sectionLabel": {
+      "bold": true,
+      "fontSize": 10,
+      "margin": [
+        0,
+        12,
+        0,
+        4,
+      ],
+    },
+    "title": {
+      "bold": true,
+      "fontSize": 16,
+    },
+  },
+}
+`;
+
+exports[`ExamRequestPdfBuilderService — conteúdo do documento mantém a definição do documento estável com logo e observações gerais 1`] = `
+{
+  "content": [
+    {
+      "columnGap": 24,
+      "columns": [
+        {
+          "image": "data:image/png;base64,AAAA",
+          "width": 150,
+        },
+        {
+          "stack": [
+            {
+              "style": "clinicName",
+              "text": "Clínica Pulso",
+            },
+            {
+              "fontSize": 9,
+              "text": "Rua das Flores, 100, Sala 2",
+            },
+            {
+              "fontSize": 9,
+              "text": "Centro — São Paulo — SP",
+            },
+            {
+              "fontSize": 9,
+              "text": "CEP 01001000",
+            },
+          ],
+        },
+      ],
+      "margin": [
+        0,
+        0,
+        0,
+        4,
+      ],
+    },
+    {
+      "canvas": [
+        {
+          "lineColor": "#cccccc",
+          "lineWidth": 0.5,
+          "type": "line",
+          "x1": 0,
+          "x2": 495,
+          "y1": 0,
+          "y2": 0,
+        },
+      ],
+    },
+    {
+      "alignment": "center",
+      "margin": [
+        0,
+        20,
+        0,
+        16,
+      ],
+      "style": "title",
+      "text": "SOLICITAÇÃO DE EXAMES",
+    },
+    {
+      "style": "sectionLabel",
+      "text": "Paciente",
+    },
+    {
+      "text": "Clara Monteiro Alves",
+    },
+    {
+      "margin": [
+        0,
+        0,
+        0,
+        8,
+      ],
+      "text": "CPF: 123.456.789-01",
+    },
+    {
+      "style": "sectionLabel",
+      "text": "Exames Solicitados",
+    },
+    {
+      "margin": [
+        0,
+        0,
+        0,
+        8,
+      ],
+      "stack": [
+        {
+          "bold": true,
+          "text": "1. Hemograma completo",
+        },
+        {
+          "margin": [
+            12,
+            2,
+            0,
+            0,
+          ],
+          "text": "Jejum de 8 horas",
+        },
+      ],
+    },
+    {
+      "style": "sectionLabel",
+      "text": "Observações gerais",
+    },
+    {
+      "margin": [
+        0,
+        0,
+        0,
+        8,
+      ],
+      "text": "Trazer exames anteriores.",
+    },
+    {
+      "style": "footerCity",
+      "text": "São Paulo, 4 de setembro de 2026",
+    },
+    {
+      "canvas": [
+        {
+          "lineWidth": 0.5,
+          "type": "line",
+          "x1": 0,
+          "x2": 200,
+          "y1": 0,
+          "y2": 0,
+        },
+      ],
+      "margin": [
+        0,
+        0,
+        0,
+        4,
+      ],
+    },
+    {
+      "bold": true,
+      "text": "Dra. Helena Vasconcelos",
+    },
+    {
+      "fontSize": 9,
+      "text": "CRM 12345/SP",
+    },
+    {
+      "fontSize": 9,
+      "text": "Ginecologia e Obstetrícia",
+    },
+  ],
+  "defaultStyle": {
+    "font": "Roboto",
+    "fontSize": 10,
+    "lineHeight": 1.4,
+  },
+  "pageMargins": [
+    50,
+    50,
+    50,
+    50,
+  ],
+  "styles": {
+    "clinicName": {
+      "bold": true,
+      "fontSize": 13,
+    },
+    "footerCity": {
+      "fontSize": 10,
+      "margin": [
+        0,
+        24,
+        0,
+        32,
+      ],
+    },
+    "sectionLabel": {
+      "bold": true,
+      "fontSize": 10,
+      "margin": [
+        0,
+        12,
+        0,
+        4,
+      ],
+    },
+    "title": {
+      "bold": true,
+      "fontSize": 16,
+    },
+  },
+}
+`;

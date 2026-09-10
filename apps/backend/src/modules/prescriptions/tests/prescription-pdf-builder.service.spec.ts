@@ -1,4 +1,5 @@
 import { PrescriptionPdfBuilderService } from '../services/prescription-pdf-builder.service'
+import { PdfDocumentService } from '../../../common/pdf/pdf-document.service'
 import { CouncilType, PrescriptionSnapshot } from '@app/shared'
 
 const VERIFY_URL = 'http://localhost:3000/clinica/verify/prescriptions/' + 'a'.repeat(64)
@@ -31,8 +32,9 @@ describe('PrescriptionPdfBuilderService', () => {
   let service: PrescriptionPdfBuilderService
 
   beforeEach(() => {
-    service = new PrescriptionPdfBuilderService()
-    service.onModuleInit()
+    const pdfDocumentService = new PdfDocumentService()
+    pdfDocumentService.onModuleInit()
+    service = new PrescriptionPdfBuilderService(pdfDocumentService)
   })
 
   it('generates a valid PDF buffer (starts with %PDF)', async () => {

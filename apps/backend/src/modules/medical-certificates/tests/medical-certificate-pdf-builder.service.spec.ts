@@ -1,4 +1,5 @@
 import { MedicalCertificatePdfBuilderService } from '../services/medical-certificate-pdf-builder.service'
+import { PdfDocumentService } from '../../../common/pdf/pdf-document.service'
 import { CouncilType, MedicalCertificateSnapshot, MedicalCertificateType } from '@app/shared'
 
 const makeSnapshot = (overrides: Partial<MedicalCertificateSnapshot> = {}): MedicalCertificateSnapshot => ({
@@ -45,8 +46,9 @@ describe('MedicalCertificatePdfBuilderService', () => {
   let service: MedicalCertificatePdfBuilderService
 
   beforeEach(() => {
-    service = new MedicalCertificatePdfBuilderService()
-    service.onModuleInit()
+    const pdfDocumentService = new PdfDocumentService()
+    pdfDocumentService.onModuleInit()
+    service = new MedicalCertificatePdfBuilderService(pdfDocumentService)
   })
 
   it('generates a valid PDF buffer for LEAVE (starts with %PDF)', async () => {

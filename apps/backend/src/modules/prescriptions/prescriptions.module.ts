@@ -16,11 +16,12 @@ import { GeneratePrescriptionPdfUseCase } from './use-cases/generate-prescriptio
 import { VerifyPrescriptionUseCase } from './use-cases/verify-prescription.use-case'
 import { IPrescriptionsRepository } from './repositories/prescriptions.repository.interface'
 import { PrescriptionsRepository } from './repositories/prescriptions.repository'
-import { LogoFetcherService } from '../../common/services/logo-fetcher.service'
+import { PdfModule } from '../../common/pdf/pdf.module'
 import { PrescriptionPdfBuilderService } from './services/prescription-pdf-builder.service'
 
 @Module({
   imports: [
+    PdfModule,
     TypeOrmModule.forFeature([Prescription]),
     CacheModule,
     AppointmentsModule,
@@ -37,7 +38,6 @@ import { PrescriptionPdfBuilderService } from './services/prescription-pdf-build
     DeletePrescriptionUseCase,
     GeneratePrescriptionPdfUseCase,
     VerifyPrescriptionUseCase,
-    LogoFetcherService,
     PrescriptionPdfBuilderService,
     { provide: IPrescriptionsRepository, useClass: PrescriptionsRepository },
   ],
