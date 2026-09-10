@@ -1,6 +1,7 @@
 import * as bcrypt from 'bcrypt'
+import { AppointmentLabel } from '../../../modules/appointment-labels/entities/appointment-label.entity'
 import { DataSource, IsNull } from 'typeorm'
-import { AppointmentInsuranceType, AppointmentStatus, CouncilType, DayOfWeek, MedicalRecordFieldType, PatientGender, UserRole } from '@app/shared'
+import { AppointmentInsuranceType, AppointmentLabelColor, AppointmentStatus, CouncilType, DayOfWeek, MedicalRecordFieldType, PatientGender, UserRole } from '@app/shared'
 import { Theme } from '../../../modules/themes/entities/theme.entity'
 import { CANONICAL_THEMES as SEED_THEMES } from '../themes/canonical-themes'
 import { Clinic } from '../../../modules/clinics/entities/clinic.entity'
@@ -26,6 +27,19 @@ import {
 import { MedicalRecord } from '../../../modules/medical-records/entities/medical-record.entity'
 import { generateFieldKey } from '../../../modules/medical-record-templates/utils/generate-field-key.util'
 
+// Ponto de partida realista de consultório, não demonstração da paleta: oito
+// rótulos com cores distintas, para a agenda de dev abrir distinguível.
+const APPOINTMENT_LABELS = [
+  { name: 'Primeira consulta', color: AppointmentLabelColor.BLUE },
+  { name: 'Retorno', color: AppointmentLabelColor.GREEN },
+  { name: 'Pré-natal', color: AppointmentLabelColor.ROSE },
+  { name: 'Encaixe', color: AppointmentLabelColor.BRONZE },
+  { name: 'Urgência', color: AppointmentLabelColor.RED },
+  { name: 'Teleconsulta', color: AppointmentLabelColor.PETROL },
+  { name: 'Exame', color: AppointmentLabelColor.VIOLET },
+  { name: 'Convênio', color: AppointmentLabelColor.SLATE },
+]
+
 const SEED_CLINIC_ID = '10000000-0000-4000-8000-000000000000'
 
 // General (non specialty-scoped) canonical fields, sourced from the shared catalogue.
@@ -37,6 +51,7 @@ export async function devSeed(dataSource: DataSource): Promise<void> {
   await seedClinicAdmin(dataSource.getRepository(User))
   const nutritionSpecialty = await seedNutritionSpecialty(dataSource)
   await seedCanonicalFields(dataSource)
+  await seedAppointmentLabels(dataSource)
   await seedVaccines(dataSource)
   await seedVaccineScheduleRules(dataSource)
   await seedMedicalRecordTemplates(dataSource)
@@ -47,6 +62,18 @@ export async function devSeed(dataSource: DataSource): Promise<void> {
 
 // Non-medical specialty fixture, created early so the nutrition-scoped canonical fields
 // (bmi, waist_circumference) resolve against it during seedCanonicalFields.
+async function seedAppointmentLabels(dataSource: DataSource): Promise<void> {
+  const repository = dataSource.getRepository(AppointmentLabel)
+
+  for (const data of APPOINTMENT_LABELS) {
+    const existing = await repository.findOneBy({ clinicId: SEED_CLINIC_ID, name: data.name })
+    if (existing) continue
+    await repository.save(repository.create({ clinicId: SEED_CLINIC_ID, ...data, isActive: true }))
+  }
+
+  console.log(`Dev seed: ${APPOINTMENT_LABELS.length} appointment labels ensured.`)
+}
+
 async function seedNutritionSpecialty(dataSource: DataSource): Promise<Specialty> {
   const specialtyRepository = dataSource.getRepository(Specialty)
   let specialty = await specialtyRepository.findOneBy({ name: 'Nutrição Clínica' })

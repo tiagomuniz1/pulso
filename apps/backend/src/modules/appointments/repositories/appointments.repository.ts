@@ -26,11 +26,13 @@ export class AppointmentsRepository implements IAppointmentsRepository {
   ) {}
 
   async findAll(filters: ListAppointmentsQueryDto, clinicId: string): Promise<[Appointment[], number]> {
-    const { professionalId, patientId, status, from, to, page = 1, limit = 20 } = filters
+    const { professionalId, patientId, status, from, to, labelId, hasLabel, page = 1, limit = 20 } = filters
 
     const qb = this.repository
       .createQueryBuilder('appointment')
       .leftJoinAndSelect('appointment.series', 'series')
+      // ManyToOne não multiplica linha, então skip/take seguem corretos.
+      .leftJoinAndSelect('appointment.label', 'label')
       .where('appointment.deleted_at IS NULL')
       .andWhere('appointment.clinic_id = :clinicId', { clinicId })
       .orderBy('appointment.date', 'DESC')
@@ -43,6 +45,10 @@ export class AppointmentsRepository implements IAppointmentsRepository {
     if (status) qb.andWhere('appointment.status = :status', { status })
     if (from) qb.andWhere('appointment.date >= :from', { from })
     if (to) qb.andWhere('appointment.date <= :to', { to })
+    if (labelId) qb.andWhere('appointment.label_id = :labelId', { labelId })
+    // Comparação estrita: `!hasLabel` confundiria ausente com false.
+    if (hasLabel === true) qb.andWhere('appointment.label_id IS NOT NULL')
+    if (hasLabel === false) qb.andWhere('appointment.label_id IS NULL')
 
     return qb.getManyAndCount()
   }
@@ -52,7 +58,7 @@ export class AppointmentsRepository implements IAppointmentsRepository {
     // which every response needs for "session N of M".
     return this.repository.findOne({
       where: { id, clinicId },
-      relations: ['series'],
+      relations: ['series', 'label'],
     })
   }
 
@@ -104,7 +110,7 @@ export class AppointmentsRepository implements IAppointmentsRepository {
   async findBySeriesId(seriesId: string, clinicId: string): Promise<Appointment[]> {
     return this.repository.find({
       where: { seriesId, clinicId },
-      relations: ['series'],
+      relations: ['series', 'label'],
       order: { date: 'ASC' },
     })
   }
@@ -211,6 +217,8 @@ export class AppointmentsRepository implements IAppointmentsRepository {
     if (data.professionalId !== undefined) appointment.professionalId = data.professionalId
     if (data.scheduleId !== undefined) appointment.scheduleId = data.scheduleId
     if (data.endTime !== undefined) appointment.endTime = data.endTime
+    // `!== undefined` e não truthy: `null` precisa passar, é o desmarcar.
+    if (data.labelId !== undefined) appointment.labelId = data.labelId
 
     return repo.save(appointment)
   }

@@ -24,6 +24,8 @@ export interface UpdateAppointmentData {
   professionalId?: string
   scheduleId?: string
   endTime?: string
+  /** `null` desmarca o rótulo — por isso `null` é valor válido, não ausência. */
+  labelId?: string | null
 }
 
 export abstract class IAppointmentsRepository {

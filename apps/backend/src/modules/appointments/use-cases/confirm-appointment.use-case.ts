@@ -12,6 +12,7 @@ import { BaseUseCase } from '../../../common/base.use-case'
 import { CacheService } from '../../../cache/cache.service'
 import { ICurrentUser } from '../../auth/types/current-user.type'
 import { IProfessionalsRepository } from '../../professionals/repositories/professionals.repository.interface'
+import { toAppointmentResponse } from '../appointment.mapper'
 import { Appointment } from '../entities/appointment.entity'
 import { IAppointmentsRepository } from '../repositories/appointments.repository.interface'
 
@@ -120,27 +121,11 @@ export class ConfirmAppointmentUseCase extends BaseUseCase {
     specialtyName: string | null,
     seriesTotalOccurrences: number | null,
   ): AppointmentResponseDto {
-    return {
-      id: appointment.id,
-      professionalId: appointment.professionalId,
+    return toAppointmentResponse(appointment, {
       professionalName,
-      patientId: appointment.patientId,
       patientName,
-      specialtyId: appointment.specialtyId,
       specialtyName,
-      scheduleId: appointment.scheduleId,
-      date: appointment.date,
-      startTime: appointment.startTime,
-      endTime: appointment.endTime,
-      status: appointment.status,
-      insuranceType: appointment.insuranceType,
-      reason: appointment.reason,
-      cancellationReason: appointment.cancellationReason,
-      seriesId: appointment.seriesId ?? null,
-      seriesSequence: appointment.seriesSequence ?? null,
       seriesTotalOccurrences,
-      createdAt: appointment.createdAt,
-      updatedAt: appointment.updatedAt,
-    }
+    })
   }
 }

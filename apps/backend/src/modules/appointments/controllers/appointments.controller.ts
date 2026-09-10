@@ -25,7 +25,7 @@ import {
   ReassignAppointmentDto,
   ReassignCandidateDto,
   UserRole,
-} from '@app/shared'
+  SetAppointmentLabelDto,} from '@app/shared'
 import { IdempotencyInterceptor } from '../../../common/interceptors/idempotency.interceptor'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator'
 import { Roles } from '../../auth/decorators/roles.decorator'
@@ -34,6 +34,7 @@ import { AvailabilityQueryDto } from '../dto/availability-query.dto'
 import { ListAppointmentsQueryDto } from '../dto/list-appointments-query.dto'
 import { CancelAppointmentUseCase } from '../use-cases/cancel-appointment.use-case'
 import { CompleteAppointmentUseCase } from '../use-cases/complete-appointment.use-case'
+import { SetAppointmentLabelUseCase } from '../use-cases/set-appointment-label.use-case'
 import { ConfirmAppointmentUseCase } from '../use-cases/confirm-appointment.use-case'
 import { CreateAppointmentUseCase } from '../use-cases/create-appointment.use-case'
 import { FindAppointmentByIdUseCase } from '../use-cases/find-appointment-by-id.use-case'
@@ -52,6 +53,7 @@ export class AppointmentsController {
     private readonly createAppointmentUseCase: CreateAppointmentUseCase,
     private readonly cancelAppointmentUseCase: CancelAppointmentUseCase,
     private readonly completeAppointmentUseCase: CompleteAppointmentUseCase,
+    private readonly setAppointmentLabelUseCase: SetAppointmentLabelUseCase,
     private readonly confirmAppointmentUseCase: ConfirmAppointmentUseCase,
     private readonly markAppointmentNoShowUseCase: MarkAppointmentNoShowUseCase,
     private readonly findAppointmentByIdUseCase: FindAppointmentByIdUseCase,
@@ -178,6 +180,18 @@ export class AppointmentsController {
     @CurrentUser() currentUser: ICurrentUser,
   ): Promise<AppointmentResponseDto> {
     return this.completeAppointmentUseCase.execute(id, currentUser)
+  }
+
+  // Marcar o rótulo é do ADMIN e do profissional DAQUELA consulta — gerir o
+  // catálogo em si é só do ADMIN, noutra rota. `labelId: null` desmarca.
+  @Patch(':id/label')
+  @Roles(UserRole.ADMIN, UserRole.PROFESSIONAL)
+  setLabel(
+    @Param('id') id: string,
+    @Body() dto: SetAppointmentLabelDto,
+    @CurrentUser() currentUser: ICurrentUser,
+  ): Promise<AppointmentResponseDto> {
+    return this.setAppointmentLabelUseCase.execute(id, dto, currentUser)
   }
 
   @Patch(':id/reassign')

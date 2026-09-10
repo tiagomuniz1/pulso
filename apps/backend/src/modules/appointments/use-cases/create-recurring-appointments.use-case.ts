@@ -23,6 +23,7 @@ import { ICurrentUser } from '../../auth/types/current-user.type'
 import { IProfessionalsRepository } from '../../professionals/repositories/professionals.repository.interface'
 import { IPatientsRepository } from '../../patients/repositories/patients.repository.interface'
 import { AppointmentSeries } from '../entities/appointment-series.entity'
+import { toAppointmentResponse } from '../appointment.mapper'
 import { Appointment } from '../entities/appointment.entity'
 import { IAppointmentSeriesRepository } from '../repositories/appointment-series.repository.interface'
 import { IAppointmentsRepository } from '../repositories/appointments.repository.interface'
@@ -379,27 +380,11 @@ export class CreateRecurringAppointmentsUseCase extends BaseUseCase {
     specialtyName: string | null,
     seriesTotalOccurrences: number | null,
   ): AppointmentResponseDto {
-    return {
-      id: appointment.id,
-      professionalId: appointment.professionalId,
+    return toAppointmentResponse(appointment, {
       professionalName,
-      patientId: appointment.patientId,
       patientName,
-      specialtyId: appointment.specialtyId,
       specialtyName,
-      scheduleId: appointment.scheduleId,
-      date: appointment.date,
-      startTime: appointment.startTime,
-      endTime: appointment.endTime,
-      status: appointment.status,
-      insuranceType: appointment.insuranceType,
-      reason: appointment.reason,
-      cancellationReason: appointment.cancellationReason,
-      seriesId: appointment.seriesId,
-      seriesSequence: appointment.seriesSequence,
       seriesTotalOccurrences,
-      createdAt: appointment.createdAt,
-      updatedAt: appointment.updatedAt,
-    }
+    })
   }
 }
