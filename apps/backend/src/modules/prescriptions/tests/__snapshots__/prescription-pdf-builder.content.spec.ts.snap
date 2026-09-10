@@ -167,6 +167,8 @@ exports[`PrescriptionPdfBuilderService — conteúdo do documento mantém a defi
     "fontSize": 10,
     "lineHeight": 1.4,
   },
+  "footer": [Function],
+  "header": [Function],
   "pageMargins": [
     50,
     50,
@@ -394,6 +396,8 @@ exports[`PrescriptionPdfBuilderService — conteúdo do documento mantém a defi
     "fontSize": 10,
     "lineHeight": 1.4,
   },
+  "footer": [Function],
+  "header": [Function],
   "pageMargins": [
     50,
     50,

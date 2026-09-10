@@ -102,6 +102,8 @@ exports[`MedicalCertificatePdfBuilderService — conteúdo do documento mantém 
     "fontSize": 10,
     "lineHeight": 1.4,
   },
+  "footer": [Function],
+  "header": [Function],
   "pageMargins": [
     50,
     50,
@@ -251,6 +253,8 @@ exports[`MedicalCertificatePdfBuilderService — conteúdo do documento mantém 
     "fontSize": 10,
     "lineHeight": 1.4,
   },
+  "footer": [Function],
+  "header": [Function],
   "pageMargins": [
     50,
     50,
@@ -404,6 +408,8 @@ exports[`MedicalCertificatePdfBuilderService — conteúdo do documento mantém 
     "fontSize": 10,
     "lineHeight": 1.4,
   },
+  "footer": [Function],
+  "header": [Function],
   "pageMargins": [
     50,
     50,

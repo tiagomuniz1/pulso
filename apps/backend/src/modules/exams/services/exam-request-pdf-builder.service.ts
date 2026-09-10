@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common'
 import { ExamRequestSnapshot } from '@app/shared'
 import { buildClinicHeader } from '../../../common/pdf/clinic-header.builder'
 import { formatCpf } from '../../../common/pdf/format-cpf.util'
+import {
+  buildContinuationHeader,
+  buildPageNumberFooter,
+} from '../../../common/pdf/page-furniture.builder'
 import { PdfDocumentService } from '../../../common/pdf/pdf-document.service'
 import { PDF_DEFAULT_STYLE, PDF_PAGE_MARGINS, PDF_STYLES } from '../../../common/pdf/pdf-styles'
 import { buildSignatureFooter } from '../../../common/pdf/signature-footer.builder'
@@ -31,6 +35,8 @@ export class ExamRequestPdfBuilderService {
 
     return {
       content,
+      header: buildContinuationHeader(snapshot.clinic),
+      footer: buildPageNumberFooter(),
       defaultStyle: PDF_DEFAULT_STYLE,
       styles: PDF_STYLES,
       pageMargins: PDF_PAGE_MARGINS,

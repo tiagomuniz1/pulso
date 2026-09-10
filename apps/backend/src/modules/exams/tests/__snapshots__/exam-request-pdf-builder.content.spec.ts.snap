@@ -136,6 +136,8 @@ exports[`ExamRequestPdfBuilderService — conteúdo do documento mantém a defin
     "fontSize": 10,
     "lineHeight": 1.4,
   },
+  "footer": [Function],
+  "header": [Function],
   "pageMargins": [
     50,
     50,
@@ -332,6 +334,8 @@ exports[`ExamRequestPdfBuilderService — conteúdo do documento mantém a defin
     "fontSize": 10,
     "lineHeight": 1.4,
   },
+  "footer": [Function],
+  "header": [Function],
   "pageMargins": [
     50,
     50,
