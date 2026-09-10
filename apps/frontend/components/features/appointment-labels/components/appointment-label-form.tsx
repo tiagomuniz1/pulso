@@ -71,7 +71,7 @@ export function AppointmentLabelForm({
         />
 
         {/* Amarra "escolhi verde" a "é assim que vai aparecer": a mesma faixa
-            de 4px que a agenda desenha, no bloco de verdade. */}
+            de 6px que a agenda desenha, no bloco de verdade. */}
         <div className="flex flex-col gap-1.5">
           <span className="text-sm text-text-dim">Como vai aparecer na agenda</span>
           <div
@@ -82,7 +82,7 @@ export function AppointmentLabelForm({
               <span
                 aria-hidden="true"
                 data-testid="appointment-label-form-preview-strip"
-                className={cn('absolute inset-y-0 left-0 w-1', LABEL_STRIP_CLASS[color])}
+                className={cn('absolute inset-y-0 left-0 w-1.5', LABEL_STRIP_CLASS[color])}
               />
             )}
             <span className="w-12 shrink-0 font-mono text-xs">08:00</span>

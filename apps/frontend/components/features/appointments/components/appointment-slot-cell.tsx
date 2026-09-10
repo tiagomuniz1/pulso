@@ -100,7 +100,7 @@ export function AppointmentSlotCell({
             aria-hidden="true"
             data-testid="agenda-slot-label"
             data-label-color={apt.label.color}
-            className={cn('absolute inset-y-0 left-0 w-1', LABEL_STRIP_CLASS[apt.label.color])}
+            className={cn('absolute inset-y-0 left-0 w-1.5', LABEL_STRIP_CLASS[apt.label.color])}
           />
         )}
         <span className="font-mono text-xs w-12 shrink-0">{slot.startTime}</span>

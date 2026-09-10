@@ -1,7 +1,8 @@
 'use client'
 
 import { useAppointmentLabels } from '../hooks/use-appointment-labels.hook'
-import { AppointmentLabelPill } from './appointment-label-pill'
+import { cn } from '@/lib/cn'
+import { LABEL_STRIP_CLASS } from '../constants/label-color-classes'
 import type { IAppointmentLabelRefModel } from '@/components/features/appointments/types/appointment-model.types'
 
 interface AppointmentLabelSelectProps {
@@ -27,13 +28,13 @@ export function AppointmentLabelSelect({
   const labels = data?.data ?? []
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 items-center gap-2">
       <select
         value={value?.id ?? ''}
         disabled={isPending}
         onChange={(event) => onChange(event.target.value === '' ? null : event.target.value)}
         data-testid={testId ?? 'appointment-label-select'}
-        className="rounded-lg border border-line bg-surface px-2 py-1 text-sm text-text disabled:opacity-50"
+        className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-2 py-1 text-sm text-text disabled:opacity-50"
       >
         <option value="">Sem rótulo</option>
         {labels.map((label) => (
@@ -42,7 +43,18 @@ export function AppointmentLabelSelect({
           </option>
         ))}
       </select>
-      {value && <AppointmentLabelPill name={value.name} color={value.color} />}
+      {/* Amostra, e não a pílula: o select já mostra o nome, e repeti-lo ao lado
+          estourava a coluna do `<dl>` do diálogo, que tem cerca de 190px. O que
+          falta ali é só a cor. */}
+      {value && (
+        <span
+          aria-hidden="true"
+          title={value.name}
+          data-testid="appointment-label-swatch"
+          data-label-color={value.color}
+          className={cn('h-5 w-5 shrink-0 rounded-md', LABEL_STRIP_CLASS[value.color])}
+        />
+      )}
     </div>
   )
 }

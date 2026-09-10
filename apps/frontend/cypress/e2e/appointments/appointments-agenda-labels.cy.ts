@@ -79,6 +79,25 @@ describe('Agenda — rótulos', () => {
       body: { professionalId: DOC_UUID, date: DATA, slots: [{ startTime: '08:00', endTime: '08:30' }] },
     })
     cy.intercept('GET', `${Cypress.env('API_URL')}/appointments*`, { statusCode: 200, body: { data: consultas, total: 3, page: 1, limit: 100 } })
+    // O glob acima NÃO cobre `/appointments/:id` — no minimatch o `*` não
+    // atravessa a barra. É por essa rota que o diálogo de detalhes carrega, e
+    // sem stub a chamada dá 401 e o app redireciona para o login.
+    cy.intercept('GET', `${Cypress.env('API_URL')}/appointments/*`, (req) => {
+      if (req.url.includes('availability')) return
+      const id = req.url.split('/appointments/')[1]!.split('?')[0]!
+      const encontrada = consultas.find((c) => c.id === id) ?? consultas[0]!
+      req.reply({
+        statusCode: 200,
+        body: {
+          ...encontrada,
+          patient: {
+            fullName: encontrada.patientName, email: 'p@x.com', phoneNumber: '11999990000',
+            birthDate: '1990-01-01', documentNumber: '12345678901', gender: 'female',
+          },
+          seriesFutureCount: null,
+        },
+      })
+    })
     cy.intercept('GET', `${Cypress.env('API_URL')}/patients*`, { statusCode: 200, body: { data: [], total: 0, page: 1, limit: 200 } })
     cy.intercept('GET', `${Cypress.env('API_URL')}/schedule-exceptions*`, { statusCode: 200, body: { data: [], total: 0, page: 1, limit: 20 } })
   })
@@ -185,5 +204,133 @@ describe('Agenda — rótulos', () => {
 
     cy.get('[data-testid="agenda-day-empty-filtered"]', { timeout: 10000 }).should('be.visible')
     cy.get('[data-testid="agenda-day-empty"]').should('not.exist')
+  })
+
+  // A coluna de valor do `<dl>` do diálogo tem cerca de 190px. Uma pílula
+  // repetindo o nome que o select já mostra transbordava; ficou uma amostra de
+  // cor. Medir é o único jeito de pegar isto — `be.visible` passa mesmo com o
+  // conteúdo vazando.
+  it('a linha do rótulo cabe na coluna do diálogo de detalhes', () => {
+    abrirDia()
+    cy.wait('@getLabels')
+
+    cy.contains('[data-testid="agenda-slot-booked"]', 'Paciente a').click()
+    cy.get('[data-testid="details-label-select"]', { timeout: 10000 }).should('be.visible')
+
+    cy.get('[data-testid="details-label"]').then(($dd) => {
+      const coluna = $dd[0]!.getBoundingClientRect()
+      const filhos = [...$dd[0]!.querySelectorAll('select, [data-testid="appointment-label-swatch"]')]
+      for (const filho of filhos) {
+        const caixa = filho.getBoundingClientRect()
+        expect(
+          Math.round(caixa.right) <= Math.round(coluna.right) + 1,
+          `"${filho.getAttribute('data-testid') ?? filho.tagName}" transborda a coluna ` +
+            `(direita ${Math.round(caixa.right)} contra ${Math.round(coluna.right)})`,
+        ).to.eq(true)
+      }
+    })
+
+    cy.get('[data-testid="appointment-label-swatch"]')
+      .should('be.visible')
+      .and('have.attr', 'data-label-color', 'green')
+  })
+
+  // O modal inteiro não pode ganhar rolagem horizontal por causa da linha nova.
+  it('o diálogo não ganha rolagem horizontal', () => {
+    abrirDia()
+    cy.wait('@getLabels')
+
+    cy.contains('[data-testid="agenda-slot-booked"]', 'Paciente a').click()
+    cy.get('[data-testid="details-label-select"]', { timeout: 10000 }).should('be.visible')
+
+    cy.get('[data-testid="appointment-details-dialog"]').then(($modal) => {
+      const el = $modal[0]!
+      expect(el.scrollWidth, 'o modal rola na horizontal').to.be.at.most(el.clientWidth + 1)
+    })
+  })
+
+  describe('no mobile', () => {
+    beforeEach(() => cy.viewport(375, 700))
+
+    // No toque não existe hover, então o `title` do bloco não ajuda: sem a
+    // legenda a cor ficaria sem chave nenhuma, que é o oposto de "bater o olho
+    // e saber".
+    it('mostra a legenda, que no desktop é o único apoio junto do hover', () => {
+      abrirDia()
+      cy.wait('@getLabels')
+
+      cy.get('[data-testid="agenda-label-legend"]').should('be.visible')
+      cy.get(`[data-testid="agenda-label-legend-item-${LABEL_RETORNO}"]`).should('contain.text', 'Retorno')
+    })
+
+    // Embrulhada, oito rótulos custavam 76px de uma tela de 700px, sobre uma
+    // barra que já tem 152px. Numa linha só, custa um terço disso.
+    it('cabe numa linha e desliza em vez de embrulhar', () => {
+      abrirDia()
+      cy.wait('@getLabels')
+
+      cy.get('[data-testid="agenda-label-legend"]').then(($l) => {
+        const el = $l[0]!
+        expect(Math.round(el.getBoundingClientRect().height), 'a legenda embrulhou').to.be.lessThan(45)
+      })
+    })
+
+    // Espremida, a pílula deixa o nome vazar do fundo colorido — foi assim que
+    // o rótulo ao lado do select quebrou no diálogo.
+    it('não espreme as pílulas a ponto do nome vazar', () => {
+      abrirDia()
+      cy.wait('@getLabels')
+
+      cy.get('[data-testid^="agenda-label-legend-item-"]').each(($pill) => {
+        const el = $pill[0]!
+        expect(el.scrollWidth, `"${el.textContent}" teve o texto cortado`).to.be.at.most(
+          el.clientWidth + 1,
+        )
+      })
+    })
+
+    // O espaçamento abaixo é do bloco inteiro. Quando morava só no `<div>` da
+    // barra, a legenda entrava depois dele e encostava na agenda — folga zero.
+    it('não fica colada na agenda', () => {
+      abrirDia()
+      cy.wait('@getLabels')
+
+      cy.document().then((d) => {
+        const legenda = d.querySelector('[data-testid="agenda-label-legend"]')!.getBoundingClientRect()
+        const grid = d.querySelector('[data-testid="agenda-day-grid"]')!.getBoundingClientRect()
+        const folga = Math.round(grid.top - legenda.bottom)
+        expect(folga, `a legenda está a ${folga}px da agenda`).to.be.at.least(12)
+      })
+    })
+
+    // A rolagem é da legenda, não da página: o corpo não pode andar de lado.
+    // Precisa de catálogo cheio — com dois rótulos tudo cabe e nada desliza.
+    it('a rolagem fica na legenda e não na página', () => {
+      const catalogoCheio = [
+        ...labels,
+        { id: 'x1', name: 'Primeira consulta', color: 'blue', isActive: true, createdAt: '2026-01-01T10:00:00.000Z', updatedAt: '2026-01-01T10:00:00.000Z' },
+        { id: 'x2', name: 'Encaixe', color: 'bronze', isActive: true, createdAt: '2026-01-01T10:00:00.000Z', updatedAt: '2026-01-01T10:00:00.000Z' },
+        { id: 'x3', name: 'Urgência', color: 'red', isActive: true, createdAt: '2026-01-01T10:00:00.000Z', updatedAt: '2026-01-01T10:00:00.000Z' },
+        { id: 'x4', name: 'Teleconsulta', color: 'petrol', isActive: true, createdAt: '2026-01-01T10:00:00.000Z', updatedAt: '2026-01-01T10:00:00.000Z' },
+        { id: 'x5', name: 'Exame', color: 'violet', isActive: true, createdAt: '2026-01-01T10:00:00.000Z', updatedAt: '2026-01-01T10:00:00.000Z' },
+        { id: 'x6', name: 'Convênio', color: 'slate', isActive: true, createdAt: '2026-01-01T10:00:00.000Z', updatedAt: '2026-01-01T10:00:00.000Z' },
+      ]
+      cy.intercept('GET', `${Cypress.env('API_URL')}/appointment-labels*`, {
+        statusCode: 200,
+        body: { data: catalogoCheio, total: catalogoCheio.length, page: 1, limit: 100 },
+      }).as('getLabelsCheio')
+
+      abrirDia()
+      cy.wait('@getLabelsCheio')
+
+      cy.get('[data-testid="agenda-label-legend"]').then(($l) => {
+        expect($l[0]!.scrollWidth, 'a legenda deveria deslizar').to.be.greaterThan($l[0]!.clientWidth)
+      })
+      cy.document().then((d) => {
+        expect(d.documentElement.scrollWidth, 'a página rola na horizontal').to.be.at.most(
+          d.documentElement.clientWidth + 1,
+        )
+      })
+    })
   })
 })
