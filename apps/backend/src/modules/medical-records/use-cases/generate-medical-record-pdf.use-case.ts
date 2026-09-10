@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { DataSource } from 'typeorm'
 import { BaseUseCase } from '../../../common/base.use-case'
-import { LogoFetcherService } from '../../../common/services/logo-fetcher.service'
+import { LoadClinicLogoUseCase } from '../../clinics/use-cases/load-clinic-logo.use-case'
 import { ICurrentUser } from '../../auth/types/current-user.type'
 import { FindClinicByIdUseCase } from '../../clinics/use-cases/find-clinic-by-id.use-case'
 import { FindTemplateByClinicAndIdUseCase } from '../../medical-record-templates/use-cases/find-template-by-clinic-and-id.use-case'
@@ -17,7 +17,7 @@ export class GenerateMedicalRecordPdfUseCase extends BaseUseCase {
     private readonly medicalRecordsRepository: IMedicalRecordsRepository,
     private readonly findClinicByIdUseCase: FindClinicByIdUseCase,
     private readonly findTemplateByClinicAndIdUseCase: FindTemplateByClinicAndIdUseCase,
-    private readonly logoFetcherService: LogoFetcherService,
+    private readonly loadClinicLogoUseCase: LoadClinicLogoUseCase,
     private readonly medicalRecordPdfBuilderService: MedicalRecordPdfBuilderService,
   ) {
     super(dataSource)
@@ -41,9 +41,7 @@ export class GenerateMedicalRecordPdfUseCase extends BaseUseCase {
     // o documento sai em lista plana — o mesmo que a tela faz.
     const template = await this.findTemplateByClinicAndIdUseCase.execute(clinicId, record.templateId)
 
-    const logoBase64 = clinic.logoUrl
-      ? await this.logoFetcherService.fetchAsBase64(clinic.logoUrl)
-      : null
+    const logoBase64 = await this.loadClinicLogoUseCase.execute(clinicId)
 
     return this.medicalRecordPdfBuilderService.build(
       {
