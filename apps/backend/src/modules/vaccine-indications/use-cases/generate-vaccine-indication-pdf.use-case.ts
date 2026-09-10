@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { DataSource } from 'typeorm'
 import { BaseUseCase } from '../../../common/base.use-case'
-import { LogoFetcherService } from '../../../common/services/logo-fetcher.service'
+import { LoadClinicLogoUseCase } from '../../clinics/use-cases/load-clinic-logo.use-case'
 import { ICurrentUser } from '../../auth/types/current-user.type'
 import { IVaccineIndicationsRepository } from '../repositories/vaccine-indications.repository.interface'
 import { FindVaccineIndicationByIdUseCase } from './find-vaccine-indication-by-id.use-case'
@@ -13,7 +13,7 @@ export class GenerateVaccineIndicationPdfUseCase extends BaseUseCase {
     dataSource: DataSource,
     private readonly findVaccineIndicationByIdUseCase: FindVaccineIndicationByIdUseCase,
     private readonly vaccineIndicationsRepository: IVaccineIndicationsRepository,
-    private readonly logoFetcherService: LogoFetcherService,
+    private readonly loadClinicLogoUseCase: LoadClinicLogoUseCase,
     private readonly vaccineIndicationPdfBuilderService: VaccineIndicationPdfBuilderService,
   ) {
     super(dataSource)
@@ -25,8 +25,10 @@ export class GenerateVaccineIndicationPdfUseCase extends BaseUseCase {
     const indication = await this.vaccineIndicationsRepository.findById(id, currentUser.clinicId!)
     const { snapshot } = indication!
 
+    // O `logoUrl` do snapshot é só o sinal de que a clínica tinha logo na
+    // emissão; os bytes vêm do storage, não daquela URL.
     const logoBase64 = snapshot.clinic.logoUrl
-      ? await this.logoFetcherService.fetchAsBase64(snapshot.clinic.logoUrl)
+      ? await this.loadClinicLogoUseCase.execute(currentUser.clinicId!)
       : null
 
     return this.vaccineIndicationPdfBuilderService.build(snapshot, logoBase64)

@@ -5,8 +5,8 @@ import { PDF_CONTENT_WIDTH } from './pdf-styles'
  * O cabeçalho de identificação da clínica: logo, nome, endereço e a régua.
  *
  * Era o mesmo código em quatro builders. O logo chega como data-URI e não como
- * URL porque o pdfmake roda com `setUrlAccessPolicy(() => false)` — quem baixa
- * a imagem é o `LogoFetcherService`, antes.
+ * URL porque o pdfmake roda com `setUrlAccessPolicy(() => false)` — quem lê a
+ * imagem do storage é o `LoadClinicLogoUseCase`, antes.
  */
 export function buildClinicHeader(clinic: PdfClinic, logoBase64: string | null): object[] {
   const clinicLines: object[] = [{ text: clinic.name, style: 'clinicName' }]

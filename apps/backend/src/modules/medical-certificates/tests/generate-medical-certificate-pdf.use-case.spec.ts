@@ -4,7 +4,7 @@ import { CouncilType, MedicalCertificateType, UserRole } from '@app/shared'
 import { ICurrentUser } from '../../auth/types/current-user.type'
 import { IMedicalCertificatesRepository } from '../repositories/medical-certificates.repository.interface'
 import { FindMedicalCertificateByIdUseCase } from '../use-cases/find-medical-certificate-by-id.use-case'
-import { LogoFetcherService } from '../../../common/services/logo-fetcher.service'
+import { LoadClinicLogoUseCase } from '../../clinics/use-cases/load-clinic-logo.use-case'
 import { MedicalCertificatePdfBuilderService } from '../services/medical-certificate-pdf-builder.service'
 import { GenerateMedicalCertificatePdfUseCase } from '../use-cases/generate-medical-certificate-pdf.use-case'
 
@@ -53,9 +53,9 @@ const mockMedicalCertificatesRepository: jest.Mocked<IMedicalCertificatesReposit
   delete: jest.fn(),
 }
 
-const mockLogoFetcherService = {
-  fetchAsBase64: jest.fn(),
-} as unknown as jest.Mocked<LogoFetcherService>
+const mockLoadClinicLogo = {
+  execute: jest.fn(),
+} as unknown as jest.Mocked<LoadClinicLogoUseCase>
 
 const mockPdfBuilderService = {
   build: jest.fn(),
@@ -72,12 +72,12 @@ describe('GenerateMedicalCertificatePdfUseCase', () => {
       {} as DataSource,
       mockFindByIdUseCase,
       mockMedicalCertificatesRepository,
-      mockLogoFetcherService,
+      mockLoadClinicLogo,
       mockPdfBuilderService,
     )
     mockFindByIdUseCase.execute.mockResolvedValue({} as any)
     mockMedicalCertificatesRepository.findById.mockResolvedValue(makeCertificate() as any)
-    mockLogoFetcherService.fetchAsBase64.mockResolvedValue(null)
+    mockLoadClinicLogo.execute.mockResolvedValue(null)
     mockPdfBuilderService.build.mockResolvedValue(PDF_BUFFER)
   })
 
@@ -111,11 +111,11 @@ describe('GenerateMedicalCertificatePdfUseCase', () => {
   it('does not fetch logo when logoUrl is null', async () => {
     await useCase.execute(certificateId, adminUser)
 
-    expect(mockLogoFetcherService.fetchAsBase64).not.toHaveBeenCalled()
+    expect(mockLoadClinicLogo.execute).not.toHaveBeenCalled()
     expect(mockPdfBuilderService.build).toHaveBeenCalledWith(makeSnapshot(), null)
   })
 
-  it('fetches logo and passes base64 to builder when logoUrl is set', async () => {
+  it('reads the logo from storage by clinic and passes base64 to the builder', async () => {
     const logoUrl = 'https://example.com/logo.png'
     const logoBase64 = 'data:image/png;base64,abc123'
     const snapshotWithLogo = { ...makeSnapshot(), clinic: { name: 'Clínica', address: null, logoUrl } }
@@ -124,11 +124,13 @@ describe('GenerateMedicalCertificatePdfUseCase', () => {
       ...makeCertificate(),
       snapshot: snapshotWithLogo,
     } as any)
-    mockLogoFetcherService.fetchAsBase64.mockResolvedValue(logoBase64)
+    mockLoadClinicLogo.execute.mockResolvedValue(logoBase64)
 
     await useCase.execute(certificateId, adminUser)
 
-    expect(mockLogoFetcherService.fetchAsBase64).toHaveBeenCalledWith(logoUrl)
+    // O `logoUrl` do snapshot só diz que havia logo na emissão; os bytes
+    // vêm do storage, por clínica — nada de sair pela rede.
+    expect(mockLoadClinicLogo.execute).toHaveBeenCalledWith(clinicId)
     expect(mockPdfBuilderService.build).toHaveBeenCalledWith(snapshotWithLogo, logoBase64)
   })
 
@@ -141,7 +143,7 @@ describe('GenerateMedicalCertificatePdfUseCase', () => {
       ...makeCertificate(),
       snapshot: snapshotWithLogo,
     } as any)
-    mockLogoFetcherService.fetchAsBase64.mockResolvedValue(null)
+    mockLoadClinicLogo.execute.mockResolvedValue(null)
 
     const result = await useCase.execute(certificateId, adminUser)
 

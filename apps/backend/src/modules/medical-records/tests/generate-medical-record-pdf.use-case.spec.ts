@@ -1,7 +1,7 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common'
 import { DataSource } from 'typeorm'
 import { MedicalRecordFieldType, UserRole } from '@app/shared'
-import { LogoFetcherService } from '../../../common/services/logo-fetcher.service'
+import { LoadClinicLogoUseCase } from '../../clinics/use-cases/load-clinic-logo.use-case'
 import { ICurrentUser } from '../../auth/types/current-user.type'
 import { FindClinicByIdUseCase } from '../../clinics/use-cases/find-clinic-by-id.use-case'
 import { FindTemplateByClinicAndIdUseCase } from '../../medical-record-templates/use-cases/find-template-by-clinic-and-id.use-case'
@@ -59,7 +59,7 @@ const mockFindClinic = { execute: jest.fn() } as unknown as jest.Mocked<FindClin
 const mockFindTemplate = {
   execute: jest.fn(),
 } as unknown as jest.Mocked<FindTemplateByClinicAndIdUseCase>
-const mockLogoFetcher = { fetchAsBase64: jest.fn() } as unknown as jest.Mocked<LogoFetcherService>
+const mockLoadClinicLogo = { execute: jest.fn() } as unknown as jest.Mocked<LoadClinicLogoUseCase>
 const mockBuilder = { build: jest.fn() } as unknown as jest.Mocked<MedicalRecordPdfBuilderService>
 
 const mockRepository: jest.Mocked<IMedicalRecordsRepository> = {
@@ -82,7 +82,7 @@ describe('GenerateMedicalRecordPdfUseCase', () => {
       mockRepository,
       mockFindClinic,
       mockFindTemplate,
-      mockLogoFetcher,
+      mockLoadClinicLogo,
       mockBuilder,
     )
     mockFindById.execute.mockResolvedValue({ id: recordId } as any)
@@ -91,7 +91,7 @@ describe('GenerateMedicalRecordPdfUseCase', () => {
     mockFindTemplate.execute.mockResolvedValue({
       sections: [{ key: 'anamnese', title: 'Anamnese', order: 0 }],
     } as any)
-    mockLogoFetcher.fetchAsBase64.mockResolvedValue('data:image/png;base64,AAAA')
+    mockLoadClinicLogo.execute.mockResolvedValue('data:image/png;base64,AAAA')
     mockBuilder.build.mockResolvedValue(Buffer.from('%PDF-fake'))
   })
 
@@ -153,19 +153,22 @@ describe('GenerateMedicalRecordPdfUseCase', () => {
     )
   })
 
-  it('does not call the logo fetcher when the clinic has no logo', async () => {
-    mockFindClinic.execute.mockResolvedValue({ ...clinic, logoUrl: null })
+  // Quem decide "esta clínica não tem logo" é o carregador, que lê o
+  // `logoPath` — não este use-case olhando uma URL. Antes a decisão estava
+  // aqui e dependia de um campo que descrevia um endereço HTTP.
+  it('asks the loader by clinic and renders without logo when it gives up', async () => {
+    mockLoadClinicLogo.execute.mockResolvedValue(null)
 
     await useCase.execute(recordId, adminUser)
 
-    expect(mockLogoFetcher.fetchAsBase64).not.toHaveBeenCalled()
+    expect(mockLoadClinicLogo.execute).toHaveBeenCalledWith(clinicId)
     expect(mockBuilder.build).toHaveBeenCalledWith(expect.anything(), null)
   })
 
   // O fetcher devolve `null` para logo corrompido ou inalcançável. O documento
   // sai sem logo — nunca deixa de sair por causa de uma imagem.
   it('renders without logo when the fetcher gives up', async () => {
-    mockLogoFetcher.fetchAsBase64.mockResolvedValue(null)
+    mockLoadClinicLogo.execute.mockResolvedValue(null)
 
     await useCase.execute(recordId, adminUser)
 

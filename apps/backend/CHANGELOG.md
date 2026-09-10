@@ -1,5 +1,15 @@
 # Changelog — Backend
 
+## [1.15.1] - 2026-09-10
+
+### Fixed
+- **O logo da clínica voltou a sair nos PDFs.** Nenhum documento emitido — receita, atestado, pedido de exame, indicação de vacina — trazia o logo, e ninguém percebeu porque o erro era engolido em silêncio. Eram duas falhas somadas:
+  - `import sharp from 'sharp'` compilava mas não funcionava. O `tsconfig` tem `allowSyntheticDefaultImports` **sem** `esModuleInterop`: a checagem de tipos aceita o import default e o runtime não recebe o helper de interop, então `sharp_1.default` era `undefined` e chamá-lo lançava "is not a function". O teste não pegava porque mockava o sharp com `{ __esModule: true, default: ... }` — o mock fabricava exatamente o que faltava no mundo real
+  - Um `catch` sem binding descartava o motivo. O log dizia que não conseguiu ler o logo, nunca por quê, e diagnosticar exigiu acesso à máquina de produção
+
+### Changed
+- **O logo passa a ser lido direto do storage**, por `LoadClinicLogoUseCase`. Antes o backend saía pela internet contra a própria URL pública (`https://api.../clinics/:slug/logo`) — DNS, TLS, CloudFront e balanceador, voltando para o próprio container — para ler um arquivo que estava do lado dele. O `LogoFetcherService` foi removido
+
 ## [1.15.0] - 2026-09-10
 
 ### Added
