@@ -1,4 +1,5 @@
 import { DataSource } from 'typeorm'
+import Redis from 'ioredis'
 import * as path from 'path'
 
 process.env.NODE_ENV = 'test'
@@ -14,6 +15,11 @@ process.env.JWT_REFRESH_EXPIRATION = process.env.JWT_REFRESH_EXPIRATION ?? '7d'
 process.env.FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:3000'
 process.env.REDIS_HOST = process.env.REDIS_HOST ?? 'localhost'
 process.env.REDIS_PORT = process.env.REDIS_PORT ?? '6399'
+// Banco Redis próprio da suíte. Dev e teste apontam para a mesma instância e o
+// id da clínica-semente é idêntico nos dois, então as chaves colidiam e o teste
+// lia dado de desenvolvimento — origem de falhas que mudavam de spec a cada
+// execução. Ver o comentário em `cache.service.ts`.
+process.env.REDIS_DB = process.env.REDIS_DB ?? '1'
 
 export default async function globalSetup() {
   const dataSource = new DataSource({
@@ -33,6 +39,28 @@ export default async function globalSetup() {
   await dataSource.runMigrations()
   await truncateAllTables(dataSource)
   await dataSource.destroy()
+
+  await flushTestCache()
+}
+
+/**
+ * Zera o cache da suíte, pelo mesmo motivo do truncate acima: o que a execução
+ * anterior deixou não pode decidir o resultado desta. É o banco Redis próprio
+ * (`REDIS_DB`), nunca o do desenvolvimento.
+ */
+async function flushTestCache(): Promise<void> {
+  const client = new Redis({
+    host: process.env.REDIS_HOST,
+    port: parseInt(process.env.REDIS_PORT!, 10),
+    db: parseInt(process.env.REDIS_DB!, 10),
+    lazyConnect: true,
+  })
+  try {
+    await client.connect()
+    await client.flushdb()
+  } finally {
+    client.disconnect()
+  }
 }
 
 /**
