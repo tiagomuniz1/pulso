@@ -1,5 +1,14 @@
 # Changelog — Frontend
 
+## [1.16.0] - 2026-09-11
+
+### Added
+- **Selo "Primeira vez" ao lado do nome da paciente**, no diálogo que abre ao clicar na consulta da agenda e no cabeçalho da página da consulta. O `title` carrega a frase inteira — "Primeira vez que {paciente} é atendida por {profissional}" —, que é o que diz em relação a quem
+
+### Notes
+- **A agenda não mostra o selo**, de propósito: a faixa colorida do rótulo já ocupa a borda esquerda do bloco, e na visão semana a coluna tem ~155px com o nome já truncado
+- O selo é `rounded-full` e não `rounded-md` pela mesma razão da pílula de rótulo: o raio do tema da clínica varia de 2px a 32px
+
 ## [1.15.0] - 2026-09-10
 
 ### Added
