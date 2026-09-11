@@ -40,11 +40,16 @@ describe('Medical Record Templates Update', () => {
   beforeEach(() => {
     cy.clearCookies()
     cy.clearLocalStorage()
+    // ADMIN sem ficha: o formulário pergunta "eu exerço?" e a resposta é não.
+    // Sem stub a chamada bate no backend real com token mock e vira 401.
+    cy.intercept('GET', `${Cypress.env('API_URL')}/professionals/me`, { statusCode: 200, body: null })
     cy.intercept('GET', `${Cypress.env('API_URL')}/medical-record-canonical-fields*`, {
       statusCode: 200,
       body: [],
     }).as('getCanonicalFields')
-    cy.intercept('GET', `${Cypress.env('API_URL')}/specialties*`, {
+    // O formulário lê as especialidades VINCULADAS À CLÍNICA, não o catálogo
+    // da plataforma.
+    cy.intercept('GET', `${Cypress.env('API_URL')}/clinics/*/specialties*`, {
       statusCode: 200,
       body: { data: [], total: 0, page: 1, limit: 100 },
     }).as('getSpecialties')
@@ -126,7 +131,11 @@ describe('Medical Record Templates Update', () => {
     cy.wait('@getTemplate')
     cy.get('[data-testid="template-form-submit"]').click()
     cy.wait('@updateTemplate')
-    cy.get('[data-testid="template-form-global-error"]').should('be.visible')
+    // Editing cannot change the template's scope, so a 409 here is the optimistic
+    // lock, not the uniqueness rule.
+    cy.get('[data-testid="template-form-global-error"]')
+      .should('be.visible')
+      .and('contain', 'alterado por outra pessoa')
   })
 
   it('redirects to details on successful save', () => {

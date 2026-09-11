@@ -35,8 +35,8 @@ const makeAtestadoDto = (overrides: object = {}) => ({
   ...overrides,
 })
 
-const doctorProps = { appointmentId: 'appt-uuid', professionalId: 'doctor-uuid', canManage: true, userRole: UserRole.PROFESSIONAL }
-const adminProps = { appointmentId: 'appt-uuid', professionalId: 'doctor-uuid', canManage: true, userRole: UserRole.ADMIN }
+const doctorProps = { appointmentId: 'appt-uuid', professionalId: 'doctor-uuid', canManage: true, canIssue: true }
+const adminProps = { appointmentId: 'appt-uuid', professionalId: 'doctor-uuid', canManage: true, canIssue: false }
 
 describe('AtestadoSection (integration)', () => {
   beforeEach(() => {
@@ -76,8 +76,10 @@ describe('AtestadoSection (integration)', () => {
     expect(screen.getByTestId('atestado-item-badge-cert-uuid')).toHaveTextContent('Emitido')
     expect(screen.getByTestId('atestado-item-type-cert-uuid')).toHaveTextContent('Afastamento')
     expect(screen.getByTestId('atestado-item-type-cert-uuid')).toHaveTextContent('3 dias')
-    const expectedDate = new Date('2026-01-05').toLocaleDateString('pt-BR')
-    expect(screen.getByTestId('atestado-item-date-cert-uuid')).toHaveTextContent(expectedDate)
+    // Asserted as a literal on purpose: deriving it with `new Date(...)
+    // .toLocaleDateString()` reproduced the implementation's own timezone bug, so
+    // the assertion agreed with the wrong output and could never fail.
+    expect(screen.getByTestId('atestado-item-date-cert-uuid')).toHaveTextContent('05/01/2026')
   })
 
   it('renders singular "dia" in title when daysOff is 1', async () => {
@@ -123,7 +125,7 @@ describe('AtestadoSection (integration)', () => {
     expect(screen.getByTestId('atestado-item-summary-cert-uuid')).toHaveTextContent('Entrada 08:00 · Saída 08:30')
   })
 
-  it('shows "Novo atestado" button for DOCTOR with canManage', async () => {
+  it('shows "Novo atestado" button for whoever holds a professional profile', async () => {
     mockAtestadosService.getByAppointment.mockResolvedValue([])
     renderWithProviders(<AtestadoSection {...doctorProps} />)
     await waitFor(() => {
@@ -131,7 +133,7 @@ describe('AtestadoSection (integration)', () => {
     })
   })
 
-  it('does not show "Novo atestado" button for ADMIN', async () => {
+  it('does not show \"Novo atestado\" button for someone without a professional profile', async () => {
     mockAtestadosService.getByAppointment.mockResolvedValue([])
     renderWithProviders(<AtestadoSection {...adminProps} />)
     await waitFor(() => {

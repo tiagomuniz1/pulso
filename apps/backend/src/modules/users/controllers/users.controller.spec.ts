@@ -6,6 +6,7 @@ import { FindAllUsersUseCase } from '../use-cases/find-all-users.use-case'
 import { FindUserByIdUseCase } from '../use-cases/find-user-by-id.use-case'
 import { UpdateUserUseCase } from '../use-cases/update-user.use-case'
 import { DeleteUserUseCase } from '../use-cases/delete-user.use-case'
+import { SendUserSetPasswordEmailUseCase } from '../use-cases/send-user-set-password-email.use-case'
 import { PaginationDto } from '../../../common/dto/pagination.dto'
 import { ICurrentUser } from '../../auth/types/current-user.type'
 
@@ -15,6 +16,7 @@ const mockFindById = { execute: jest.fn() } as unknown as jest.Mocked<FindUserBy
 const mockUpdate = { execute: jest.fn() } as unknown as jest.Mocked<UpdateUserUseCase>
 const mockDelete = { execute: jest.fn() } as unknown as jest.Mocked<DeleteUserUseCase>
 const mockActivate = { execute: jest.fn() } as unknown as jest.Mocked<ActivateUserUseCase>
+const mockSendSetPasswordEmail = { execute: jest.fn() } as unknown as jest.Mocked<SendUserSetPasswordEmailUseCase>
 
 const currentUser: ICurrentUser = { id: 'user-uuid-admin', role: UserRole.ADMIN, clinicId: 'clinic-uuid' }
 const platformAdminUser: ICurrentUser = { id: 'platform-uuid', role: UserRole.PLATFORM_ADMIN, clinicId: null }
@@ -24,7 +26,7 @@ describe('UsersController', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    controller = new UsersController(mockCreateUser, mockFindAll, mockFindById, mockUpdate, mockDelete, mockActivate)
+    controller = new UsersController(mockCreateUser, mockFindAll, mockFindById, mockUpdate, mockDelete, mockActivate, mockSendSetPasswordEmail)
   })
 
   it('create delegates to CreateUserUseCase with currentUser', async () => {
@@ -97,5 +99,14 @@ describe('UsersController', () => {
     await controller.delete('u1', currentUser)
 
     expect(mockDelete.execute).toHaveBeenCalledWith('u1', currentUser)
+  })
+
+  it('sendSetPasswordEmail delega ao use-case com o usuário atual', async () => {
+    mockSendSetPasswordEmail.execute.mockResolvedValue({ sent: true })
+
+    const result = await controller.sendSetPasswordEmail('u1', currentUser)
+
+    expect(mockSendSetPasswordEmail.execute).toHaveBeenCalledWith('u1', currentUser)
+    expect(result).toEqual({ sent: true })
   })
 })

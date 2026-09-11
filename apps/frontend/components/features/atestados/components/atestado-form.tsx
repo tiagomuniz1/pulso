@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { MedicalCertificateType } from '@app/shared'
 import { useState } from 'react'
 import { Button } from '@/components/ui/atoms/button/button'
+import { ModalFormActions } from '@/components/ui/molecules/modal-form-actions/modal-form-actions'
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { ProfessionalSignatureSelect } from '@/components/features/professionals/components/professional-signature-select'
 import type { ICreateAtestadoInput } from '../types/atestado-input.types'
@@ -300,7 +301,7 @@ export function AtestadoForm({ appointmentId, professionalId, isPending, globalE
         </Alert>
       )}
 
-      <div className="flex justify-end">
+      <ModalFormActions>
         <Button
           type="submit"
           isLoading={isPending}
@@ -309,7 +310,7 @@ export function AtestadoForm({ appointmentId, professionalId, isPending, globalE
         >
           Emitir atestado
         </Button>
-      </div>
+      </ModalFormActions>
     </form>
   )
 }

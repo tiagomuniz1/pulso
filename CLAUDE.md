@@ -34,8 +34,9 @@ yarn workspace @app/backend migration:run
 yarn workspace @app/backend migration:generate src/database/migrations/nome_da_migration
 yarn workspace @app/backend migration:revert
 yarn workspace @app/backend seed:run
-NODE_ENV=test yarn workspace @app/backend seed:run
 ```
+
+> **Não semeie o schema `test`.** Ele é da suíte de integração, que cria e desmonta o próprio cenário a cada spec, e as migrations que ela precisa são aplicadas no `globalSetup`. O `seed:run` é de desenvolvimento e **recusa** rodar ali: apontá-lo para o `test` renomeia a clínica que os specs usam e derruba dezenas de testes — num spec diferente a cada execução, porque o schema sobrevive entre elas.
 
 ### Desenvolvimento
 
@@ -164,6 +165,20 @@ Cypress.Commands.add('login', (email: string, password: string) => {
   cy.request('POST', `${Cypress.env('API_URL')}/auth/login`, { email, password })
 })
 ```
+
+### Duas suítes, dois modos de roteamento
+
+A suíte padrão (`cypress:run`) roda inteira em **modo path** (`localhost:3000/pulso`). Produção usa **modo subdomínio** (`pulso.pulso.center`), e são contratos diferentes: sob subdomínio o slug vive no host, o middleware reescreve o caminho internamente, o cookie precisa do domínio-pai e as chamadas de API cruzam origem.
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.full.yml up -d --build
+yarn workspace @app/frontend cypress:run:subdomain
+```
+
+* `cypress.subdomain.config.ts` roda apenas `cypress/e2e/subdomain/**` — regra de negócio já é coberta em modo path e rodá-la duas vezes não cobre nada novo. Ali ficam só os casos que o modo path é **incapaz** de exercitar
+* Os helpers de `cypress/support/clinic.ts` (`visitClinic`, `visitBackoffice`, `expectClinicPath`) são mode-aware: leem `SUBDOMAIN_BASE_DOMAIN` e montam URL, domínio de cookie e asserção de caminho conforme o modo. Specs que os usam funcionam nos dois modos sem alteração
+* **A suíte de subdomínio falha em erro de hidratação**, ao contrário da padrão, que os silencia em `cypress/support/e2e.ts`. Divergência entre o que o servidor renderizou e o que o cliente hidratou é a assinatura típica de um componente que decidiu algo pelo pathname — que o middleware reescreve no servidor mas não no browser. Foi assim que a Sidebar passou a exibir marca de clínica no backoffice em produção, com os 117 specs verdes
+* Ao asserir algo que depende do modo, **espere a hidratação** (`cy.wait('@backofficeAuthMe')` e afins). Antes disso o DOM ainda é a marcação do servidor, que costuma estar correta mesmo quando o cliente erra — asserir cedo passa verde com a tela errada
 
 * Sempre usar `data-testid` — nunca classes CSS ou texto
 * Cada teste deve ser independente — sem depender do estado de outro teste

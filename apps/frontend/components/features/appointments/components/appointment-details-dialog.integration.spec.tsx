@@ -1,12 +1,14 @@
 jest.mock('../services/appointments.service')
+jest.mock('@/components/features/appointment-labels/services/appointment-labels.service')
 jest.mock('@/lib/slug-context', () => ({ useSlug: jest.fn(() => 'clinic-slug'), useBasePath: () => '/clinic-slug' }))
 jest.mock('next/navigation', () => ({ useRouter: jest.fn(() => ({ push: jest.fn() })) }))
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppointmentStatus, PatientGender, UserRole } from '@app/shared'
+import { AppointmentLabelColor, AppointmentStatus, PatientGender, UserRole } from '@app/shared'
 import { useRouter } from 'next/navigation'
 import { appointmentsService } from '../services/appointments.service'
+import { appointmentLabelsService } from '@/components/features/appointment-labels/services/appointment-labels.service'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { AppointmentDetailsDialog } from './appointment-details-dialog'
 
@@ -29,6 +31,11 @@ const makeAppointmentDto = (overrides: object = {}) => ({
   insuranceType: null,
   reason: null,
   cancellationReason: null,
+  seriesFutureCount: null,
+  isFirstVisitWithProfessional: false,
+  seriesId: null,
+  seriesSequence: null,
+  seriesTotalOccurrences: null,
   createdAt: new Date(),
   updatedAt: new Date(),
   patient: {
@@ -39,6 +46,7 @@ const makeAppointmentDto = (overrides: object = {}) => ({
     documentNumber: '12345678901',
     gender: PatientGender.FEMALE,
   },
+  label: null,
   ...overrides,
 })
 
@@ -127,6 +135,9 @@ describe('AppointmentDetailsDialog (integration)', () => {
       makeAppointmentDto({
         status: AppointmentStatus.CANCELLED,
         cancellationReason: 'Paciente desmarcou',
+        seriesId: null,
+        seriesSequence: null,
+        seriesTotalOccurrences: null,
       }),
     )
     renderWithProviders(<AppointmentDetailsDialog {...defaultProps} />)
@@ -154,5 +165,164 @@ describe('AppointmentDetailsDialog (integration)', () => {
     renderWithProviders(<AppointmentDetailsDialog {...defaultProps} />)
     await waitFor(() => expect(screen.getByTestId('details-patient')).toBeInTheDocument())
     expect(screen.queryByTestId('fill-medical-record-button')).not.toBeInTheDocument()
+  })
+  it('shows the series position when the appointment belongs to a series', async () => {
+    mockAppointmentsService.getById.mockResolvedValue(
+      makeAppointmentDto({
+        seriesId: 'series-uuid',
+        seriesSequence: 3,
+        seriesTotalOccurrences: 10,
+      }) as never,
+    )
+
+    renderWithProviders(<AppointmentDetailsDialog {...defaultProps} />)
+
+    await waitFor(() => expect(screen.getByTestId('details-series')).toBeInTheDocument())
+    expect(screen.getByTestId('details-series')).toHaveTextContent('Sessão 3 de 10')
+  })
+
+  it('omits the series row for a standalone appointment', async () => {
+    mockAppointmentsService.getById.mockResolvedValue(makeAppointmentDto() as never)
+
+    renderWithProviders(<AppointmentDetailsDialog {...defaultProps} />)
+
+    await waitFor(() => expect(screen.getByTestId('details-patient')).toBeInTheDocument())
+    expect(screen.queryByTestId('details-series')).not.toBeInTheDocument()
+  })
+
+  describe('rótulo', () => {
+    const comRotulo = () =>
+      makeAppointmentDto({
+        label: { id: 'l1', name: 'Retorno', color: AppointmentLabelColor.GREEN },
+      })
+
+    beforeEach(() => {
+      ;(appointmentLabelsService.getAll as jest.Mock).mockResolvedValue({
+        data: [
+          { id: 'l1', name: 'Retorno', color: AppointmentLabelColor.GREEN, isActive: true,
+            createdAt: '2026-01-01T10:00:00.000Z', updatedAt: '2026-01-01T10:00:00.000Z' },
+        ],
+        total: 1, page: 1, limit: 100,
+      })
+    })
+
+    it('lets ADMIN choose the label', async () => {
+      mockAppointmentsService.getById.mockResolvedValue(makeAppointmentDto())
+      renderWithProviders(<AppointmentDetailsDialog {...defaultProps} />)
+
+      expect(await screen.findByTestId('details-label-select')).toBeInTheDocument()
+    })
+
+    it('lets the appointment professional choose the label', async () => {
+      mockAppointmentsService.getById.mockResolvedValue(makeAppointmentDto())
+      renderWithProviders(
+        <AppointmentDetailsDialog
+          {...defaultProps}
+          role={UserRole.PROFESSIONAL}
+          currentDoctorId="doctor-uuid"
+        />,
+      )
+
+      expect(await screen.findByTestId('details-label-select')).toBeInTheDocument()
+    })
+
+    // Consulta alheia: vê o rótulo, não muda.
+    it('shows only the pill to a professional on someone else appointment', async () => {
+      mockAppointmentsService.getById.mockResolvedValue(comRotulo())
+      renderWithProviders(
+        <AppointmentDetailsDialog
+          {...defaultProps}
+          role={UserRole.PROFESSIONAL}
+          currentDoctorId="outro-doutor"
+        />,
+      )
+
+      expect(await screen.findByTestId('details-label-pill')).toHaveTextContent('Retorno')
+      expect(screen.queryByTestId('details-label-select')).not.toBeInTheDocument()
+    })
+
+    it('shows a dash for a professional when there is no label', async () => {
+      mockAppointmentsService.getById.mockResolvedValue(makeAppointmentDto())
+      renderWithProviders(
+        <AppointmentDetailsDialog
+          {...defaultProps}
+          role={UserRole.PROFESSIONAL}
+          currentDoctorId="outro-doutor"
+        />,
+      )
+
+      expect(await screen.findByTestId('details-label')).toHaveTextContent('—')
+    })
+
+    it('saves the chosen label without a submit button', async () => {
+      mockAppointmentsService.getById.mockResolvedValue(makeAppointmentDto())
+      ;(mockAppointmentsService.setLabel as jest.Mock).mockResolvedValue(comRotulo())
+      renderWithProviders(<AppointmentDetailsDialog {...defaultProps} />)
+
+      const select = await screen.findByTestId('details-label-select')
+      // O catálogo chega depois do select: escolher antes erraria por opção
+      // inexistente.
+      await screen.findByRole('option', { name: 'Retorno' })
+      await userEvent.selectOptions(select, 'l1')
+
+      await waitFor(() =>
+        expect(mockAppointmentsService.setLabel).toHaveBeenCalledWith('appt-uuid', 'l1'),
+      )
+    })
+
+    // "Sem rótulo" é desmarcar, e o `null` precisa chegar ao servidor.
+    it('unsets the label with null', async () => {
+      mockAppointmentsService.getById.mockResolvedValue(comRotulo())
+      ;(mockAppointmentsService.setLabel as jest.Mock).mockResolvedValue(makeAppointmentDto())
+      renderWithProviders(<AppointmentDetailsDialog {...defaultProps} />)
+
+      const select = await screen.findByTestId('details-label-select')
+      await userEvent.selectOptions(select, '')
+
+      await waitFor(() =>
+        expect(mockAppointmentsService.setLabel).toHaveBeenCalledWith('appt-uuid', null),
+      )
+    })
+  })
+
+  // É o modal que abre ao clicar na consulta da agenda — o ponto em que o
+  // profissional efetivamente pergunta "já atendi essa paciente?". A agenda em
+  // si não leva o selo, de propósito: a faixa do rótulo já ocupa a borda do
+  // bloco e na visão semana o nome já vem truncado.
+  describe('primeira vez com o profissional', () => {
+    it('mostra o selo colado ao nome da paciente', async () => {
+      mockAppointmentsService.getById.mockResolvedValue(
+        makeAppointmentDto({ isFirstVisitWithProfessional: true }) as never,
+      )
+      renderWithProviders(
+        <AppointmentDetailsDialog
+          appointmentId="appt-uuid"
+          isOpen
+          onClose={jest.fn()}
+          role={UserRole.ADMIN}
+        />,
+      )
+
+      const selo = await screen.findByTestId('first-visit-badge')
+      expect(selo).toHaveTextContent('Primeira vez')
+      expect(screen.getByTestId('details-patient')).toContainElement(selo)
+    })
+
+    it('não mostra o selo para paciente já atendida antes', async () => {
+      mockAppointmentsService.getById.mockResolvedValue(
+        makeAppointmentDto({ isFirstVisitWithProfessional: false }) as never,
+      )
+      renderWithProviders(
+        <AppointmentDetailsDialog
+          appointmentId="appt-uuid"
+          isOpen
+          onClose={jest.fn()}
+          role={UserRole.ADMIN}
+        />,
+      )
+
+      await screen.findByTestId('details-patient')
+      expect(screen.queryByTestId('first-visit-badge')).not.toBeInTheDocument()
+    })
   })
 })

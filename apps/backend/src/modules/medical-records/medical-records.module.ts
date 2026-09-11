@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { CacheModule } from '../../cache/cache.module'
+import { PdfModule } from '../../common/pdf/pdf.module'
+import { ClinicsModule } from '../clinics/clinics.module'
 import { AppointmentsModule } from '../appointments/appointments.module'
 import { ProfessionalsModule } from '../professionals/professionals.module'
 import { MedicalRecordTemplatesModule } from '../medical-record-templates/medical-record-templates.module'
@@ -14,6 +16,8 @@ import { FindMedicalRecordsByPatientUseCase } from './use-cases/find-medical-rec
 import { DeleteMedicalRecordUseCase } from './use-cases/delete-medical-record.use-case'
 import { IMedicalRecordsRepository } from './repositories/medical-records.repository.interface'
 import { MedicalRecordsRepository } from './repositories/medical-records.repository'
+import { GenerateMedicalRecordPdfUseCase } from './use-cases/generate-medical-record-pdf.use-case'
+import { MedicalRecordPdfBuilderService } from './services/medical-record-pdf-builder.service'
 import { ValidateRecordDataService } from './services/validate-record-data.service'
 
 @Module({
@@ -23,6 +27,8 @@ import { ValidateRecordDataService } from './services/validate-record-data.servi
     AppointmentsModule,
     ProfessionalsModule,
     MedicalRecordTemplatesModule,
+    ClinicsModule,
+    PdfModule,
   ],
   controllers: [MedicalRecordsController],
   providers: [
@@ -32,6 +38,8 @@ import { ValidateRecordDataService } from './services/validate-record-data.servi
     FindMedicalRecordByAppointmentUseCase,
     FindMedicalRecordsByPatientUseCase,
     DeleteMedicalRecordUseCase,
+    GenerateMedicalRecordPdfUseCase,
+    MedicalRecordPdfBuilderService,
     ValidateRecordDataService,
     { provide: IMedicalRecordsRepository, useClass: MedicalRecordsRepository },
   ],

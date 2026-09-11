@@ -5,6 +5,7 @@ import { UserRole } from '@app/shared'
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { useScheduleExceptions } from '@/components/features/schedule-exceptions/hooks/use-schedule-exceptions.hook'
 import { BlockBanner } from '@/components/features/schedule-exceptions/components/BlockBanner'
+import { toLocalDateString } from '@/lib/format-date'
 import { useDayAgenda } from '../hooks/use-day-agenda.hook'
 import { AgendaSkeleton } from './agenda-skeleton'
 import { AppointmentSlotCell } from './appointment-slot-cell'
@@ -20,7 +21,9 @@ function getWeekDates(startDate: string): string[] {
   for (let i = 0; i < 7; i++) {
     const d = new Date(base)
     d.setDate(d.getDate() + i)
-    dates.push(d.toISOString().split('T')[0])
+    // toLocalDateString, not toISOString: the latter converts to UTC and shifts
+    // the day for viewers in a positive-offset timezone.
+    dates.push(toLocalDateString(d))
   }
   return dates
 }
@@ -32,13 +35,14 @@ interface DayColumnProps {
   role: UserRole
   currentDoctorId?: string
   effectiveDoctorId?: string
+  labelFilter?: string | null
 }
 
-function DayColumn({ professionalId, date, dayLabel, role, currentDoctorId, effectiveDoctorId }: DayColumnProps) {
+function DayColumn({ professionalId, date, dayLabel, role, currentDoctorId, effectiveDoctorId, labelFilter }: DayColumnProps) {
   const [bookingSlot, setBookingSlot] = useState<IAgendaSlot | null>(null)
   const [detailsId, setDetailsId] = useState<string | null>(null)
 
-  const { slots, isLoading, isError } = useDayAgenda(professionalId, date)
+  const { slots, isLoading, isError } = useDayAgenda(professionalId, date, labelFilter)
   const { data: exceptions = [] } = useScheduleExceptions(
     { professionalId: professionalId === 'self' ? undefined : professionalId, from: date, to: date },
   )
@@ -78,6 +82,7 @@ function DayColumn({ professionalId, date, dayLabel, role, currentDoctorId, effe
                 onBookClick={() => setBookingSlot(slot)}
                 /* c8 ignore next */
                 onDetailsClick={() => setDetailsId(slot.appointment?.id ?? null)}
+                dense
               />
             ))}
           </div>
@@ -110,6 +115,8 @@ interface AgendaWeekGridProps {
   role: UserRole
   currentDoctorId?: string
   effectiveDoctorId?: string
+  /** Recorte por rótulo, aplicado no cliente. */
+  labelFilter?: string | null
 }
 
 export function AgendaWeekGrid({
@@ -118,6 +125,7 @@ export function AgendaWeekGrid({
   role,
   currentDoctorId,
   effectiveDoctorId,
+  labelFilter,
 }: AgendaWeekGridProps) {
   const dates = getWeekDates(startDate)
 
@@ -145,6 +153,7 @@ export function AgendaWeekGrid({
             role={role}
             currentDoctorId={currentDoctorId}
             effectiveDoctorId={effectiveDoctorId}
+            labelFilter={labelFilter}
           />
         )
       })}

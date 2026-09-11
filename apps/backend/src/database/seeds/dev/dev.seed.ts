@@ -1,6 +1,7 @@
 import * as bcrypt from 'bcrypt'
-import { DataSource, ILike, IsNull } from 'typeorm'
-import { AppointmentInsuranceType, AppointmentStatus, CouncilType, DayOfWeek, MedicalRecordFieldType, PatientGender, UserRole } from '@app/shared'
+import { AppointmentLabel } from '../../../modules/appointment-labels/entities/appointment-label.entity'
+import { DataSource, IsNull } from 'typeorm'
+import { AppointmentInsuranceType, AppointmentLabelColor, AppointmentStatus, CouncilType, DayOfWeek, MedicalRecordFieldType, PatientGender, UserRole } from '@app/shared'
 import { Theme } from '../../../modules/themes/entities/theme.entity'
 import { CANONICAL_THEMES as SEED_THEMES } from '../themes/canonical-themes'
 import { Clinic } from '../../../modules/clinics/entities/clinic.entity'
@@ -15,6 +16,10 @@ import { Schedule } from '../../../modules/schedules/entities/schedule.entity'
 import { Appointment } from '../../../modules/appointments/entities/appointment.entity'
 import { MedicalRecordCanonicalField } from '../../../modules/medical-record-canonical-fields/entities/medical-record-canonical-field.entity'
 import { CANONICAL_FIELDS } from '../canonical-fields/canonical-fields'
+import { Vaccine } from '../../../modules/vaccines/entities/vaccine.entity'
+import { VACCINES } from '../vaccines/vaccines'
+import { VaccineScheduleRule } from '../../../modules/vaccine-schedules/entities/vaccine-schedule-rule.entity'
+import { VACCINE_SCHEDULE_RULES } from '../vaccines/vaccine-schedule-rules'
 import {
   MedicalRecordTemplate,
   MedicalRecordTemplateField,
@@ -22,10 +27,26 @@ import {
 import { MedicalRecord } from '../../../modules/medical-records/entities/medical-record.entity'
 import { generateFieldKey } from '../../../modules/medical-record-templates/utils/generate-field-key.util'
 
+// Ponto de partida realista de consultório, não demonstração da paleta: sete
+// rótulos com cores distintas, para a agenda de dev abrir distinguível.
+//
+// "Primeira consulta" saiu daqui: o sistema agora deduz sozinho a primeira vez
+// da paciente com o profissional e mostra no detalhe da consulta. Um rótulo
+// manual homônimo ofereceria duas coisas quase iguais na tela — e a manual
+// erraria em silêncio quando alguém esquecesse de marcar.
+const APPOINTMENT_LABELS = [
+  { name: 'Retorno', color: AppointmentLabelColor.GREEN },
+  { name: 'Pré-natal', color: AppointmentLabelColor.ROSE },
+  { name: 'Encaixe', color: AppointmentLabelColor.BRONZE },
+  { name: 'Urgência', color: AppointmentLabelColor.RED },
+  { name: 'Teleconsulta', color: AppointmentLabelColor.PETROL },
+  { name: 'Exame', color: AppointmentLabelColor.VIOLET },
+  { name: 'Convênio', color: AppointmentLabelColor.SLATE },
+]
+
 const SEED_CLINIC_ID = '10000000-0000-4000-8000-000000000000'
 
 // General (non specialty-scoped) canonical fields, sourced from the shared catalogue.
-const SEED_GENERAL_CANONICAL_FIELDS = CANONICAL_FIELDS.filter((field) => !field.specialtyName)
 
 export async function devSeed(dataSource: DataSource): Promise<void> {
   const defaultTheme = await seedThemes(dataSource)
@@ -34,6 +55,9 @@ export async function devSeed(dataSource: DataSource): Promise<void> {
   await seedClinicAdmin(dataSource.getRepository(User))
   const nutritionSpecialty = await seedNutritionSpecialty(dataSource)
   await seedCanonicalFields(dataSource)
+  await seedAppointmentLabels(dataSource)
+  await seedVaccines(dataSource)
+  await seedVaccineScheduleRules(dataSource)
   await seedMedicalRecordTemplates(dataSource)
   await seedGeneralistProfessional(dataSource)
   await seedNutritionistProfessional(dataSource, nutritionSpecialty)
@@ -42,6 +66,18 @@ export async function devSeed(dataSource: DataSource): Promise<void> {
 
 // Non-medical specialty fixture, created early so the nutrition-scoped canonical fields
 // (bmi, waist_circumference) resolve against it during seedCanonicalFields.
+async function seedAppointmentLabels(dataSource: DataSource): Promise<void> {
+  const repository = dataSource.getRepository(AppointmentLabel)
+
+  for (const data of APPOINTMENT_LABELS) {
+    const existing = await repository.findOneBy({ clinicId: SEED_CLINIC_ID, name: data.name })
+    if (existing) continue
+    await repository.save(repository.create({ clinicId: SEED_CLINIC_ID, ...data, isActive: true }))
+  }
+
+  console.log(`Dev seed: ${APPOINTMENT_LABELS.length} appointment labels ensured.`)
+}
+
 async function seedNutritionSpecialty(dataSource: DataSource): Promise<Specialty> {
   const specialtyRepository = dataSource.getRepository(Specialty)
   let specialty = await specialtyRepository.findOneBy({ name: 'Nutrição Clínica' })
@@ -132,47 +168,82 @@ async function seedNutritionistProfessional(dataSource: DataSource, specialty: S
 async function seedCanonicalFields(dataSource: DataSource): Promise<void> {
   const repository = dataSource.getRepository(MedicalRecordCanonicalField)
 
-  for (const data of SEED_GENERAL_CANONICAL_FIELDS) {
+  // The catalogue is global — a single pass, and `options`/`description` come
+  // from the catalogue itself: dropping them would leave a SELECT field with no
+  // options to pick from.
+  for (const data of CANONICAL_FIELDS) {
     const existing = await repository.findOneBy({ canonicalKey: data.canonicalKey })
-    if (!existing) {
-      await repository.save(
-        repository.create({
-          canonicalKey: data.canonicalKey,
-          label: data.label,
-          type: data.type,
-          options: null,
-          unit: data.unit ?? null,
-          specialtyId: null,
-          description: null,
-        }),
-      )
-      console.log(`Dev seed: canonical field "${data.canonicalKey}" created.`)
-    }
+    if (existing) continue
+
+    await repository.save(
+      repository.create({
+        canonicalKey: data.canonicalKey,
+        label: data.label,
+        type: data.type,
+        options: data.options ?? null,
+        unit: data.unit ?? null,
+        description: data.description ?? null,
+      }),
+    )
+    console.log(`Dev seed: canonical field "${data.canonicalKey}" created.`)
+  }
+}
+
+// Catálogo global de imunobiológicos, mesma natureza dos campos canônicos:
+// vocabulário da plataforma, idempotente por nome.
+async function seedVaccines(dataSource: DataSource): Promise<void> {
+  const repository = dataSource.getRepository(Vaccine)
+
+  for (const data of VACCINES) {
+    const existing = await repository.findOneBy({ name: data.name })
+    if (existing) continue
+
+    await repository.save(
+      repository.create({
+        name: data.name,
+        abbreviation: data.abbreviation,
+        preventedDiseases: data.preventedDiseases,
+        isActive: true,
+      }),
+    )
   }
 
-  const specialtyFields = CANONICAL_FIELDS.filter((field) => field.specialtyName)
-  for (const data of specialtyFields) {
-    const specialty = await dataSource
-      .getRepository(Specialty)
-      .findOne({ where: { name: ILike(data.specialtyName as string) } })
-    if (!specialty) continue
+  console.log(`Dev seed: ${VACCINES.length} vaccines ensured.`)
+}
 
-    const existing = await repository.findOneBy({ canonicalKey: data.canonicalKey })
-    if (!existing) {
-      await repository.save(
-        repository.create({
-          canonicalKey: data.canonicalKey,
-          label: data.label,
-          type: data.type,
-          options: data.options ?? null,
-          unit: data.unit ?? null,
-          specialtyId: specialty.id,
-          description: data.description ?? null,
-        }),
-      )
-      console.log(`Dev seed: canonical field "${data.canonicalKey}" (${data.specialtyName}) created.`)
-    }
+// O calendário oficial como ponto de partida. Idempotente por (vacina, ordem
+// da dose), que é a chave única da tabela.
+async function seedVaccineScheduleRules(dataSource: DataSource): Promise<void> {
+  const vaccineRepository = dataSource.getRepository(Vaccine)
+  const ruleRepository = dataSource.getRepository(VaccineScheduleRule)
+
+  let criadas = 0
+  for (const data of VACCINE_SCHEDULE_RULES) {
+    const vaccine = await vaccineRepository.findOneBy({ name: data.vaccineName })
+    if (!vaccine) continue
+
+    const existing = await ruleRepository.findOneBy({
+      vaccineId: vaccine.id,
+      doseOrder: data.doseOrder,
+    })
+    if (existing) continue
+
+    await ruleRepository.save(
+      ruleRepository.create({
+        vaccineId: vaccine.id,
+        doseLabel: data.doseLabel,
+        doseOrder: data.doseOrder,
+        minAgeMonths: data.minAgeMonths,
+        maxAgeMonths: data.maxAgeMonths ?? null,
+        minIntervalDays: data.minIntervalDays ?? null,
+        appliesToGender: data.appliesToGender ?? null,
+        isActive: true,
+      }),
+    )
+    criadas += 1
   }
+
+  console.log(`Dev seed: ${criadas} vaccine schedule rules created.`)
 }
 
 async function seedMedicalRecordTemplates(dataSource: DataSource): Promise<void> {

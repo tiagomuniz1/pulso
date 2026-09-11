@@ -1,5 +1,26 @@
 import type { Config } from 'tailwindcss'
 
+/**
+ * Paleta dos rótulos de consulta. Vive fora do tema da clínica de propósito: o
+ * `useApplyClinicTheme` sobrescreve apenas accent, bg e raio, então toda
+ * variável `--label-*` é imune por construção.
+ *
+ * As classes precisam existir aqui para serem geradas — `bg-label-${slug}` não
+ * funciona (o Tailwind varre texto, não avalia expressões), e classe não
+ * registrada renderiza sem cor, que é a dívida já existente de `bg-success`.
+ */
+const LABEL_SLUGS = [
+    'rose', 'red', 'terracotta', 'bronze', 'mustard', 'moss', 'green', 'emerald',
+    'petrol', 'blue', 'indigo', 'violet', 'plum', 'magenta', 'stone', 'slate',
+] as const
+
+const labelColors = Object.fromEntries(
+    LABEL_SLUGS.map((slug) => [
+        slug,
+        { DEFAULT: `var(--label-${slug})`, soft: `var(--label-${slug}-soft)` },
+    ]),
+)
+
 const config: Config = {
     darkMode: 'class',
 
@@ -57,6 +78,9 @@ const config: Config = {
                     DEFAULT: 'var(--danger)',
                     soft: 'var(--dangerSoft)',
                 },
+
+                /* Rótulos de consulta — imunes ao tema da clínica */
+                label: labelColors,
             },
 
             /* ===== TYPOGRAPHY ===== */

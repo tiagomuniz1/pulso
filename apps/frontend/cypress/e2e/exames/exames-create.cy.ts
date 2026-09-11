@@ -54,9 +54,19 @@ describe('Exames — Create', () => {
   beforeEach(() => {
     cy.clearCookies()
     cy.clearLocalStorage()
+    // Registered first on purpose: any spec-specific intercept below overrides
+    // it, and the widgets this spec does not care about stop 401-ing the app
+    // into a login/dashboard redirect loop.
+    cy.stubAppointmentDetailWidgets()
     cy.intercept('GET', `${Cypress.env('API_URL')}/professionals*`, {
       statusCode: 200,
       body: { data: [mockProfessional], total: 1, page: 1, limit: 200 },
+    })
+    // A ficha do próprio usuário — mesma armadilha de glob do `/professionals/:id`
+    // logo abaixo. É ela que decide se o botão de emitir aparece.
+    cy.intercept('GET', `${Cypress.env('API_URL')}/professionals/me`, {
+      statusCode: 200,
+      body: mockProfessional,
     })
     // ProfessionalSignatureSelect (rendered inside ExameForm) fetches the single
     // professional by id — a distinct route from the list above (`/professionals*`

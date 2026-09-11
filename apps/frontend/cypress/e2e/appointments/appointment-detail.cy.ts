@@ -1,4 +1,5 @@
 import { visitClinic, CLINIC_ID } from '../../support/clinic'
+import { STUB_TEMPLATE } from '../../support/commands'
 
 const PROFESSIONAL_ID = '00000000-0000-4000-b000-000000000001'
 const APPT_ID = '00000000-0000-4000-d000-000000000002'
@@ -71,7 +72,14 @@ function stubAppointmentDetail(overrides: object = {}) {
   }).as('getAppointmentDetail')
 }
 
-function stubProfessionals() {
+// `mine` é a ficha do próprio usuário: quem a tem, exerce. O glob
+// `/professionals*` não cobre `/professionals/me` — no minimatch o `*` não
+// atravessa a barra — então precisa de intercept próprio.
+function stubProfessionals(mine: object | null = null) {
+  cy.intercept('GET', `${Cypress.env('API_URL')}/professionals/me`, {
+    statusCode: 200,
+    body: mine,
+  }).as('getMyProfessional')
   cy.intercept('GET', `${Cypress.env('API_URL')}/professionals*`, {
     statusCode: 200,
     body: mockProfessionalsResponse,
@@ -85,10 +93,11 @@ function stubMedicalRecord(body: object | null = null) {
   }).as('getMedicalRecord')
 }
 
+// Um modelo: sem nenhum, a aba nem oferece o botão de preencher.
 function stubTemplates() {
   cy.intercept('GET', `${Cypress.env('API_URL')}/medical-record-templates*`, {
     statusCode: 200,
-    body: { data: [], total: 0, page: 1, limit: 1 },
+    body: { data: [STUB_TEMPLATE], total: 1, page: 1, limit: 50 },
   }).as('getTemplates')
 }
 
@@ -111,6 +120,29 @@ function stubExamRequests() {
     statusCode: 200,
     body: [],
   }).as('getExamRequests')
+  // A página de detalhe monta a aba de fotos; sem stub a chamada dá 401 e o
+  // interceptor do api-client joga o app num loop de redirect login/dashboard.
+  cy.intercept('GET', `${Cypress.env('API_URL')}/consultation-photos*`, { statusCode: 200, body: [] })
+
+  // A aba Vacinas monta no load da página, não ao clicar na aba: doses lançadas
+  // nesta consulta e indicações emitidas nela. Sem stub, a chamada bate no
+  // backend real com token mock, dá 401 e o interceptor do api-client joga o
+  // app num loop de redirect — a página inteira some, inclusive o estado de erro.
+  cy.intercept('GET', `${Cypress.env('API_URL')}/vaccinations*`, {
+    statusCode: 200,
+    body: { data: [], total: 0, page: 1, limit: 20 },
+  })
+  cy.intercept('GET', `${Cypress.env('API_URL')}/vaccine-indications*`, { statusCode: 200, body: [] })
+  cy.intercept('GET', `${Cypress.env('API_URL')}/vaccines*`, {
+    statusCode: 200,
+    body: { data: [], total: 0, page: 1, limit: 100 },
+  })
+  // A aba Histórico monta ao ser aberta; sem stub o 401 do backend real leva
+  // o app para /login e a tela some inteira.
+  cy.intercept('GET', `${Cypress.env('API_URL')}/medical-records?*`, {
+    statusCode: 200,
+    body: { data: [], total: 0, page: 1, limit: 50 },
+  }).as('getHistorico')
 }
 
 describe('Appointment Detail Page', () => {
@@ -227,7 +259,7 @@ describe('Appointment Detail Page', () => {
 
   describe('PROFESSIONAL (own appointment)', () => {
     it('sees actions and medical record section', () => {
-      stubProfessionals()
+      stubProfessionals(mockProfessionalsResponse.data[0])
       stubMedicalRecord()
       stubTemplates()
       stubPrescriptions()
@@ -242,7 +274,7 @@ describe('Appointment Detail Page', () => {
     })
 
     it('atestados tab: shows a skeleton while loading, then the empty state', () => {
-      stubProfessionals()
+      stubProfessionals(mockProfessionalsResponse.data[0])
       stubMedicalRecord()
       stubTemplates()
       stubPrescriptions()
@@ -263,7 +295,7 @@ describe('Appointment Detail Page', () => {
     })
 
     it('atestados tab: shows an error state when the list fails to load', () => {
-      stubProfessionals()
+      stubProfessionals(mockProfessionalsResponse.data[0])
       stubMedicalRecord()
       stubTemplates()
       stubPrescriptions()
@@ -296,7 +328,7 @@ describe('Appointment Detail Page', () => {
         patientName: 'João Silva',
         professionalName: 'Dr. Owner',
       }
-      stubProfessionals()
+      stubProfessionals(mockProfessionalsResponse.data[0])
       stubMedicalRecord()
       stubTemplates()
       stubPrescriptions()
@@ -345,4 +377,107 @@ describe('Appointment Detail Page', () => {
       cy.get('[data-testid="tab-prontuario"]').should('not.exist')
     })
   })
+
+  describe('aba Histórico', () => {
+    // Mesmo preparo do describe ADMIN: sem estes stubs as demais chamadas da
+    // tela batem no backend real, dão 401 e o app sai para /login.
+    beforeEach(() => {
+      stubProfessionals()
+      stubMedicalRecord()
+      stubTemplates()
+      stubPrescriptions()
+      stubAtestados()
+      stubExamRequests()
+    })
+
+    const registro = (over = {}) => ({
+      id: 'record-1',
+      appointmentId: 'appointment-antigo',
+      patientId: mockAppointmentDetail.patientId,
+      patientName: 'Paciente Teste',
+      professionalId: 'prof-1',
+      professionalName: 'Dra. Helena Vasconcelos',
+      specialtyId: mockAppointmentDetail.specialtyId,
+      specialtyName: 'Ginecologia',
+      appointmentDate: '2026-03-11',
+      appointmentStartTime: '14:30',
+      templateId: 't1',
+      templateSchemaSnapshot: [
+        { key: 'queixa', label: 'Queixa principal', type: 'text', required: false, order: 1, options: null, placeholder: null, helpText: null, sectionKey: null },
+      ],
+      data: { queixa: 'Dor pélvica' },
+      notes: null,
+      createdAt: '2026-03-11T18:00:00.000Z',
+      updatedAt: '2026-03-11T18:00:00.000Z',
+      ...over,
+    })
+
+    function stubHistorico(itens: object[]) {
+      cy.intercept('GET', `${Cypress.env('API_URL')}/medical-records?*`, {
+        statusCode: 200,
+        body: { data: itens, total: itens.length, page: 1, limit: 50 },
+      }).as('getHistorico')
+    }
+
+    it('mostra os atendimentos anteriores recolhidos, com data e quem atendeu', () => {
+      stubAppointmentDetail()
+      stubHistorico([registro()])
+
+      visitClinic(`/appointments/${APPT_ID}`, mockAdminUser)
+      // As contagens das abas chegam depois e re-renderizam a barra; clicar
+      // antes disso perde o elemento no meio do comando.
+      cy.wait(['@getAppointmentDetail', '@getPrescriptions', '@getAtestados'])
+      cy.get('[data-testid="tab-historico"]').click()
+      cy.wait('@getHistorico')
+
+      cy.get('[data-testid="appointment-history-item-record-1"]')
+        .should('contain', '11/03/2026')
+        .and('contain', 'Dra. Helena Vasconcelos')
+      cy.get('[data-testid="appointment-history-detail-record-1"]').should('not.exist')
+    })
+
+    it('expande o atendimento ao clicar', () => {
+      stubAppointmentDetail()
+      stubHistorico([registro()])
+
+      visitClinic(`/appointments/${APPT_ID}`, mockAdminUser)
+      // As contagens das abas chegam depois e re-renderizam a barra; clicar
+      // antes disso perde o elemento no meio do comando.
+      cy.wait(['@getAppointmentDetail', '@getPrescriptions', '@getAtestados'])
+      cy.get('[data-testid="tab-historico"]').click()
+      cy.wait('@getHistorico')
+
+      cy.get('[data-testid="appointment-history-toggle-record-1"]').click()
+      cy.get('[data-testid="appointment-history-detail-record-1"]')
+        .should('be.visible')
+        .and('contain', 'Dor pélvica')
+    })
+
+    it('a busca filtra pelo que foi registrado', () => {
+      stubAppointmentDetail()
+      stubHistorico([registro(), registro({ id: 'record-2', data: { queixa: 'Prurido vulvar' } })])
+
+      visitClinic(`/appointments/${APPT_ID}`, mockAdminUser)
+      // As contagens das abas chegam depois e re-renderizam a barra; clicar
+      // antes disso perde o elemento no meio do comando.
+      cy.wait(['@getAppointmentDetail', '@getPrescriptions', '@getAtestados'])
+      cy.get('[data-testid="tab-historico"]').click()
+      cy.wait('@getHistorico')
+
+      cy.get('[data-testid="appointment-history-search"]').type('Prurido')
+      cy.get('[data-testid="appointment-history-item-record-2"]').should('exist')
+      cy.get('[data-testid="appointment-history-item-record-1"]').should('not.exist')
+    })
+
+    it('mostra o estado vazio quando não há atendimento anterior', () => {
+      stubAppointmentDetail()
+      visitClinic(`/appointments/${APPT_ID}`, mockAdminUser)
+      // As contagens das abas chegam depois e re-renderizam a barra; clicar
+      // antes disso perde o elemento no meio do comando.
+      cy.wait(['@getAppointmentDetail', '@getPrescriptions', '@getAtestados'])
+      cy.get('[data-testid="tab-historico"]').click()
+      cy.get('[data-testid="appointment-history-empty"]').should('be.visible')
+    })
+  })
+
 })

@@ -3,8 +3,8 @@ import { Test } from '@nestjs/testing'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import { faker } from '@faker-js/faker'
 import * as bcrypt from 'bcrypt'
-import * as cookieParser from 'cookie-parser'
-import * as request from 'supertest'
+import cookieParser from 'cookie-parser'
+import request from 'supertest'
 import { Repository } from 'typeorm'
 import { AppointmentStatus, CouncilType, DayOfWeek, MedicalCertificateType, PatientGender, UserRole } from '@app/shared'
 import { AppModule } from '../../../app.module'
@@ -320,7 +320,7 @@ describe('MedicalCertificatesController (integration)', () => {
       expect(body.startDate).toBeNull()
     })
 
-    it('returns 403 when ADMIN tries to emit certificate', async () => {
+    it('returns 403 when ADMIN without a professional profile tries to emit', async () => {
       await request(app.getHttpServer())
         .post('/medical-certificates')
         .set('Cookie', `access_token=${adminToken}`)

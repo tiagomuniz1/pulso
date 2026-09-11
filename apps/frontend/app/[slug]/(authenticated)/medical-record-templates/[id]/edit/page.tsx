@@ -43,7 +43,14 @@ export default function EditMedicalRecordTemplatePage({ params }: EditMedicalRec
       onError: (error) => {
         const apiError = error as unknown as IApiError
         if (apiError.status === 409) {
-          setGlobalError('Já existe um modelo com este nome para esta especialidade.')
+          // Editar não muda o escopo do modelo, mas muda o nome — e o nome é
+          // único dentro do escopo. Então o 409 aqui tem duas causas possíveis, e
+          // mandar recarregar a página não resolveria a de nome repetido.
+          setGlobalError(
+            apiError.detail?.includes('name')
+              ? 'Já existe um modelo com esse nome neste escopo. Escolha outro nome.'
+              : 'Este modelo foi alterado por outra pessoa. Recarregue a página e tente novamente.',
+          )
         } else {
           setGlobalError('Não foi possível salvar o modelo. Tente novamente.')
         }

@@ -7,11 +7,13 @@ import { IAccessRequestEmailAdapter } from './adapters/access-request-email.adap
 import { AccessRequestEmailAdapter } from './adapters/access-request-email.adapter'
 import { IAccessRequestsRepository } from './repositories/access-requests.repository.interface'
 import { AccessRequestsRepository } from './repositories/access-requests.repository'
+import { EmailSenderService } from '../../common/email/email-sender.service'
 
 @Module({
   imports: [TypeOrmModule.forFeature([AccessRequest])],
   controllers: [AccessRequestsController],
   providers: [
+    EmailSenderService,
     CreateAccessRequestUseCase,
     { provide: IAccessRequestEmailAdapter, useClass: AccessRequestEmailAdapter },
     { provide: IAccessRequestsRepository, useClass: AccessRequestsRepository },

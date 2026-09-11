@@ -1,6 +1,305 @@
 # Changelog — Backend
 
+## [1.16.0] - 2026-09-11
+
+### Added
+- **`GET /appointments/:id` diz se é a primeira vez da paciente com aquele profissional** (`isFirstVisitWithProfessional`). É primeira vez quando não há consulta anterior dos dois que não tenha sido cancelada nem faltada — **sem exigir que alguém tenha marcado "concluída"**, porque concluir é ação manual e clínica corrida esquece; exigir a marcação anunciaria "primeira vez" para quem foi atendida na semana passada
+
+### Fixed
+- **A suíte de integração usa um banco Redis só dela.** Dev e teste apontavam para a mesma instância, no mesmo banco, sem prefixo — e o id da clínica-semente é o mesmo nos dois, então `clinic:10000000-…` colidia e o teste lia a clínica de desenvolvimento. É a metade que a correção anterior de estabilidade não alcançou: lá foi tratada a poluição do banco de dados, e a do cache continuava derrubando um spec diferente a cada execução
+
+### Notes
+- O campo é **calculado na leitura, não gravado**: reatribuir ou cancelar muda quem foi a primeira vez, e uma coluna precisaria de recálculo em cascata. Custa uma consulta indexada num endpoint que não é cacheado
+- A comparação é com a própria consulta, não com "hoje" — por isso a tupla `(date, start_time)`. Assim a própria consulta nunca se conta, e abrir uma consulta antiga continua dizendo a verdade sobre aquele dia
+- Vive só no DTO de detalhe. No DTO base obrigaria os dez produtores do `appointment.mapper`, e a listagem é cacheada por 30s
+- **O rótulo manual "Primeira consulta" saiu do seed de desenvolvimento** — duas coisas quase iguais na tela, e a marcada à mão erraria em silêncio
+
+## [1.15.2] - 2026-09-10
+
+### Fixed
+- **`esModuleInterop` ligado no backend**, fechando a armadilha que apagou o logo dos PDFs. O `tsconfig` tinha `allowSyntheticDefaultImports` **sem** `esModuleInterop`: a checagem de tipos aceitava `import x from 'pacote-cjs'` e o runtime não recebia o helper que faz isso funcionar. Qualquer import default de pacote CommonJS sem `default` próprio compilava limpo e quebrava ao rodar. O frontend e o `shared` já estavam certos — só o backend divergia
+- **Dois mocks que inventavam o formato do módulo.** O do `ioredis` devolvia `{ default: ... }`, formato que o módulo real não tem; funcionava só por causa da configuração errada. Mock que fabrica formato testa um mundo que não existe — foi assim que o logo sumiu de todos os PDFs sem nenhum teste reclamar
+
+### Changed
+- `import * as X` convertido para import default onde o módulo é chamado ou construído (`opossum`, `cookie-parser`, `supertest`) — com `esModuleInterop`, chamar um namespace import é erro de compilação, e foi o próprio compilador que apontou os 29 arquivos
+- `common/module-interop.spec.ts` falha se alguém desligar o `esModuleInterop`
+
+## [1.15.1] - 2026-09-10
+
+### Fixed
+- **O logo da clínica voltou a sair nos PDFs.** Nenhum documento emitido — receita, atestado, pedido de exame, indicação de vacina — trazia o logo, e ninguém percebeu porque o erro era engolido em silêncio. Eram duas falhas somadas:
+  - `import sharp from 'sharp'` compilava mas não funcionava. O `tsconfig` tem `allowSyntheticDefaultImports` **sem** `esModuleInterop`: a checagem de tipos aceita o import default e o runtime não recebe o helper de interop, então `sharp_1.default` era `undefined` e chamá-lo lançava "is not a function". O teste não pegava porque mockava o sharp com `{ __esModule: true, default: ... }` — o mock fabricava exatamente o que faltava no mundo real
+  - Um `catch` sem binding descartava o motivo. O log dizia que não conseguiu ler o logo, nunca por quê, e diagnosticar exigiu acesso à máquina de produção
+
+### Changed
+- **O logo passa a ser lido direto do storage**, por `LoadClinicLogoUseCase`. Antes o backend saía pela internet contra a própria URL pública (`https://api.../clinics/:slug/logo`) — DNS, TLS, CloudFront e balanceador, voltando para o próprio container — para ler um arquivo que estava do lado dele. O `LogoFetcherService` foi removido
+
+## [1.15.0] - 2026-09-10
+
+### Added
+- **PDF do prontuário** (`GET /medical-records/:id/pdf`). Era o único documento clínico que só existia dentro da tela — receita, atestado, pedido de exame e indicação de vacina já saíam em PDF
+- **Numeração e identificação nas páginas de continuação** de todo documento em PDF. Quando um documento passava de uma página, a segunda saía anônima: sem dizer de que clínica é nem que existe uma página 1. Aparecem só quando fazem falta, então documento de página única sai exatamente como saía
+
+### Changed
+- **Abrir prontuário por ID passa a seguir a mesma regra da listagem.** Listar o histórico do paciente devolvia ao profissional os próprios prontuários **e** os das especialidades que ele exerce, mas abrir um por ID exigia ser o autor. Na prática, o histórico listava o prontuário do colega da mesma especialidade e clicar nele dava 404, com o diálogo abrindo vazio. Editar continua sendo só do autor
+- **A base comum de PDF foi extraída** para `common/pdf/`. Os quatro geradores eram cópias quase literais — fontes, cabeçalho, rodapé de assinatura, CPF, meses, estilos. O `LogoFetcherService`, antes re-registrado nos quatro módulos, agora vem do `PdfModule`
+
+### Notes
+- **O PDF do prontuário não tem snapshot nem assinatura**, ao contrário dos outros quatro. Aqueles congelam clínica, profissional e CPF porque são documentos *emitidos*, conferidos depois contra o que foi assinado. O prontuário é um *registro*, e o PDF é cópia tirada hoje dele: cabeçalho resolvido ao vivo, sem bloco de assinatura, com quem atendeu identificado no topo
+- É o primeiro documento longo de verdade: 3 campos saem em 1 página, 25 `textarea` em 7. Cada par rótulo/valor é indivisível, para não sobrar rótulo no pé de uma página e valor no topo da outra
+- Os títulos das seções vêm do modelo vivo — só o `sectionKey` de cada campo é congelado. Modelo excluído sai em lista plana
+
+## [1.14.0] - 2026-09-10
+
+### Added
+
+#### Rótulos de consulta
+- **Catálogo por clínica** (`/appointment-labels`), gerido pelo ADMIN e lido pelos três perfis — a recepção precisa dele para o filtro da agenda. Nome único por clínica (`lower(name)`, parcial em `deleted_at IS NULL`): o rótulo aparece na agenda como cor cujo único texto é o nome, e dois "Retorno" seriam indistinguíveis no seletor e na legenda
+- **A cor é um identificador de paleta, nunca um hex.** Hex no banco não tem variante para modo escuro, e a mesma "verde" precisa ser dois valores conforme o tema — quem sabe o modo em vigor é o frontend
+- **`PATCH /appointments/:id/label`** marca e desmarca (`null` desmarca). ADMIN em qualquer consulta da clínica, profissional só na própria. Rótulo inexistente e de outra clínica respondem igual (422), para não revelar o que existe noutro tenant. Sem guarda de status: reetiquetar consulta concluída é inofensivo e às vezes é o que se quer
+- **Filtro `labelId` e `hasLabel`** na listagem de consultas, com `hasLabel` em tri-estado — ausente não filtra, `false` traz só as sem rótulo
+
+### Changed
+- **`AppointmentResponseDto` ganha `label` aninhado**, resolvido por relação e não em lote. O DTO era montado à mão em **dez** lugares: um campo por parâmetro seria esquecido em algum, e se o `PATCH /confirm` devolvesse sem `label` a cor sumiria da agenda ao confirmar a consulta
+- **Extraído `appointments/appointment.mapper.ts`**, que substituiu as dez cópias de `toResponse`. Foi o que tornou o campo novo uma mudança de um arquivo
+- **Renomear ou recolorir um rótulo invalida também as listas de consultas** (`appointments:list:{clinicId}:`): o rótulo viaja embutido no payload, então sem isso a agenda mostraria o nome velho até o TTL expirar
+
+### Notes
+- Rótulo **desativado continua colorindo** as consultas que já o usam; **excluído** vira `null` e some da agenda. Sai de graça do filtro de soft delete que o TypeORM aplica no join
+
+## [1.13.0] - 2026-09-09
+
+### Added
+
+#### Vários modelos de prontuário por escopo
+- **A clínica pode ter quantos modelos quiser por especialidade e por profissão.** Primeira consulta, retorno e pré-natal são formulários diferentes; um modelo só obrigava a escolher entre eles ou a inchar um que servia mal aos três. Os dois índices únicos parciais de escopo caíram (`UQ_template_clinic_specialty`, `UQ_template_clinic_council_type`) e voltaram como índices comuns, que continuam sendo o caminho de leitura do seletor
+- **`templateId` passa a ser obrigatório no `POST /medical-records`.** Não é conveniência: o frontend resolvia o modelo pegando `data[0]` de uma lista ordenada por `createdAt` e o backend re-resolvia por conta própria com `findOneBy` sem ordenação. Com um modelo por escopo os dois sempre coincidiam; com vários poderiam divergir, e o prontuário nasceria com um schema diferente do que foi preenchido na tela, congelado para sempre no `templateSchemaSnapshot`
+- **O nome passa a ser único dentro do escopo** (`lower(name)`, parcial em `deleted_at IS NULL`). Sem modelo padrão, o nome é o único discriminador que o profissional vê no seletor, e dois "Retorno" na mesma especialidade seriam indistinguíveis. Traduzido do `23505`, sem read-then-write — inclusive no rename, que sem isso viraria 500
+- **`GET /medical-record-templates?isActive=` filtra por situação**, sem default: a gestão precisa enxergar os desativados para reativá-los, e o seletor da consulta pede só os ativos. O filtro entra na chave do cache, senão as duas listas colidiriam na mesma entrada
+
+### Changed
+- **A validação do modelo escolhido substitui a resolução automática** em `create-medical-record.use-case.ts`: `404` para modelo fora da clínica ou excluído (mesma resposta nos dois casos, para não revelar existência alheia), `422` para modelo desativado, `422` para modelo de outra especialidade e `422` para generalista de outra profissão. Este último é o caso que a FK composta não pega — ela é MATCH SIMPLE e, com `specialty_id` nulo dos dois lados, o banco nem checa
+- **`is_active` passa a valer.** A mensagem de erro já prometia "No active template found" e nada filtrava: um modelo desativado continuava virando prontuário novo. Agora desativar é como a clínica aposenta um modelo, sem tocar nos prontuários que nasceram dele — o schema deles está congelado no registro
+- `FindTemplateByClinicAndSpecialtyUseCase` deu lugar a `FindTemplateByClinicAndIdUseCase`: o contrato antigo, "o modelo daquela especialidade" no singular, deixou de existir
+- Removidos os resíduos do commit que moveu a gestão para o ADMIN: imports e a injeção de `IProfessionalsRepository` que ninguém mais usava em `create-medical-record-template.use-case.ts`
+
+### Preserved
+- `UQ_template_id_specialty` e a FK composta `medical_records (template_id, specialty_id)` seguem intactas — com N modelos o par continua trivialmente único, e a FK deixa de ser redundante para virar o backstop de banco da validação
+
+## [1.12.0] - 2026-09-09
+
+### Changed
+
+#### Modelo de prontuário é da clínica, não do profissional
+- **Criar e editar passam a ser exclusivos do ADMIN.** A tabela `medical_record_templates` não tem `professional_id`: o escopo é `clinicId + specialtyId` ou, no generalista, `clinicId + councilType`. Dois médicos da mesma especialidade compartilham o mesmo modelo, e editar mudaria o formulário do colega — o código tratava o modelo como se fosse do profissional, contrariando o próprio modelo de dados
+- **A leitura do profissional passa a ser recortada**, o que não existia: ele via todos os modelos da clínica. Agora vê as especialidades que exerce e o generalista da própria profissão. O recorte vai na consulta ao banco, para o total da paginação bater com o que ele enxerga
+- **O escopo entra na chave do cache da listagem** — sem isso o profissional leria o catálogo inteiro guardado para o ADMIN. No "ver por id" a checagem saiu de dentro do `try` do cache: ali um `Forbidden` seria engolido pelo `catch`, que existe para tolerar falha de Redis, não para esconder negativa de acesso
+- Profissional sem ficha não enxerga modelo nenhum: sem especialidade e sem conselho não há escopo, e o catálogo inteiro seria o oposto do recorte
+
+### Removed
+- `assert-professional-owns-template-scope.util.ts` — a posse do escopo pelo profissional deixou de existir como conceito
+
+## [1.11.0] - 2026-09-08
+
+### Changed
+- **O PROFESSIONAL passa a ler o histórico de prontuários da própria especialidade**, não só o que ele mesmo escreveu. A regra é "o que escrevi **ou** o que foi escrito numa especialidade que exerço" — antes o segundo médico de uma especialidade abria o histórico da paciente vazio, que é justamente quando ele mais precisa dele
+- `GET /medical-records` aceita `specialtyId` e `excludeAppointmentId`. `specialtyId=null` pede exatamente os prontuários de consulta generalista: omitir significaria "todas as especialidades", que é outra coisa
+
+### Added
+- A resposta de prontuário passa a trazer `appointmentDate` e `appointmentStartTime` — data e horário do **atendimento**, não do registro. Os dois divergem quando o médico preenche o prontuário depois, e o que situa a consulta no histórico é quando a paciente foi vista
+- **Prontuário de consulta excluída deixa de ser devolvido.** A relação é juntada por `innerJoinAndSelect`, e o TypeORM acrescenta `deleted_at IS NULL` ao join — atendimento excluído não aparece em histórico nenhum. Na prática nenhum fluxo exclui consulta hoje: a interface cancela, que é status, não exclusão
+
+## [1.10.0] - 2026-09-08
+
+### Changed
+
+#### Envio de e-mail pela API do SES, autenticado pela role da instância
+- Produção passa a enviar pelo **SES**, sem usuário nem senha em lugar nenhum: a role da EC2 já carregava `ses:SendEmail` e o domínio já estava verificado com DKIM. Era um desencontro — o código enviava por SMTP enquanto a infraestrutura tinha sido preparada para a API, e por isso `SMTP_HOST` nunca havia sido semeado
+- O provedor é escolhido pela presença de `SMTP_HOST`: ausente → SES; presente → SMTP (o mailpit local). `EMAIL_PROVIDER` força um dos dois
+- **`EmailSenderService` passa a ser o único lugar que envia e-mail.** Os dois adapters traziam cópias quase idênticas de circuito, checagem de configuração, transporte e log — e a divergência entre elas já havia custado: ambas logavam "circuit breaker open" para qualquer falha. Os adapters ficaram com o que lhes pertence: assunto e corpo
+- `GET /health/email` passa a informar **qual provedor está ativo**, que é a primeira pergunta ao diagnosticar
+
+### Fixed
+- `SESv2Client` recebia `region: undefined` quando a variável não estava no ambiente, o que **anula a resolução do próprio SDK** e derruba o envio com "Region is missing". Encontrado ao testar o caminho SES pela primeira vez — e visível justamente por causa do log novo, que expõe o erro real
+
+## [1.9.0] - 2026-09-08
+
+### Added
+- `POST /users/:id/send-set-password-email` — reenviar o link de definição de senha, exclusivo do ADMIN. `422` para PATIENT (não faz login) e para conta desativada (o link morreria no login sem explicação); `503` com motivo quando o e-mail não sai
+- `GET /health/email` — diagnóstico da configuração de SMTP, **separado do `GET /health`**. Aquele é o healthcheck do container: e-mail quebrado não pode marcar a instância como doente e pô-la em ciclo de restart, com o sistema capaz de atender consulta e emitir documento. Responde `503` com `missing` quando falta configuração, e nunca expõe usuário nem senha
+
+### Changed
+- **Os adapters de e-mail passam a reportar o desfecho** em vez de devolver `void`. `SMTP_HOST` ausente fazia o envio ser pulado em silêncio e quem chamou seguia como se tivesse enviado — era o defeito virado contrato, com um teste afirmando "pula e não lança"
+- **Logs de e-mail com código estável e em nível de erro**, pensados para filtro de métrica no CloudWatch: `EMAIL_NOT_CONFIGURED`, `EMAIL_SEND_FAILED`, `EMAIL_CIRCUIT_OPEN`
+
+### Fixed
+- **O erro real do nodemailer não aparecia em log nenhum.** O `fallback` do opossum substitui a exceção, e ele era o único ponto que logava — pior, logava "circuit breaker open" para qualquer falha, mandando quem investiga para o lugar errado. Agora `failure` expõe o erro e `open` registra o circuito de fato aberto
+
+## [1.8.2] - 2026-09-06
+
+### Added
+- `import:vaccines` — publica o catálogo de vacinas e o Calendário Nacional no banco, no molde de `import:medications` e `import:canonical-fields`. Seeds não rodam em produção, e sem esses dados o módulo de vacinas sobe inerte: sem catálogo não há o que registrar nem indicar, e sem regras a situação vacinal não calcula nada. Idempotente nas duas tabelas — o que já existe não é tocado, porque o backoffice edita esse catálogo
+- `infra/scripts/import-vaccines.sh` — roda a importação em produção por container efêmero via SSM, mesmo mecanismo do seed do admin da plataforma
+
+## [1.8.1] - 2026-09-05
+
+### Fixed
+
+#### `yarn build` produz um artefato que roda
+- `webpack.config.js` chamava `nodeExternals()` sem argumento, que lê `node_modules` relativo ao cwd — em yarn workspaces as dependências estão içadas na raiz, então ele enxergava 11 pacotes de 1186 e empacotava o resto. Só quebrava em dependência com binário nativo, e cada uma tinha ganhado remendo manual (`bcrypt`, `fsevents`, `@next/swc-darwin-arm64`); `sharp` seria o quarto. Agora aponta para a raiz por caminho absoluto e falha alto se não a encontrar
+- Com o bundle compilando, apareceu o bloqueio de verdade: `database.config.ts` resolve entities e migrations por glob de sistema de arquivos, e o webpack junta tudo num arquivo só — o glob acha os 32 `.entity.ts` do código-fonte e o TypeORM morre tentando dar require em TypeScript. **`build` passou a compilar com tsc**, que é o que produção sempre rodou via `build:docker`; este virou apelido de `build`, então o Dockerfile segue intocado
+- `nest-cli.docker.json` → `nest-cli.build.json`: não é mais config exclusiva do container, é a do build
+- `webpack.config.js` fica como opção documentada, com o bloqueio do glob registrado nele
+
+## [1.8.0] - 2026-09-04
+
+### Added
+
+#### Indicação de vacina
+- `POST/GET/DELETE /vaccine-indications` e `GET /vaccine-indications/:id/pdf` — o documento que a paciente leva ao serviço de imunização, no molde do atestado: snapshot `jsonb` congelado na emissão, PDF por pdfmake, assinatura resolvida por `resolveProfessionalSigningIdentity`
+- **Emitir exige ser o profissional da consulta**, para qualquer role — o documento sai com nome, conselho e registro de quem assina
+- **A vacina vem sempre do catálogo**, e desativada não pode ser indicada
+- **Sem QR e sem verificação pública**, ao contrário da receita: ali o QR existe porque a farmácia confere; aqui não há quem confira, e o endpoint público exporia dado de paciente sem leitor do outro lado
+
+### Changed
+- `LogoFetcherService` estava **triplicado** em `prescriptions/`, `medical-certificates/` e `exams/` — três cópias byte a byte idênticas. A quarta seria a da indicação; virou uma só, em `common/services/`
+
+### Fixed
+- A suíte de integração de auth deixava o contador de tentativas de login no Redis, que é compartilhado e não tem schema `test`. A execução seguinte herdava a conta bloqueada e `returns 401 when account is inactive` falhava com "credenciais inválidas" — falha real, mas de higiene de teste, não de produto
+
+## [1.7.0] - 2026-09-04
+
+### Added
+
+#### Calendário vacinal e o que falta a cada paciente
+- `GET /vaccine-schedules/patients/:id` — a situação vacinal: por vacina, se está em dia, pendente, fora da janela, ainda não devida ou dispensada, com a próxima dose e a data a partir da qual ela é devida
+- `GET/POST/PATCH/DELETE /vaccine-schedules/rules` — o calendário, curado pelo PLATFORM_ADMIN e **editável no backoffice**: quando o Ministério muda o esquema, a correção é curadoria, não deploy. Seed com 29 regras do Calendário Nacional
+- `POST /vaccine-schedules/decisions` — a conduta do profissional sobre uma pendência. **Dispensar e adiar exigem motivo**; confirmar não, porque é só reconhecer o calendário
+- O cálculo vive numa **função pura sem I/O** (`evaluate-vaccine-schedule`), com 25 testes: é a peça que faz afirmação clínica e precisa ser testável exaustivamente. O use-case só orquestra
+- O cache da situação carrega o **dia na chave**: a idade do paciente avança à meia-noite sem nada acontecer no sistema
+
+## [1.6.0] - 2026-09-04
+
+### Added
+
+#### Vacinas: catálogo e caderneta do paciente
+- `GET/POST/PATCH/DELETE /vaccines` — catálogo global de imunobiológicos, sem `clinicId`, curado pelo PLATFORM_ADMIN e lido por ADMIN e PROFESSIONAL. Sem importação automática: o calendário oficial não é publicado em formato aberto como o CSV da ANVISA, e são 23 entradas curadas à mão. Índice único por `lower(name)`, parcial no soft delete
+- `GET/POST/PATCH/DELETE /vaccinations` — a caderneta, **ancorada no paciente**. É a única entidade clínica do sistema com `appointment_id` opcional, e a decisão é deliberada: dose aplicada anos atrás em outro serviço não tem consulta a que se amarrar
+- Registrar exige ficha, não cargo — e, diferente das emissões, **não** exige ser o profissional da consulta, porque não há assinatura verificável envolvida. Corrigir e excluir são escopo: ADMIN em qualquer registro, profissional só nos próprios
+- A recepção não lê caderneta
+
+## [1.5.4] - 2026-09-02
+
+### Fixed
+
+#### ADMIN pode largar a própria ficha de profissional
+- `DELETE /professionals/:id` recusava qualquer exclusão da própria ficha, de qualquer cargo. O guard existe contra a autodestruição: excluir a ficha de um usuário de role `PROFESSIONAL` apaga o usuário junto (ou o rebaixa a `PATIENT`), e quem fizesse isso em si mesmo perderia o acesso na hora
+- Para `ADMIN` essa consequência não existe — o usuário fica intacto, com o mesmo cargo e ativo. O guard passa a valer só quando a exclusão de fato destruiria a própria conta
+- Sem isso, quem administra a própria clínica ficava preso à ficha para sempre: ninguém mais pode excluí-la, e ele não podia excluir a si mesmo. Era um caminho sem volta, exatamente o risco registrado quando cargo e ofício foram separados
+
+## [1.5.3] - 2026-09-01
+
+### Fixed
+
+#### `POST /auth/refresh` limpa a sessão ao falhar
+- Um refresh recusado devolvia `401` deixando `access_token` e `refresh_token` no navegador. Como são `httpOnly`, o cliente não consegue apagá-los sozinho — e a página de login, que decide pela presença do `access_token`, devolvia o usuário ao dashboard. O resultado era um loop de redirecionamento até o navegador cortar
+- Agora os dois cookies são limpos nos dois caminhos de falha: refresh token ausente, e refresh token recusado pelo use-case (expirado, revogado ou inexistente)
+- `POST /auth/logout` já fazia isso; o refresh é o outro fim da mesma sessão e não fazia
+
+## [1.5.2] - 2026-09-01
+
+### Fixed
+
+#### Modelo de receita para quem administra e atende
+- `POST /prescription-templates` resolvia a ficha do autor pelo `role`: um ADMIN **tinha** de informar `professionalId`, e omiti-lo dava `422`. Uma médica que administra a própria clínica precisava se escolher numa lista de profissionais para cadastrar o próprio modelo
+- Passa a buscar a ficha do chamador antes de olhar o cargo. Com ficha e sem `professionalId`, o modelo nasce sob a própria ficha; com `professionalId` explícito, em nome daquele profissional — é o ADMIN agindo por outro. Sem ficha e sem `professionalId`, o `422` continua
+- Nada muda para `PROFESSIONAL`: continua restrito à própria ficha, e um `professionalId` alheio no corpo continua sendo ignorado
+
+## [1.5.1] - 2026-09-01
+
+### Fixed
+
+#### Escalada de privilégio ao editar o próprio perfil
+- `PATCH /users/:id` repassava o DTO inteiro ao update depois de checar apenas "você só edita a si mesmo". Como `role` e `isActive` viajam nesse DTO, **qualquer USER ou PROFESSIONAL virava ADMIN com um PATCH no próprio id**. A interface escondia o seletor, e era só isso que segurava — o backend é a fonte de verdade
+- Passa a recusar alteração de `role` ou `isActive` por quem não é ADMIN, e alteração do próprio `role` mesmo por ADMIN: numa clínica com um administrador só, rebaixar a si mesmo a deixaria sem ninguém capaz de gerir usuários
+- A comparação é contra o valor atual, não a presença do campo — o formulário reenvia perfil e status inalterados ao salvar "Meu perfil", e recusar isso quebraria a edição do próprio cadastro
+- Mesmo padrão que `update-professional.use-case.ts` já usava para o `isActive`; o módulo de usuários não o tinha
+
+## [1.5.0] - 2026-09-01
+
+### Added
+
+#### `GET /professionals/me`
+- Devolve a ficha de profissional do próprio usuário, ou `null` quando ele não exerce. `200` com `null`, nunca `404` — não ter ficha é resposta comum, e um 404 faria o React Query tratar como erro e repetir. Declarada acima de `@Get(':id')`, senão `me` seria capturado como id
+
+### Changed
+
+#### Cargo e ofício deixam de ser a mesma coisa
+- **Exercer** (emitir receita, atestado, pedido de exame; anexar/remover resultado; enviar foto) passa a depender da **ficha de profissional**, não do `role`. As 6 rotas que eram `@Roles(PROFESSIONAL)` exclusivas aceitam `ADMIN, PROFESSIONAL`, e o use-case exige a ficha
+- **Escopo** continua vindo do `role`: ADMIN vê a clínica toda, PROFESSIONAL vê o próprio. Nada muda para quem já usa
+- **Emitir exige ser o profissional da consulta, para qualquer role** — inclusive ADMIN. O documento leva um snapshot de assinatura e um `verification_token` conferido publicamente pela farmácia; emitir sobre consulta alheia produziria documento verificável atestando registro de outra pessoa
+- Ver e excluir documento seguem administrativos: ADMIN irrestrito na clínica
+
+### Fixed
+
+#### Fallback que assinava em nome do profissional da consulta
+- `create-prescription`, `create-medical-certificate` e `create-exam-request` tinham `professionalForRbac ?? findById(appointment.professionalId)`. Era código morto — nenhum ADMIN chegava lá —, mas deixava o sistema a um `if` de distância de emitir documento assinado por quem não o emitiu. Removido
+
+## [1.4.0] - 2026-08-31
+
+### Changed
+
+#### Catálogo de campos canônicos passa a ser global
+- **Breaking (DTO):** `specialtyId` sai de `CanonicalFieldResponseDto`, `CreateCanonicalFieldDto` e `UpdateCanonicalFieldDto`, e do query param da listagem. O `ValidationPipe` roda com `forbidNonWhitelisted`, então enviar o campo agora resulta em `400`
+- Migration `1754700000000` derruba `specialty_id`, sua FK e seu índice. O `down` recria a estrutura, **não os dados**
+- `findForSuggestion(specialtyId, includeInactive)` vira `findAll(includeInactive)` — o nome descrevia um escopo que não existe mais. A ordenação passa a ser só por `label`
+- `create`/`update` deixam de validar a especialidade; o módulo não importa mais `SpecialtiesModule`
+- Chave de cache simplifica de `canonical_fields:list:${specialtyId ?? 'all'}` para `canonical_fields:list`
+
+### Fixed
+
+#### Campo escopado era invisível no backoffice
+- A listagem reusava `findForSuggestion`, cujo ramo sem especialidade filtrava `specialty_id IS NULL`. Como a tela de catálogo não tem filtro de especialidade, o PLATFORM_ADMIN nunca via nem editava uma entrada escopada — em produção o `risk_level` estava no banco e some da tela
+
+#### Três campos do catálogo nunca eram importados
+- `bmi` e `waist_circumference` apontavam para "Nutrição Clínica" e `range_of_motion` para "Fisioterapia Ortopédica", especialidades que o catálogo não define (só as 17 do CRM). O importador as descartava com warning. Sem escopo, os três entram
+- `infra/scripts/publish-canonical-data.sh`: no dataset `all`, os campos canônicos eram importados **antes** das especialidades, o que garantia o descarte em base nova. Ordem corrigida
+- `carga.seed.ts` duplicava o catálogo inline com só 8 entradas; passa a consumir `CANONICAL_FIELDS`, então os templates que referenciam `bmi`, `waist_circumference` e `range_of_motion` deixam de cair como não-canônicos
+
 ## [Unreleased]
+
+### Added
+
+#### Consultas recorrentes
+- Nova tabela `appointment_series` guardando a regra escolhida (intervalo, dia da semana, horário, data âncora e o terminador: nº de ocorrências e/ou data-limite) e quantas ocorrências foram criadas; `appointments` ganha `series_id` + `series_sequence` (posição 1..N, imutável — cancelar a #3 não renumera as demais)
+- `GET /appointments/recurring/preview` (ADMIN, PROFESSIONAL) devolve as datas candidatas com o motivo de cada indisponibilidade — `available`, `already_booked`, `outside_schedule`, `blocked_by_exception`, `in_the_past` — em vez de um simples "não dá"
+- `POST /appointments/recurring` (ADMIN, PROFESSIONAL) cria a série inteira ou nenhuma consulta. O cliente envia as datas que confirmou na tela; o servidor revalida que todas caem no mesmo dia da semana, na grade do intervalo, dentro do horizonte e no futuro. Se algo mudou desde a prévia, responde `409` listando **todas** as datas problemáticas de uma vez, em `conflictingOccurrences`
+- Primeiro endpoint do projeto a usar o `IdempotencyInterceptor` (que existia e nunca fora aplicado): um reenvio com o mesmo `Idempotency-Key` não duplica a série. Ressalvas conhecidas do interceptor: só cacheia sucesso e não tem guarda de in-flight — o lock e o índice único cobrem o resto
+- `PATCH /appointments/:id/cancel` aceita `scope`: `single_occurrence` (padrão, retrocompatível) ou `this_and_future_occurrences`, que cancela a ocorrência e todas as posteriores da série numa transação. A resposta ganha `cancelledOccurrenceCount` e `cancelledAppointmentIds`
+- `GET /appointments/series/:seriesId` (ADMIN, PROFESSIONAL, USER) devolve a série com suas ocorrências ordenadas
+- `AppointmentResponseDto` ganha `seriesId`, `seriesSequence` e `seriesTotalOccurrences`; `AppointmentDetailResponseDto` ganha `seriesFutureCount` (contado, não derivado de `total - sequence`, que ignoraria ocorrências já canceladas ou concluídas)
+- Limites: **26 ocorrências e 365 dias**, o que vier primeiro (`packages/shared/src/config/recurrence.config.ts`, consumido também pelo frontend)
+
+### Changed
+
+#### Concorrência da criação em lote
+- Um único lock distribuído por `(clínica, profissional)` — 26 locks aninhados por slot seriam lentos e impossíveis de liberar numa aquisição parcial. Os INSERTs saem em ordem de data crescente dentro de uma transação, o que torna deadlock entre duas séries impossível
+- O **índice único parcial continua sendo o árbitro real** da corrida contra o `POST /appointments` avulso, que tranca um espaço de chave diferente — por isso o tratamento de `23505` é obrigatório, não decorativo
+
+#### Trocar profissional bloqueado em consulta de série
+- `PATCH /appointments/:id/reassign` passa a recusar (`422`) uma consulta com `seriesId`: trocar o profissional de uma ocorrência deixaria a série heterogênea e quebraria a checagem de posse usada no cancelamento em escopo. Reatribuir a série inteira é feature futura
+
+### Fixed
+
+#### Agendamento avulso ignorava bloqueios da agenda
+- `create-appointment` derivava o slot na mão e **não consultava `schedule_exceptions`** — dava para agendar em cima de um bloqueio. Agora delega ao `ResolveProfessionalSlotUseCase`, que já validava grade + exceção + ocupação, corrigindo o furo e eliminando a duplicação. Sem isso, a prévia recorrente marcaria a data como "Bloqueado" e o usuário contornaria agendando avulso
+
+#### Consulta confirmada não segurava o slot
+- O índice único parcial e o `findActiveBySlot` cobriam apenas `status = 'scheduled'`, então uma consulta **confirmada** reaparecia como horário livre na disponibilidade e podia ser duplo-agendada sem violar o índice. Raro numa consulta avulsa; quase certo ao longo de uma série recorrente longa
+- `UQ_appointment_slot_scheduled` vira `UQ_appointment_slot_active`, cobrindo `scheduled` e `confirmed`; `cancelled`/`completed`/`no_show` seguem liberando o slot. **Antes de rodar em produção**, checar duplicatas com a query documentada no cabeçalho da migration — a criação do índice falha se existir alguma
+
+#### `GET /appointments` quebrava ao ordenar por coluna com JOIN
+- O `ORDER BY` usava `appointment.start_time` (nome de coluna) em vez de `appointment.startTime` (nome da propriedade). Sem JOIN o TypeORM não precisava resolver isso; com o JOIN da série, a paginação passa pela metadata da entidade e estourava `Cannot read properties of undefined (reading 'databaseName')`
 
 ### Added
 
@@ -138,6 +437,37 @@
 #### Medicamentos — índices de busca
 - Migration `add_medications_trigram_indexes`: índices GIN `gin_trgm_ops` em `name` e `active_ingredient` (parciais, `WHERE deleted_at IS NULL`) para acelerar a busca `ILIKE '%termo%'` — elimina o Seq Scan na listagem e no `COUNT` (medido: count ~16ms→1ms, página de termo raro ~31ms→2ms na base com ~36k registros)
 - Removido o btree `IDX_medications_active_ingredient` (não utilizável por `ILIKE` nem ordenação)
+
+## [1.3.2] - 2026-08-28
+
+### Fixed
+
+#### Um logo inválido derrubava a geração de PDF inteira
+- `LogoFetcherService` confiava no `content-type` e devolvia os bytes em base64 **sem verificar se eram uma imagem**. O upload valida apenas o `mimetype` declarado pelo cliente, então um arquivo que só se diz PNG chegava intacto ao pdfmake, que lançava exceção e levava o documento junto — uma clínica com um logo corrompido perderia **receita, atestado e exame de uma vez**
+- Os bytes passam a ser lidos pelo `sharp` antes de virarem data URI; se não forem uma imagem, o PDF é gerado sem logo, que é o que o serviço já dizia fazer nos outros caminhos de falha
+- O serviço tem **três cópias idênticas** (receitas, atestados e exames); a correção foi aplicada nas três
+
+#### Consulta confirmada não segurava o slot
+- O índice único parcial e as consultas de disponibilidade olhavam só `status = 'scheduled'`, então **confirmar** uma consulta soltava o horário: ele reaparecia como livre na disponibilidade e podia ser agendado por cima sem violar o índice. Raro numa marcação avulsa, quase certo ao longo de uma série recorrente
+- `UQ_appointment_slot_scheduled` vira `UQ_appointment_slot_active`, cobrindo `scheduled` **e** `confirmed`. A constante do repositório passa a se chamar `ACTIVE_STATUSES` e é a fonte única com que o índice precisa ficar em sincronia
+- Os guardas de "tem consulta futura?" que bloqueiam excluir **agenda** e **profissional** também olhavam só `scheduled` — dava para excluir um profissional cujas consultas futuras estivessem todas confirmadas. Uma consulta confirmada é mais motivo para bloquear a exclusão, não menos
+- Verificado antes de aplicar: a query de detecção não encontrou **nenhuma** linha duplicada em produção, e não existe hoje nenhuma consulta `confirmed` — a migração é preventiva e não pode falhar com os dados atuais
+
+## [1.3.1] - 2026-08-28
+
+### Fixed
+
+#### QR Code da receita levava a farmácia para uma tela de login
+- A URL do QR era montada como `${FRONTEND_URL}/${slug}/verify/prescriptions/...`, mas em produção `FRONTEND_URL` aponta para `backoffice.pulso.center` e cada clínica é servida no próprio subdomínio. O middleware do frontend lia o slug do host (`backoffice`), o que sobrava do caminho virava `/pulso/verify/...`, a rota deixava de ser pública e o visitante era mandado para o login do backoffice — uma conta que a farmácia não tem
+- Novo `common/utils/clinic-url.utils.ts` monta a URL do mesmo jeito que o app resolve a clínica em runtime: subdomínio quando `COOKIE_DOMAIN` está definido (produção e stack local completa), slug no caminho quando não está (dev local)
+- **O link do e-mail de definir senha tinha exatamente o mesmo defeito** e caía no mesmo login errado — corrigido junto
+- Os specs do gerador de PDF só exercitavam path-mode, por isso passavam com a URL errada; o caso de subdomínio agora está coberto
+
+#### Upload de foto da consulta falhava com `500` em produção
+- A policy IAM `clinic-assets-write-production` listava só os prefixos `clinics/*` e `exam-results/*` do bucket; `consultation-photos/*` nunca foi incluído, então todo upload de foto batia em `AccessDenied` na AWS. Corrigido em `infra/terraform/modules/s3-clinic-assets`, que agora documenta que um prefixo faltando não falha no deploy — falha como `500` no primeiro upload daquele tipo
+
+#### Erro do S3 vazava detalhes da infraestrutura para o cliente
+- `StorageAdapter` deixava a exceção do SDK subir, e o `ExceptionFilter` a devolvia no corpo da resposta: a mensagem da AWS nomeia o id da conta, o role IAM, o id da instância e o ARN do bucket. Agora as três operações (upload, download, remove) registram a causa no log do servidor e devolvem uma mensagem genérica
 
 ## [1.1.0] - 2026-06-20
 

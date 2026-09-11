@@ -53,6 +53,9 @@ describe('Schedules Create', () => {
   beforeEach(() => {
     cy.clearCookies()
     cy.clearLocalStorage()
+    // A ficha do próprio usuário: neste spec ele é o profissional.
+    // O glob `/professionals*` não cobre esta rota — `*` não atravessa a barra.
+    cy.intercept('GET', `${Cypress.env('API_URL')}/professionals/me`, { statusCode: 200, body: mockProfessionalsList.data[0] })
     cy.intercept('GET', `${Cypress.env('API_URL')}/professionals*`, { statusCode: 200, body: mockProfessionalsList })
     cy.intercept('GET', `${Cypress.env('API_URL')}/schedules*`, { statusCode: 200, body: { data: [], total: 0, page: 1, limit: 20 } })
   })
@@ -86,14 +89,20 @@ describe('Schedules Create', () => {
     cy.contains('Horário de fim deve ser após o início').should('be.visible')
   })
 
-  it('shows validation error when interval is not divisible by slot duration', () => {
+  // 40 min é uma duração perfeitamente válida — só não fecha numa janela de 1h.
+  // A mensagem precisa dizer isso, e não parecer que 40 é proibido.
+  it('explains why the duration does not close the window, and how to fix it', () => {
     visitClinic('/schedules/new', mockProfessionalUser)
     cy.get('[data-testid="schedule-form-day"]').select('TUESDAY')
     cy.get('[data-testid="schedule-form-start-time"]').clear().type('08:00')
     cy.get('[data-testid="schedule-form-end-time"]').clear().type('09:00')
     cy.get('[data-testid="schedule-form-slot"]').type('{selectall}40')
     cy.get('[data-testid="schedule-form-submit"]').click()
-    cy.contains('O intervalo de tempo deve ser divisível pela duração do slot').should('be.visible')
+    cy.contains('não fecha em blocos de 40 min')
+      .should('be.visible')
+      .and('contain.text', 'sobrariam 20 min')
+      .and('contain.text', 'use 20, 30 ou 60 min')
+      .and('contain.text', 'termine às 09:20')
   })
 
   it('applies time mask — typing digits only auto-inserts colon', () => {

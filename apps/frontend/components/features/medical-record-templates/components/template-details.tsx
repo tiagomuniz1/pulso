@@ -15,6 +15,7 @@ import { TemplateListSkeleton } from './template-list-skeleton'
 import { TemplateDeleteDialog } from './template-delete-dialog'
 import type { MedicalRecordFieldType } from '@app/shared'
 import type { ITemplateFieldModel, ITemplateModel, ITemplateSectionModel } from '../types/template-model.types'
+import { professionLabel, specialtyLabel } from '../utils/template-labels'
 
 const FIELD_TYPE_LABELS: Record<MedicalRecordFieldType, string> = {
   text: 'Texto',
@@ -26,29 +27,9 @@ const FIELD_TYPE_LABELS: Record<MedicalRecordFieldType, string> = {
   multiselect: 'Seleção múltipla',
 } as Record<MedicalRecordFieldType, string>
 
-// Specialties only exist for Medicina (CRM) — a specialty template has no councilType of its
-// own (only specialtyId), so its profession is always CRM. Every other template carries its
-// profession directly via councilType.
-function professionLabel(template: ITemplateModel): string {
-  const councilType = template.specialtyId ? CouncilType.CRM : template.councilType
-  return councilType ? COUNCIL_TYPE_PROFESSION_LABELS[councilType] : '—'
-}
-
-function specialtyLabel(template: ITemplateModel): string {
-  return template.specialtyName ?? '—'
-}
-
 // Ownership mirrors the backend's rule in AssertProfessionalOwnsTemplateScope: a specialty
 // template belongs to whoever has that specialty; a profession-wide (generalist) template
 // belongs to whoever's own primary registration matches its councilType.
-function ownsTemplateScope(template: ITemplateModel, myProfessional: IProfessionalModel | undefined): boolean {
-  if (!myProfessional) return false
-  if (template.specialtyId) {
-    return myProfessional.specialties.some((s) => s.id === template.specialtyId)
-  }
-  return template.councilType === getPrimaryCouncilType(myProfessional.registrations)
-}
-
 function FieldCard({ field, index }: { field: ITemplateFieldModel; index: number }) {
   return (
     <div
@@ -125,8 +106,6 @@ export function TemplateDetails({ templateId }: TemplateDetailsProps) {
   const basePath = useBasePath()
   const role = useAuthStore((s) => s.user?.role)
   const isAdmin = role === UserRole.ADMIN
-  const isProfessional = role === UserRole.PROFESSIONAL
-  const { data: myProfessional } = useMyProfessional({ enabled: isProfessional })
 
   const { data: template, isPending, isError } = useTemplate(templateId)
   const { mutate: deleteTemplate, isPending: isDeleting } = useDeleteTemplate()
@@ -163,7 +142,8 @@ export function TemplateDetails({ templateId }: TemplateDetailsProps) {
   const sortedSections = [...template.sections].sort((a, b) => a.order - b.order)
 
   const totalFields = template.fields.length
-  const canEdit = isAdmin || (isProfessional && ownsTemplateScope(template, myProfessional))
+  // Editar mudaria o formulário que a clínica inteira usa — é gestão do ADMIN.
+  const canEdit = isAdmin
 
   return (
     <div className="flex flex-col gap-6" data-testid="template-details">

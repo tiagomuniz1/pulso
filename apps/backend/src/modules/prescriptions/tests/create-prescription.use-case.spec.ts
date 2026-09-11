@@ -104,6 +104,11 @@ const mockAppointmentsRepository: jest.Mocked<IAppointmentsRepository> = {
   findById: jest.fn(),
   findActiveByProfessionalAndDate: jest.fn(),
   findActiveBySlot: jest.fn(),
+  findActiveByDatesAndTime: jest.fn(),
+  findBySeriesId: jest.fn(),
+  findBySeriesIdFromDate: jest.fn(),
+  countBySeriesIdAfterDate: jest.fn(),
+  hasEarlierVisitWithProfessional: jest.fn(),
   hasFutureByScheduleId: jest.fn(),
   hasFutureByProfessionalId: jest.fn(),
   create: jest.fn(),
@@ -175,7 +180,7 @@ describe('CreatePrescriptionUseCase', () => {
     )
     mockAppointmentsRepository.findById.mockResolvedValue(makeAppointment() as any)
     mockProfessionalsRepository.findByUserId.mockResolvedValue(makeDoctor() as any)
-    mockProfessionalsRepository.findById.mockResolvedValue(makeDoctor() as any)
+    mockProfessionalsRepository.findByUserId.mockResolvedValue(makeDoctor() as any)
     mockPatientsRepository.findById.mockResolvedValue(makePatient() as any)
     mockMedicationsRepository.findById.mockResolvedValue(makeMedication() as any)
     ;(mockFindClinicByIdUseCase.execute as jest.Mock).mockResolvedValue(makeClinic())
@@ -209,11 +214,18 @@ describe('CreatePrescriptionUseCase', () => {
     expect(mockProfessionalsRepository.findById).not.toHaveBeenCalled()
   })
 
-  it('loads doctor by ID for ADMIN (no RBAC check)', async () => {
+  // O cargo não emite; a ficha emite. Um ADMIN que também atende resolve a
+  // própria ficha pelo userId, igual a qualquer profissional.
+  it('resolves the issuer profile by userId, for ADMIN too', async () => {
     await useCase.execute(baseDto, adminUser)
 
-    expect(mockProfessionalsRepository.findByUserId).not.toHaveBeenCalled()
-    expect(mockProfessionalsRepository.findById).toHaveBeenCalledWith(professionalId, clinicId)
+    expect(mockProfessionalsRepository.findByUserId).toHaveBeenCalledWith(adminUser.id, clinicId)
+  })
+
+  it('throws ForbiddenException when the issuer has no professional profile', async () => {
+    mockProfessionalsRepository.findByUserId.mockResolvedValue(null)
+
+    await expect(useCase.execute(baseDto, adminUser)).rejects.toThrow(ForbiddenException)
   })
 
   it('builds snapshot with denormalized clinic, doctor, patient, and items', async () => {
@@ -242,7 +254,7 @@ describe('CreatePrescriptionUseCase', () => {
         { specialtyId: altSpecialtyId, registryNumber: '222', specialty: { id: altSpecialtyId, name: 'Mastologia', titleName: 'mastologista' } },
       ],
     }
-    mockProfessionalsRepository.findById.mockResolvedValue(doctorWithOptions as any)
+    mockProfessionalsRepository.findByUserId.mockResolvedValue(doctorWithOptions as any)
 
     await useCase.execute({ ...baseDto, registrationId: 'crm-2', specialtyId: altSpecialtyId }, adminUser)
 
@@ -263,7 +275,7 @@ describe('CreatePrescriptionUseCase', () => {
     mockAppointmentsRepository.findById.mockResolvedValue(
       makeAppointment({ professionalId: nutritionistId, specialtyId: null }) as any,
     )
-    mockProfessionalsRepository.findById.mockResolvedValue(nutritionist as any)
+    mockProfessionalsRepository.findByUserId.mockResolvedValue(nutritionist as any)
 
     await useCase.execute(baseDto, adminUser)
 
@@ -334,7 +346,7 @@ describe('CreatePrescriptionUseCase', () => {
   })
 
   it('sets specialtyName to null when doctor has no matching specialty', async () => {
-    mockProfessionalsRepository.findById.mockResolvedValue(makeDoctor({ specialties: [] }) as any)
+    mockProfessionalsRepository.findByUserId.mockResolvedValue(makeDoctor({ specialties: [] }) as any)
 
     await useCase.execute(baseDto, adminUser)
 
@@ -444,12 +456,6 @@ describe('CreatePrescriptionUseCase', () => {
     }
 
     await expect(useCase.execute(badDto as any, adminUser)).rejects.toThrow(UnprocessableEntityException)
-  })
-
-  it('throws NotFoundException when doctor not found during snapshot', async () => {
-    mockProfessionalsRepository.findById.mockResolvedValue(null)
-
-    await expect(useCase.execute(baseDto, adminUser)).rejects.toThrow(NotFoundException)
   })
 
   it('throws NotFoundException when patient not found', async () => {

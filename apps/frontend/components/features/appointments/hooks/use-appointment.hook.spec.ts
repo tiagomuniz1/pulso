@@ -30,6 +30,12 @@ const makeModel = (): IAppointmentDetailModel => ({
   status: AppointmentStatus.SCHEDULED,
   reason: null,
   cancellationReason: null,
+  label: null,
+  seriesFutureCount: null,
+  isFirstVisitWithProfessional: false,
+  seriesId: null,
+  seriesSequence: null,
+  seriesTotalOccurrences: null,
   createdAt: new Date(),
   updatedAt: new Date(),
   patient: {

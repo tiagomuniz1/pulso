@@ -24,6 +24,7 @@ const mockDoctors = [
 const mockDefaultValues: IScheduleModel = {
   id: 'uuid-1',
   professionalId: 'doc-uuid-1',
+  professionalName: 'Dr. Test',
   dayOfWeek: DayOfWeek.MONDAY,
   startTime: '08:00',
   endTime: '12:00',
@@ -139,6 +140,24 @@ describe('ScheduleForm — create mode', () => {
     expect(screen.getByTestId('schedule-form-end-time')).toHaveAttribute('aria-invalid', 'true')
   })
 
+  // These three shipped in English — 'Required' and the full list of accepted
+  // enum values — because the check above only asserted aria-invalid.
+  it('writes the empty-field errors in Portuguese, without exposing enum values', async () => {
+    renderWithProviders(
+      <ScheduleForm mode="create" role={UserRole.PROFESSIONAL} isPending={false} onSubmit={jest.fn()} />,
+    )
+
+    await userEvent.click(screen.getByTestId('schedule-form-submit'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Dia da semana obrigatório')).toBeInTheDocument()
+    })
+
+    expect(screen.getAllByText('Campo obrigatório')).toHaveLength(2)
+    expect(screen.queryByText(/Required/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/MONDAY/)).not.toBeInTheDocument()
+  })
+
   it('shows validation error when no doctor is selected in ADMIN mode', async () => {
     renderWithProviders(
       <ScheduleForm
@@ -186,7 +205,9 @@ describe('ScheduleForm — create mode', () => {
     expect(onSubmit.mock.calls[0][0]).not.toHaveProperty('professionalId')
   })
 
-  it('shows error when slot duration does not evenly divide the time interval', async () => {
+  // A mensagem diz a conta e as saídas: "deve ser divisível" ficava sob o campo
+  // da duração e fazia parecer que o número digitado era proibido.
+  it('explains why the duration does not close the window, and how to fix it', async () => {
     renderWithProviders(
       <ScheduleForm mode="create" role={UserRole.PROFESSIONAL} isPending={false} onSubmit={jest.fn()} />,
     )
@@ -203,9 +224,11 @@ describe('ScheduleForm — create mode', () => {
     await userEvent.click(screen.getByTestId('schedule-form-submit'))
 
     await waitFor(() => {
-      expect(
-        screen.getByText('O intervalo de tempo deve ser divisível pela duração do slot'),
-      ).toBeInTheDocument()
+      const erro = screen.getByText(/não fecha em blocos de 17 min/)
+      expect(erro).toHaveTextContent('das 08:00 às 12:00')
+      expect(erro).toHaveTextContent('sobrariam 2 min')
+      expect(erro).toHaveTextContent('use 15, 20 ou 30 min')
+      expect(erro).toHaveTextContent('termine às 12:15')
     })
   })
 

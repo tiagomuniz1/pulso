@@ -14,7 +14,9 @@ import { Clinic } from '../../clinics/entities/clinic.entity'
 import { Professional } from '../../professionals/entities/professional.entity'
 import { Patient } from '../../patients/entities/patient.entity'
 import { Schedule } from '../../schedules/entities/schedule.entity'
+import { AppointmentLabel } from '../../appointment-labels/entities/appointment-label.entity'
 import { Specialty } from '../../specialties/entities/specialty.entity'
+import { AppointmentSeries } from './appointment-series.entity'
 
 @Entity('appointments')
 export class Appointment {
@@ -49,6 +51,20 @@ export class Appointment {
   @Column({ name: 'specialty_id', type: 'uuid', nullable: true })
   specialtyId: string | null
 
+  /**
+   * O rótulo que colore esta consulta na agenda. Relação, e não resolução em
+   * lote, para que todo use-case que carrega a consulta receba o rótulo junto —
+   * o DTO é montado em dez lugares e um campo por parâmetro seria esquecido em
+   * algum. De quebra, o TypeORM aplica `deleted_at IS NULL` no join, então um
+   * rótulo excluído vira `null` sozinho e some da agenda.
+   */
+  @ManyToOne(() => AppointmentLabel, { eager: false })
+  @JoinColumn({ name: 'label_id' })
+  label: AppointmentLabel | null
+
+  @Column({ name: 'label_id', type: 'uuid', nullable: true })
+  labelId: string | null
+
   @ManyToOne(() => Schedule, { eager: false })
   @JoinColumn({ name: 'schedule_id' })
   schedule: Schedule
@@ -76,6 +92,21 @@ export class Appointment {
 
   @Column({ name: 'cancellation_reason', type: 'text', nullable: true })
   cancellationReason: string | null
+
+  @ManyToOne(() => AppointmentSeries, { eager: false })
+  @JoinColumn({ name: 'series_id' })
+  series: AppointmentSeries | null
+
+  @Column({ name: 'series_id', type: 'uuid', nullable: true })
+  seriesId: string | null
+
+  /**
+   * Position 1..N among the occurrences actually created for the series, and
+   * immutable: cancelling #3 does not renumber the rest, so "session 5 of 10"
+   * stays 5 of 10.
+   */
+  @Column({ name: 'series_sequence', type: 'int', nullable: true })
+  seriesSequence: number | null
 
   @VersionColumn()
   version: number

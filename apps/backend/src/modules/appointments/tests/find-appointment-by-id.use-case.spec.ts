@@ -51,6 +51,11 @@ const mockAppointmentsRepository: jest.Mocked<IAppointmentsRepository> = {
   findById: jest.fn(),
   findActiveByProfessionalAndDate: jest.fn(),
   findActiveBySlot: jest.fn(),
+  findActiveByDatesAndTime: jest.fn(),
+  findBySeriesId: jest.fn(),
+  findBySeriesIdFromDate: jest.fn(),
+  countBySeriesIdAfterDate: jest.fn(),
+  hasEarlierVisitWithProfessional: jest.fn(),
   hasFutureByScheduleId: jest.fn(),
   hasFutureByProfessionalId: jest.fn(),
   create: jest.fn(),
@@ -92,6 +97,9 @@ describe('FindAppointmentByIdUseCase', () => {
       mockProfessionalsRepository,
     )
     mockProfessionalsRepository.findByUserId.mockResolvedValue({ id: professionalId } as any)
+    // O padrão dos testes existentes é uma paciente já conhecida; os casos de
+    // primeira vez sobrescrevem.
+    mockAppointmentsRepository.hasEarlierVisitWithProfessional.mockResolvedValue(true)
   })
 
   it('throws NotFoundException when appointment not found', async () => {
@@ -216,5 +224,92 @@ describe('FindAppointmentByIdUseCase', () => {
 
     expect(result.specialtyId).toBe('spec-x')
     expect(result.specialtyName).toBe('Cardiologia')
+  })
+  it('returns null series fields for a standalone appointment', async () => {
+    const appointment = makeAppointment()
+    mockAppointmentsRepository.findById.mockResolvedValue(appointment as any)
+
+    const result = await useCase.execute(appointment.id, adminUser)
+
+    expect(result.seriesId).toBeNull()
+    expect(result.seriesSequence).toBeNull()
+    expect(result.seriesTotalOccurrences).toBeNull()
+    expect(result.seriesFutureCount).toBeNull()
+    expect(mockAppointmentsRepository.countBySeriesIdAfterDate).not.toHaveBeenCalled()
+  })
+
+  it('exposes the series position and the still-cancellable future occurrences', async () => {
+    const seriesId = faker.string.uuid()
+    const appointment = makeAppointment({
+      seriesId,
+      seriesSequence: 3,
+      series: { createdOccurrenceCount: 10 },
+    })
+    mockAppointmentsRepository.findById.mockResolvedValue(appointment as any)
+    mockAppointmentsRepository.countBySeriesIdAfterDate.mockResolvedValue(5)
+
+    const result = await useCase.execute(appointment.id, adminUser)
+
+    expect(result.seriesId).toBe(seriesId)
+    expect(result.seriesSequence).toBe(3)
+    expect(result.seriesTotalOccurrences).toBe(10)
+    expect(result.seriesFutureCount).toBe(5)
+    expect(mockAppointmentsRepository.countBySeriesIdAfterDate).toHaveBeenCalledWith(
+      seriesId,
+      CLINIC_ID,
+      appointment.date,
+      [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED],
+    )
+  })
+
+  // A regra de quais consultas anteriores contam (cancelada não, falta não,
+  // outro profissional não) vive na query do repository e é exercitada contra o
+  // banco em `appointments.integration.spec.ts`. Aqui se prova a fiação: que o
+  // use-case pergunta pela consulta certa e que a resposta entra invertida — o
+  // repository responde "houve anterior", o DTO expõe "é a primeira vez".
+  describe('primeira vez com o profissional', () => {
+    it('marca primeira vez quando não houve atendimento anterior', async () => {
+      const appointment = makeAppointment()
+      mockAppointmentsRepository.findById.mockResolvedValue(appointment as any)
+      mockAppointmentsRepository.hasEarlierVisitWithProfessional.mockResolvedValue(false)
+
+      const result = await useCase.execute(appointment.id, adminUser)
+
+      expect(result.isFirstVisitWithProfessional).toBe(true)
+    })
+
+    it('não marca quando já houve atendimento anterior', async () => {
+      const appointment = makeAppointment()
+      mockAppointmentsRepository.findById.mockResolvedValue(appointment as any)
+      mockAppointmentsRepository.hasEarlierVisitWithProfessional.mockResolvedValue(true)
+
+      const result = await useCase.execute(appointment.id, adminUser)
+
+      expect(result.isFirstVisitWithProfessional).toBe(false)
+    })
+
+    // A consulta inteira, e não patientId/professionalId soltos: a query precisa
+    // da data e da hora dela para saber o que é "anterior".
+    it('pergunta pela própria consulta, dentro da clínica', async () => {
+      const appointment = makeAppointment()
+      mockAppointmentsRepository.findById.mockResolvedValue(appointment as any)
+
+      await useCase.execute(appointment.id, adminUser)
+
+      expect(mockAppointmentsRepository.hasEarlierVisitWithProfessional).toHaveBeenCalledWith(
+        appointment,
+        CLINIC_ID,
+      )
+    })
+
+    it('vale também para o profissional que abre a própria consulta', async () => {
+      const appointment = makeAppointment()
+      mockAppointmentsRepository.findById.mockResolvedValue(appointment as any)
+      mockAppointmentsRepository.hasEarlierVisitWithProfessional.mockResolvedValue(false)
+
+      const result = await useCase.execute(appointment.id, doctorUser)
+
+      expect(result.isFirstVisitWithProfessional).toBe(true)
+    })
   })
 })

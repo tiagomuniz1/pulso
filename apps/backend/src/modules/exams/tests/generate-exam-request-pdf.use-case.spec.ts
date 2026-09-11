@@ -4,7 +4,7 @@ import { CouncilType, UserRole } from '@app/shared'
 import { ICurrentUser } from '../../auth/types/current-user.type'
 import { IExamRequestsRepository } from '../repositories/exam-requests.repository.interface'
 import { FindExamRequestByIdUseCase } from '../use-cases/find-exam-request-by-id.use-case'
-import { LogoFetcherService } from '../services/logo-fetcher.service'
+import { LoadClinicLogoUseCase } from '../../clinics/use-cases/load-clinic-logo.use-case'
 import { ExamRequestPdfBuilderService } from '../services/exam-request-pdf-builder.service'
 import { GenerateExamRequestPdfUseCase } from '../use-cases/generate-exam-request-pdf.use-case'
 
@@ -48,9 +48,9 @@ const mockExamRequestsRepository: jest.Mocked<IExamRequestsRepository> = {
   delete: jest.fn(),
 }
 
-const mockLogoFetcherService = {
-  fetchAsBase64: jest.fn(),
-} as unknown as jest.Mocked<LogoFetcherService>
+const mockLoadClinicLogo = {
+  execute: jest.fn(),
+} as unknown as jest.Mocked<LoadClinicLogoUseCase>
 
 const mockPdfBuilderService = {
   build: jest.fn(),
@@ -67,12 +67,12 @@ describe('GenerateExamRequestPdfUseCase', () => {
       {} as DataSource,
       mockFindByIdUseCase,
       mockExamRequestsRepository,
-      mockLogoFetcherService,
+      mockLoadClinicLogo,
       mockPdfBuilderService,
     )
     mockFindByIdUseCase.execute.mockResolvedValue({} as any)
     mockExamRequestsRepository.findById.mockResolvedValue(makeExamRequest() as any)
-    mockLogoFetcherService.fetchAsBase64.mockResolvedValue(null)
+    mockLoadClinicLogo.execute.mockResolvedValue(null)
     mockPdfBuilderService.build.mockResolvedValue(PDF_BUFFER)
   })
 
@@ -106,11 +106,11 @@ describe('GenerateExamRequestPdfUseCase', () => {
   it('does not fetch logo when logoUrl is null', async () => {
     await useCase.execute(examRequestId, adminUser)
 
-    expect(mockLogoFetcherService.fetchAsBase64).not.toHaveBeenCalled()
+    expect(mockLoadClinicLogo.execute).not.toHaveBeenCalled()
     expect(mockPdfBuilderService.build).toHaveBeenCalledWith(makeSnapshot(), null)
   })
 
-  it('fetches logo and passes base64 to builder when logoUrl is set', async () => {
+  it('reads the logo from storage by clinic and passes base64 to the builder', async () => {
     const logoUrl = 'https://example.com/logo.png'
     const logoBase64 = 'data:image/png;base64,abc123'
     const snapshotWithLogo = { ...makeSnapshot(), clinic: { name: 'Clínica', address: null, logoUrl } }
@@ -119,11 +119,13 @@ describe('GenerateExamRequestPdfUseCase', () => {
       ...makeExamRequest(),
       snapshot: snapshotWithLogo,
     } as any)
-    mockLogoFetcherService.fetchAsBase64.mockResolvedValue(logoBase64)
+    mockLoadClinicLogo.execute.mockResolvedValue(logoBase64)
 
     await useCase.execute(examRequestId, adminUser)
 
-    expect(mockLogoFetcherService.fetchAsBase64).toHaveBeenCalledWith(logoUrl)
+    // O `logoUrl` do snapshot só diz que havia logo na emissão; os bytes
+    // vêm do storage, por clínica — nada de sair pela rede.
+    expect(mockLoadClinicLogo.execute).toHaveBeenCalledWith(clinicId)
     expect(mockPdfBuilderService.build).toHaveBeenCalledWith(snapshotWithLogo, logoBase64)
   })
 
@@ -136,7 +138,7 @@ describe('GenerateExamRequestPdfUseCase', () => {
       ...makeExamRequest(),
       snapshot: snapshotWithLogo,
     } as any)
-    mockLogoFetcherService.fetchAsBase64.mockResolvedValue(null)
+    mockLoadClinicLogo.execute.mockResolvedValue(null)
 
     const result = await useCase.execute(examRequestId, adminUser)
 

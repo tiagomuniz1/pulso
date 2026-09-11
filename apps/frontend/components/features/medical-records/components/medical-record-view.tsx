@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { MedicalRecordFieldType } from '@app/shared'
 import { Tabs } from '@/components/ui/atoms/tabs/tabs'
 import type { IMedicalRecordModel, IRecordFieldModel } from '../types/medical-record-model.types'
+import { groupFieldsBySection } from '../utils/group-fields-by-section.util'
+import { formatFieldValue } from '../utils/format-field-value.util'
 
 interface IViewSection {
   key: string
@@ -19,19 +21,6 @@ interface MedicalRecordViewProps {
 const NOTES_TAB = '__notes__'
 const GENERAL_TAB = '__general__'
 
-function formatFieldValue(type: MedicalRecordFieldType, value: unknown): string {
-  if (value === undefined || value === null || value === '') return '—'
-
-  switch (type) {
-    case MedicalRecordFieldType.BOOLEAN:
-      return value ? 'Sim' : 'Não'
-    case MedicalRecordFieldType.MULTISELECT:
-      return Array.isArray(value) ? value.join(', ') : String(value)
-    default:
-      return String(value)
-  }
-}
-
 function FieldRow({ field, value }: { field: IRecordFieldModel; value: unknown }) {
   const isLong =
     field.type === MedicalRecordFieldType.TEXTAREA ||
@@ -46,7 +35,7 @@ function FieldRow({ field, value }: { field: IRecordFieldModel; value: unknown }
         {field.label}
       </dt>
       <dd className="text-sm text-text whitespace-pre-wrap">
-        {formatFieldValue(field.type, value)}
+        {formatFieldValue(field, value)}
       </dd>
     </div>
   )
@@ -66,12 +55,7 @@ export function MedicalRecordView({ record, sections = [] }: MedicalRecordViewPr
   const sortedSections = sections.slice().sort((a, b) => a.order - b.order)
   const hasSections = sortedSections.length > 0
 
-  const fieldsBySection = new Map<string | null, IRecordFieldModel[]>()
-  for (const field of record.schema) {
-    const key = field.sectionKey ?? null
-    if (!fieldsBySection.has(key)) fieldsBySection.set(key, [])
-    fieldsBySection.get(key)!.push(field)
-  }
+  const fieldsBySection = groupFieldsBySection(record.schema, sortedSections)
   const unsectionedFields = fieldsBySection.get(null) ?? []
 
   const hasNotes = !!record.notes

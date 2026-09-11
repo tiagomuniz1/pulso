@@ -5,7 +5,7 @@ import { ICurrentUser } from '../../auth/types/current-user.type'
 import { IPrescriptionsRepository } from '../repositories/prescriptions.repository.interface'
 import { FindPrescriptionByIdUseCase } from '../use-cases/find-prescription-by-id.use-case'
 import { FindClinicByIdUseCase } from '../../clinics/use-cases/find-clinic-by-id.use-case'
-import { LogoFetcherService } from '../services/logo-fetcher.service'
+import { LoadClinicLogoUseCase } from '../../clinics/use-cases/load-clinic-logo.use-case'
 import { PrescriptionPdfBuilderService } from '../services/prescription-pdf-builder.service'
 import { GeneratePrescriptionPdfUseCase } from '../use-cases/generate-prescription-pdf.use-case'
 
@@ -67,9 +67,9 @@ const mockPrescriptionsRepository: jest.Mocked<IPrescriptionsRepository> = {
   delete: jest.fn(),
 }
 
-const mockLogoFetcherService = {
-  fetchAsBase64: jest.fn(),
-} as unknown as jest.Mocked<LogoFetcherService>
+const mockLoadClinicLogo = {
+  execute: jest.fn(),
+} as unknown as jest.Mocked<LoadClinicLogoUseCase>
 
 const mockPdfBuilderService = {
   build: jest.fn(),
@@ -90,13 +90,13 @@ describe('GeneratePrescriptionPdfUseCase', () => {
       {} as DataSource,
       mockFindByIdUseCase,
       mockPrescriptionsRepository,
-      mockLogoFetcherService,
+      mockLoadClinicLogo,
       mockPdfBuilderService,
       mockFindClinicByIdUseCase,
     )
     mockFindByIdUseCase.execute.mockResolvedValue({} as any)
     mockPrescriptionsRepository.findById.mockResolvedValue(makePrescription() as any)
-    mockLogoFetcherService.fetchAsBase64.mockResolvedValue(null)
+    mockLoadClinicLogo.execute.mockResolvedValue(null)
     mockPdfBuilderService.build.mockResolvedValue(PDF_BUFFER)
     ;(mockFindClinicByIdUseCase.execute as jest.Mock).mockResolvedValue({ id: clinicId, slug: clinicSlug } as any)
   })
@@ -135,14 +135,41 @@ describe('GeneratePrescriptionPdfUseCase', () => {
     expect(mockPdfBuilderService.build).toHaveBeenCalledWith(makeSnapshot(), null, expectedUrl)
   })
 
+  // Production runs in subdomain-mode, where FRONTEND_URL is the backoffice host.
+  // A slug in the path made the frontend middleware read "backoffice" as the
+  // clinic, drop /verify from its public routes and send the pharmacy to a login
+  // page. The suite above only ever exercised path-mode, so it never caught it.
+  it('points the QR at the clinic subdomain, not at the backoffice, in subdomain-mode', async () => {
+    const previousCookieDomain = process.env.COOKIE_DOMAIN
+    const previousFrontendUrl = process.env.FRONTEND_URL
+    process.env.COOKIE_DOMAIN = '.pulso.center'
+    process.env.FRONTEND_URL = 'https://backoffice.pulso.center'
+
+    try {
+      await useCase.execute(prescriptionId, adminUser)
+
+      const url = mockPdfBuilderService.build.mock.calls.at(-1)![2]
+      expect(url).toBe(
+        `https://${clinicSlug}.pulso.center/verify/prescriptions/${verificationToken}`,
+      )
+      expect(url).not.toContain('backoffice')
+    } finally {
+      // `process.env.X = undefined` stores the string "undefined", which is
+      // truthy and would leak subdomain-mode into every later test.
+      if (previousCookieDomain === undefined) delete process.env.COOKIE_DOMAIN
+      else process.env.COOKIE_DOMAIN = previousCookieDomain
+      process.env.FRONTEND_URL = previousFrontendUrl!
+    }
+  })
+
   it('does not fetch logo when logoUrl is null', async () => {
     await useCase.execute(prescriptionId, adminUser)
 
-    expect(mockLogoFetcherService.fetchAsBase64).not.toHaveBeenCalled()
+    expect(mockLoadClinicLogo.execute).not.toHaveBeenCalled()
     expect(mockPdfBuilderService.build).toHaveBeenCalledWith(makeSnapshot(), null, expectedUrl)
   })
 
-  it('fetches logo and passes base64 to builder when logoUrl is set', async () => {
+  it('reads the logo from storage by clinic and passes base64 to the builder', async () => {
     const logoUrl = 'https://example.com/logo.png'
     const logoBase64 = 'data:image/png;base64,abc123'
     const snapshotWithLogo = { ...makeSnapshot(), clinic: { name: 'Clínica', address: null, logoUrl } }
@@ -151,11 +178,13 @@ describe('GeneratePrescriptionPdfUseCase', () => {
       ...makePrescription(),
       snapshot: snapshotWithLogo,
     } as any)
-    mockLogoFetcherService.fetchAsBase64.mockResolvedValue(logoBase64)
+    mockLoadClinicLogo.execute.mockResolvedValue(logoBase64)
 
     await useCase.execute(prescriptionId, adminUser)
 
-    expect(mockLogoFetcherService.fetchAsBase64).toHaveBeenCalledWith(logoUrl)
+    // O `logoUrl` do snapshot só diz que havia logo na emissão; os bytes
+    // vêm do storage, por clínica — nada de sair pela rede.
+    expect(mockLoadClinicLogo.execute).toHaveBeenCalledWith(clinicId)
     expect(mockPdfBuilderService.build).toHaveBeenCalledWith(snapshotWithLogo, logoBase64, expectedUrl)
   })
 
@@ -168,7 +197,7 @@ describe('GeneratePrescriptionPdfUseCase', () => {
       ...makePrescription(),
       snapshot: snapshotWithLogo,
     } as any)
-    mockLogoFetcherService.fetchAsBase64.mockResolvedValue(null)
+    mockLoadClinicLogo.execute.mockResolvedValue(null)
 
     const result = await useCase.execute(prescriptionId, adminUser)
 

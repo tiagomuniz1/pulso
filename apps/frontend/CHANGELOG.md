@@ -1,6 +1,281 @@
 # Changelog — Frontend
 
+## [1.16.0] - 2026-09-11
+
+### Added
+- **Selo "Primeira vez" ao lado do nome da paciente**, no diálogo que abre ao clicar na consulta da agenda e no cabeçalho da página da consulta. O `title` carrega a frase inteira — "Primeira vez que {paciente} é atendida por {profissional}" —, que é o que diz em relação a quem
+
+### Notes
+- **A agenda não mostra o selo**, de propósito: a faixa colorida do rótulo já ocupa a borda esquerda do bloco, e na visão semana a coluna tem ~155px com o nome já truncado
+- O selo é `rounded-full` e não `rounded-md` pela mesma razão da pílula de rótulo: o raio do tema da clínica varia de 2px a 32px
+
+## [1.15.0] - 2026-09-10
+
+### Added
+- **Botão de baixar o prontuário em PDF**, em dois lugares: a aba da consulta e o diálogo do histórico do paciente, que até agora abria só para ler. Na aba, baixar vale também com a consulta concluída — é justamente aí que a cópia costuma ser pedida
+- **O erro do download aparece na tela.** Os outros cinco downloads da casa falham em silêncio: o botão volta ao normal e nada é dito
+
+### Fixed
+- **O valor de um campo de prontuário é lido igual em toda tela.** Havia duas formatações divergentes: a tela principal mostrava o valor cru de uma lista de opções (`hipertensao_grau_2`) enquanto o histórico mostrava o rótulo ("Hipertensão grau 2"), e nenhuma das duas formatava data. Agora é uma só, irmã da que o PDF usa no servidor
+- **O `typecheck` do projeto voltou a passar.** Estava em 63 erros, todos em fixtures de teste — `label` faltando desde os rótulos de consulta, `templateId` desde os múltiplos modelos de prontuário. Nada afetava o bundle de produção, mas o portão estava vermelho
+
+## [1.14.0] - 2026-09-10
+
+### Added
+- **Rótulos de consulta colorindo a agenda.** Cada consulta pode receber um rótulo, que desenha uma faixa de 6px na borda esquerda do bloco — na visão dia e na semana. É o canal visual novo: fundo e borda continuam contando o status
+- **Paleta curada de dezesseis cores**, em variáveis CSS próprias. O tema da clínica sobrescreve exatamente onze variáveis (accent, fundo e raio), então a paleta é imune a ele por construção. Luminosidade constante e croma limitado a 41–49% do croma dos accents: as dezesseis lêem como família subordinada à marca, não como dezesseis adesivos
+- **Tela de gestão** (`/appointment-labels`, só ADMIN), com grade de amostras em vez de `<select>` — um select com dezesseis nomes obriga a abrir, ler, fechar e comparar de memória, e o tom não aparece na lista fechada. Um preview mostra a faixa como ela vai aparecer na agenda
+- **Filtro por rótulo na agenda**, com "Sem rótulo", e legenda sob a barra dizendo o que cada cor significa
+
+### Notes
+- O filtro é aplicado **no cliente**, e isso é correção e não preferência: `pickSlot` prefere a consulta ao horário livre e, não havendo consulta, cai no livre. Um filtro no servidor faria o horário voltar como "Livre — clique para agendar" por cima de uma consulta existente, e a recepção agendaria em cima
+- Cor não é a única portadora: a pílula sempre mostra o nome, e a faixa leva o rótulo para o `title` e o `aria-label` do bloco
+
+## [1.13.2] - 2026-09-09
+
+### Fixed
+- **O botão de salvar não some mais quando o formulário do modal cresce.** O `Modal` já limitava a altura e rolava o próprio corpo, mas as ações ficavam dentro da área que rola: num prontuário com muitos campos ou numa receita com vários medicamentos, quem preenchia chegava ao fim da tela sem enxergar o botão e precisava descobrir que havia rolagem. As ações passam a ficar coladas no rodapé do modal, sempre à mão. Vale para prontuário, receita, atestado, pedido de exames, registro de vacina e indicação de vacina
+
+## [1.13.1] - 2026-09-09
+
+### Fixed
+- **A recusa de uma duração de consulta agora explica a conta e o que fazer.** Ao cadastrar uma agenda das 09:00 às 18:00 com 40 minutos, a tela dizia apenas "O intervalo de tempo deve ser divisível pela duração do slot", ancorado no campo da duração — lia-se como "40 minutos é proibido", quando 40 é perfeitamente válido em outra janela. Agora: *"A janela das 09:00 às 18:00 tem 9h e não fecha em blocos de 40 min — sobrariam 20 min no fim. Para resolver, use 20, 30 ou 45 min, ou termine às 18:20 para manter 40 min."* As sugestões priorizam durações que uma clínica de fato usa: 36 minutos divide, mas ninguém marca consulta assim
+- **O 409 ao editar agenda dizia sempre "conflita com outra agenda"**, e o backend devolve 409 por três motivos distintos nessa rota. Quem tentava mudar a duração de uma agenda com consulta marcada era mandado procurar uma sobreposição inexistente. Agora cada causa tem sua mensagem, e a de consulta futura diz o que destrava: cancelar ou remarcar as consultas daquela agenda
+
+## [1.13.0] - 2026-09-09
+
+### Added
+- **Escolha do modelo ao preencher o prontuário.** A clínica pode ter vários no mesmo escopo, e nenhum é padrão: o modal abre num seletor com nome, número de campos, seções e a data da última alteração — que é o que distingue dois modelos que agora dividem a especialidade. A escolha é explícita mesmo quando só existe um
+- **Trocar de modelo com algo digitado pede confirmação** e descarta o preenchido. Não há o que aproveitar: as chaves de campo têm sufixo aleatório, então dois modelos nunca compartilham chave nem para o mesmo rótulo
+- Paginação, filtro por escopo e coluna "Atualizado em" na listagem de modelos. A paginação não existia e o backend corta em 20 — a partir do 21º modelo o resto sumia sem aviso
+
+### Changed
+- **Sem nenhum modelo, o botão "Preencher prontuário" não aparece** e a tela diz a quem pedir. Antes o botão aparecia e a má notícia só vinha depois do clique
+- **Falha ao carregar os modelos passa a ser tratada como falha**, com "tentar novamente" — antes o erro era ignorado e a tela dizia que não existia modelo, mandando o profissional atrás do administrador por um problema de rede
+- **As seções de um prontuário salvo vêm do modelo que ficou gravado**, e não do primeiro da especialidade. O snapshot congela só os campos; com vários modelos, aquilo agrupava um prontuário pelas seções de outro
+- A mensagem de 409 ao criar modelo passa a falar de nome repetido, que é o que a regra é agora. Na edição, o 409 tem duas causas — nome e lock otimista — e a tela distingue: mandar recarregar a página não resolveria um nome repetido
+
+### Fixed
+- Campo apontando para uma seção que não existe mais **sumia da tela**, sem erro nenhum. Como as seções vêm do modelo vivo e os campos do snapshot, bastava renomear uma seção para perder de vista o que já tinha sido escrito. Agora esses campos caem na aba Geral
+
+## [1.12.0] - 2026-09-09
+
+### Changed
+- **"+ Novo modelo" e "Editar" saem da tela do profissional** em Modelos de prontuário: o modelo é da clínica, e gerir é do ADMIN. A listagem que o profissional recebe já vem recortada pelo servidor às especialidades que ele exerce
+- O detalhe do modelo não busca mais a ficha do usuário: a posse do escopo deixou de existir
+
+## [1.11.0] - 2026-09-08
+
+### Added
+
+#### Aba Histórico na consulta
+- Atendimentos anteriores da paciente **na mesma especialidade**, dentro da própria consulta — sem sair da tela em que o médico está
+- Cada linha mostra data, horário e **quem atendeu**; os detalhes vêm recolhidos e expandem no lugar, e dá para abrir dois ao mesmo tempo para comparar
+- **Busca local** que varre o que foi registrado, não só o cabeçalho: queixa, conduta, valores dos campos, observações, profissional e data. Quando o histórico não cabe numa página, a tela avisa que a busca alcança apenas o que foi carregado
+- A consulta atual não entra no próprio histórico
+
+## [1.10.0] - 2026-09-08
+
+### Added
+- **Botão "Enviar link de senha" na tela do usuário**, visível apenas para o ADMIN. Some para paciente, que não faz login, e fica desabilitado com explicação para conta inativa
+- O resultado é honesto: quando o backend responde `503` a tela mostra **erro**, não confirmação — o e-mail não sair não pode parecer entrega feita. A mensagem é traduzida por status, sem exibir o `detail` técnico
+
+## [1.9.0] - 2026-09-04
+
+### Added
+
+#### Indicação de vacina na aba Vacinas da consulta
+- Emitir, listar, baixar PDF e excluir, ao lado da caderneta — quem olha o que falta é quem indica, e as duas coisas ficam na mesma aba
+- A lista mostra **as vacinas pelo nome**, não uma contagem: ler "3 vacinas" obrigaria a abrir o PDF para saber quais
+- Seletor simples do catálogo, sem busca por tecla — são dezenas de vacinas curadas, não os 36 mil medicamentos da ANVISA
+- A contagem da aba passa a somar o que **esta consulta** lançou: doses registradas mais indicações emitidas
+- Quando o catálogo não cabe numa página, a tela **diz** que a lista está incompleta em vez de esconder vacina sem avisar
+
+## [1.8.0] - 2026-09-04
+
+### Added
+
+#### Situação vacinal na ficha do paciente
+- Painel com o que falta pelo calendário, ordenado pelo que precisa ser olhado primeiro: fora da janela, pendente, ainda não devida, em dia, não se aplica
+- **A linguagem é de sugestão, não de ordem** — "pendente pelo calendário", nunca "em atraso", com o aviso permanente de que a conduta é do profissional. O sistema informa, não prescreve
+- **Registrar conduta**: confirmar, adiar ou dispensar, com motivo obrigatório nos dois últimos. O motivo e quem decidiu ficam visíveis na própria linha
+- Registrar conduta depende da **ficha**, como registrar uma dose
+- **Tela do calendário no backoffice** para o PLATFORM_ADMIN, com filtro por vacina e janela etária legível
+
+## [1.7.0] - 2026-09-04
+
+### Added
+
+#### Vacinas: catálogo e caderneta do paciente
+- **Caderneta na ficha do paciente**, ao lado do histórico de prontuários e das fotos: vacina, dose, data, onde foi aplicada e quem registrou, da mais recente para a mais antiga
+- **Aba Vacinas na consulta** — a dose registrada ali nasce vinculada ao atendimento; a aba mostra a caderneta inteira do paciente, e o contador conta só o que foi lançado naquela consulta
+- **Catálogo no backoffice** para o PLATFORM_ADMIN, com busca por nome, sigla ou doença prevenida, e ativar/desativar. Desativar tira a vacina das listas da clínica sem apagar as doses já registradas
+- O botão de registrar depende da **ficha de profissional**, não do cargo: uma médica que administra a própria clínica registra normalmente
+- O seletor de vacina é um `select` simples, não a busca com lista de resultados do formulário de receita — são dezenas de vacinas, não 36 mil medicamentos, e aquela busca dispara uma consulta por tecla
+
+## [1.6.0] - 2026-09-03
+
+### Added
+
+#### Consultas de um paciente
+- Tela nova em `/patients/:id/appointments`, com as consultas daquele paciente **da mais recente para a mais antiga** — data, horário, profissional, especialidade e status, cada linha abrindo a consulta
+- Antes não havia onde ver isso. A ficha do paciente mostra o **histórico de prontuários**, que é outra coisa: consulta cancelada, com falta, ou que ninguém chegou a preencher não aparece ali
+- **ADMIN e recepção** chegam pelo link "Consultas" na listagem de pacientes e veem todos os profissionais, com filtro por um deles. **O profissional** chega pelo link na própria consulta — ele não acessa a listagem de pacientes — e recebe apenas as próprias, por recorte do servidor; o seletor nem lhe é oferecido
+- Sem mudança no backend: `GET /appointments` já aceitava `patientId`, já ordenava por data decrescente e já restringia o profissional. O parâmetro existia até no service do frontend — faltava a tela que o usasse
+
+## [1.5.3] - 2026-09-01
+
+### Fixed
+
+#### Loop de redirecionamento com sessão expirada
+Uma sessão morta jogava o usuário num vaivém entre login e dashboard até o navegador cortar por excesso de redirecionamentos — o sintoma relatado como "clico numa tela e sou mandado para o dashboard". Duas causas somadas, corrigidas juntas:
+
+- **O refresh não limpava os cookies que invalidava** (backend). O cliente ia para `/login`, a página de login via o `access_token` ainda presente e devolvia para o dashboard, que chamava a API, tomava 401 e recomeçava. Os cookies são `httpOnly` — só o servidor consegue apagá-los, e agora apaga
+- **Refreshes concorrentes derrubavam a própria sessão** (`lib/api-client.ts`). O backend rotaciona o refresh token: emitir um novo revoga o anterior. Uma tela que dispara várias queries de uma vez tinha todas expirando no mesmo instante e cada uma chamava `/auth/refresh` por conta própria; a primeira revogava o token das outras, que tomavam 401 e mandavam o usuário para o login no meio de uma sessão perfeitamente válida. Passa a haver um único refresh em voo, compartilhado
+
+Dois specs também estavam presos ao mesmo problema, ambos por não interceptarem `/professionals/me` corretamente — `/professionals*` não cobre a rota, porque no minimatch o `*` não atravessa `/`:
+
+- `medical-record-templates-details.cy.ts` não a interceptava, então a chamada ia ao backend real com o token falso do `visitClinic` e derrubava 9 dos 11 casos na cascata de sessão expirada
+- `mobile/no-horizontal-scroll.cy.ts` recebia `null` do stub genérico, o que contradiz o usuário do spec: um PROFESSIONAL vendo a própria consulta. A aba Prontuário depende da ficha, então nunca aparecia
+
+O loop foi encontrado pela suíte E2E, não em produção — mas é a mesma falha relatada em uso.
+
+## [1.5.2] - 2026-09-01
+
+### Fixed
+
+#### Varredura do padrão "cargo decidindo ofício"
+Depois da correção das quatro seções clínicas em 1.5.0, varri o frontend inteiro atrás do mesmo defeito — botão amarrado ao `role` quando a capacidade vem da ficha, e tela mais restritiva que o backend. Três lugares:
+
+- **Modelos de receita** — "+ Novo modelo" exigia role `PROFESSIONAL`. Uma médica que administra a própria clínica prescreve todo dia e não conseguia cadastrar um modelo. Passa a depender da ficha. No backend, um ADMIN com ficha que omite `professionalId` cria sob a própria ficha em vez de levar `422`; sem ficha, o `422` continua
+- **Modelos de receita — Editar e Excluir** — a tela escondia "Editar" de quem não fosse `PROFESSIONAL`, embora o backend sempre tenha deixado o ADMIN editar qualquer modelo da clínica; e mostrava "Excluir" sem trava nenhuma, no mesmo `<td>`. Os dois passam a repetir a regra do backend: ADMIN em qualquer um, profissional só nos próprios
+- **Detalhe do usuário** — a linha "Profissão (CRM/CRN…)" e a busca da ficha vinham do role, então o CRM de um ADMIN que também atende não aparecia. Passa a usar `isProfessional` do modelo, como o formulário irmão já fazia
+
+#### Recepcionista não vê mais botão que resulta em 403
+Criar, editar e excluir paciente são exclusivos do ADMIN no backend, mas a lista e o detalhe de paciente ofereciam os três a todo mundo. A recepcionista tem "Pacientes" no menu por desenho e navega ali todo dia — cada clique terminava em erro. É o espelho do defeito acima: tela e backend discordando sobre quem pode o quê.
+
+## [1.5.1] - 2026-09-01
+
+### Added
+
+#### ADMIN altera o perfil de acesso pela tela
+- O formulário de edição de usuário passa a oferecer o seletor de perfil também para usuários com o role PROFESSIONAL, que antes era somente-leitura. Era o único caminho para tornar administradora uma profissional já cadastrada — e exigia `curl`
+- Visível apenas para ADMIN, e nunca no próprio cadastro. O backend recusa os dois casos independentemente da tela
+- `PROFESSIONAL` entra na lista apenas para quem já o é, para que o valor atual seja representável e a troca tenha volta. Virar profissional acontece ao criar a ficha, não ao escolher um perfil aqui
+- O link "Editar profissional" continua ao lado do seletor, agora acionado pelo campo `isProfessional` do usuário em vez do role — assim um ADMIN que também atende também o vê
+
+## [1.5.0] - 2026-09-01
+
+### Changed
+
+#### Quem administra também pode atender
+- As abas Receitas, Atestados, Exames e Fotos passam a decidir o botão de emitir por `canIssue` — tenho ficha de profissional **e** sou o profissional desta consulta — em vez do `role`. Um ADMIN que também atende emite normalmente nas próprias consultas
+- A agenda abre já na própria ficha para quem atende, em vez de exigir escolher no seletor a cada manhã. Qualquer escolha do usuário, inclusive `?doctor=`, tem precedência
+
+### Fixed
+
+#### `useMyProfessional` respondia errado para ADMIN
+- O hook fazia `GET /professionals` e pegava o primeiro item — o que só acerta para PROFESSIONAL: para um ADMIN aquela lista é a clínica inteira, e o "meu profissional" era um colega qualquer. Passa a usar `GET /professionals/me`. A mesma suposição existia inline na página de detalhe da consulta e na agenda
+
+#### ADMIN não conseguia excluir foto de consulta
+- `photo-section` amarrava enviar e excluir na mesma variável. O backend sempre permitiu ao ADMIN excluir; era a interface que escondia o botão de quem tinha direito a ele
+
+## [1.4.1] - 2026-08-31
+
+### Fixed
+
+#### Modelo de prontuário oferecia especialidades que a clínica não atende
+- O select de especialidade do formulário lia `useSpecialties({ limit: 100 })` — o catálogo da plataforma inteiro (17 especialidades) — em vez dos vínculos da clínica. Um ADMIN podia criar modelo para uma especialidade que a clínica não oferece
+- Passa a usar `useClinicSpecialties(clinicId)`, que já existia. A opção "Generalista (sem especialidade)" é a `value=""` do select e não depende dessa lista, então continua disponível
+- O caminho do PROFESSIONAL não muda: continua restrito às próprias especialidades, que é a regra documentada
+
+## [1.4.0] - 2026-08-31
+
+### Changed
+
+#### Catálogo de campos canônicos passa a ser global
+- O seletor do construtor de templates mostra o catálogo inteiro. Antes recebia a especialidade do template e o backend devolvia só os gerais mais os daquela especialidade — para profissão não-médica, que não passa por especialidade, isso significava só os gerais
+- `CanonicalFieldPicker`, `useCanonicalFields`, o use-case e o service perdem o parâmetro de escopo; `template-form` e `section-editor` deixam de repassá-lo. O select de especialidade **do template** continua, que é outro escopo
+- Formulário do backoffice perde o select "Especialidade" — que, aliás, nunca teve opções: as duas páginas passavam `specialties={[]}` literal
+- Estado vazio do seletor deixa de dizer "para esta especialidade"
+
 ## [Unreleased]
+
+### Added
+
+#### Suíte E2E em modo subdomínio
+- Nova `cypress.subdomain.config.ts` + `cypress/e2e/subdomain/` (11 testes) rodando contra a stack completa (`docker-compose.full.yml`), que reproduz a topologia de produção: nginx roteando por `Host`, `COOKIE_DOMAIN` no domínio-pai, CORS entre subdomínios e o `website` no apex. Script: `yarn workspace @app/frontend cypress:run:subdomain`
+- Cobre o que o modo path é incapaz de exercitar: slug no host e ausente do caminho, links internos sem prefixo, marca do backoffice, apex servindo o `website`, redirect de login no subdomínio atual, escopo e nomes distintos de cookie, e as páginas públicas (verificação de receita e definição de senha)
+- Não duplica a suíte padrão — regra de negócio já é coberta em modo path
+- Os helpers de `cypress/support/clinic.ts` passam a ser mode-aware (`SUBDOMAIN_BASE_DOMAIN`): montam URL, domínio de cookie e asserção de caminho conforme o modo, então specs que os usam valem nos dois
+
+### Fixed
+
+#### A suíte E2E era cega a divergência de hidratação
+- `cypress/support/e2e.ts` silencia erros de hidratação do React. Como a reescrita de caminho por subdomínio faz servidor e cliente enxergarem pathnames diferentes, essa é exatamente a assinatura dos bugs que esse modo produz — e nenhum dos 117 specs podia percebê-los. Foi assim que a Sidebar passou a exibir marca de clínica no backoffice em produção
+- A suíte de subdomínio usa `cypress/support/e2e.subdomain.ts`, que **falha** nesses erros e explica o que a divergência costuma significar. Casa também as mensagens minificadas (`Minified React error #418/#423/#425/#426`), que o filtro por texto não pegava em build de produção
+- Verificado reintroduzindo o bug da Sidebar e reconstruindo a imagem: a suíte fica vermelha; com a correção, verde
+
+#### Proxy local da stack completa não subia com o repositório fora de /Users
+- `docker-compose.full.yml` montava `nginx.local.conf` do host, o que depende do diretório do projeto estar no file sharing do Docker Desktop. Agora a configuração é copiada para dentro da imagem (`infra/proxy/Dockerfile.local`) — sem dependência do host, e o mesmo passo funciona no CI
+
+## [1.3.4] - 2026-08-29
+
+### Fixed
+
+#### Mensagens de validação do zod apareciam em inglês, expondo valores internos
+- O projeto nunca instalou um error map do zod, então todo campo cuja mensagem não foi escrita à mão caía no texto padrão da biblioteca. Na tela de nova agenda, um envio vazio mostrava `Required` em Início e Fim e `Invalid enum value. Expected 'MONDAY' | 'TUESDAY' | ... , received ''` em Dia da semana — violando a regra de nunca exibir detalhe técnico ao usuário
+- Novo `lib/zod-error-map.ts` com mensagens em português, instalado em `app/providers.tsx` e em `jest.setup.ts`. Não sobrepõe nenhuma mensagem já escrita no schema — o zod só consulta o map quando não há `message`
+- `required_error` em `z.nativeEnum` trocado por `errorMap` em `schedule-form` e `canonical-field-form`: um `<select>` com opção vazia envia `''`, e `required_error` só cobre `undefined` — por isso a mensagem específica nunca aparecia
+
+#### Backoffice exibia a marca de clínica em vez do logo do Pulso
+- `Sidebar` derivava `isBackoffice` de `usePathname().startsWith('/backoffice')`. Sob subdomínio o middleware reescreve `backoffice.exemplo.com/themes` para `/backoffice/themes` internamente, mas `usePathname()` reporta o caminho externo `/themes` — a checagem era verdadeira só no modo path do dev local e falsa em produção, onde o backoffice aparecia com o quadrado de inicial e o rótulo "Clínica"
+- Passa a usar `useSlug() === 'backoffice'`, a mesma fonte que `useCurrentClinic` já usava
+
+#### Gráfico do dashboard rotulava cada ponto um dia antes
+- `to-dashboard-model.ts` fazia `new Date(d.date)` para `appointmentsByDay` — parse UTC, que em UTC-3 cai na véspera — enquanto `period.from` e `period.to`, duas linhas acima, já ancoravam em `T00:00:00`. Um período de 26/08 a 30/08 abria o eixo em 25/08
+
+## [1.3.3] - 2026-08-28
+
+### Fixed
+
+#### Cabeçalho da agenda semanal apontava uma semana diferente da grade
+- `AgendaToolbar` rotulava `currentDate` até `currentDate + 6`, enquanto `AgendaWeekGrid` renderiza a semana de domingo a sábado que contém a data selecionada. Em qualquer dia que não fosse domingo os dois discordavam — a grade mostrava 23–29/08 sob o título "28 de ago. – 3 de set."
+- `getWeekStart` saiu de `appointment-agenda.tsx` para `lib/format-date.ts` e agora é a única definição de semana: grade e rótulo derivam dela
+
+#### Rótulo de data da agenda capitalizava todas as palavras
+- `capitalize` do Tailwind vira "28 De Ago. De 2026"; a intenção era só a primeira letra, para a visão diária ler "Sexta-feira, 28 de agosto de 2026". Trocado por `first-letter:uppercase`
+
+#### Mensagem de conflito de modelo de prontuário citava o nome, que não é a regra
+- A restrição é um modelo por especialidade (ou por profissão, no generalista) por clínica — nunca por nome. Dizer "já existe um modelo com este nome" mandava o usuário renomear, o que não resolve o conflito. A mensagem agora nomeia a especialidade ou a profissão, acompanhando o próprio 409 do backend
+- Na edição, o escopo do modelo não pode mudar, então um 409 ali é o optimistic lock, não a unicidade — a mensagem passou a ser "Este modelo foi alterado por outra pessoa"
+
+#### Datas de validade da agenda saíam em ISO
+- Lista e detalhe de agendas mostravam `2026-09-01 → 2026-12-31`; agora usam `formatDateToBR`, como o resto do sistema
+
+#### CPF em branco no resumo da consulta
+- Paciente dependente pode legitimamente não ter CPF. A página do paciente já dizia "Não informado"; o resumo da consulta renderizava o rótulo sem valor, o que parece falha de carregamento
+
+## [Unreleased]
+
+### Added
+
+#### Consultas recorrentes
+- `BookAppointmentDialog` ganha a seção **Recorrência**: um checkbox "Repetir esta consulta" que revela intervalo (1, 2 ou 4 semanas) e término (após N consultas **ou** até uma data). Com a recorrência desligada o diálogo é idêntico ao de antes — mesmo layout, mesmo botão, mesmo fluxo de um passo
+- Com a recorrência ligada, o botão passa a "Revisar datas" e o corpo do diálogo troca para um **passo de pré-visualização**: cada data candidata aparece com seu status (Disponível, Ocupado, Fora da agenda, Bloqueado, No passado). Datas indisponíveis vêm desmarcadas e desabilitadas — seriam recusadas pelo backend de qualquer forma. O usuário desmarca o que quiser e confirma só as escolhidas
+- Se alguma data deixar de estar disponível entre a prévia e o envio, o diálogo permanece aberto listando exatamente quais mudaram (o backend é tudo-ou-nada: nenhuma consulta é criada)
+- Diálogo de cancelamento ganha o escopo **"Apenas esta consulta"** / **"Esta e todas as futuras da série"**, com a contagem no texto e no botão ("Cancelar 6 consultas"). A escolha só aparece quando existe ocorrência futura cancelável; o escopo destrutivo nunca vem pré-selecionado
+- Consulta de uma série é sinalizada como **"Sessão 3 de 10"** — ícone na célula da agenda, linha no diálogo de detalhes e célula na página de detalhe, onde um link **"Ver série"** abre o novo `SeriesOccurrencesDialog` com todas as ocorrências, seus status e navegação entre elas
+- Novos service (`previewRecurrence`/`bookRecurring`/`getSeries`), use-cases, hooks (`useRecurrencePreview`, `useBookRecurringAppointments`, `useAppointmentSeries`), mappers, `lib/recurrence-status.ts` e `getWeekdayNamePtBR`
+- Novos testes E2E `appointments-recurrence-book.cy.ts`, `appointments-recurrence-series.cy.ts` e `appointments-recurrence-real.cy.ts`
+
+### Fixed
+
+#### Semana da agenda podia deslocar um dia em fuso positivo
+- `getWeekDates` em `agenda-week-grid.tsx` usava `toISOString()` (que converte para UTC) enquanto o resto do código usa `toLocalDateString` justamente para evitar esse deslocamento — agora usa o mesmo helper
+
+#### Escopo de cancelamento vazava entre aberturas do diálogo
+- `CancelAppointmentDialog` não tinha `defaultValues` nem reset ao fechar, e o componente fica montado (é o `Modal` que retorna `null`) — o motivo digitado e o escopo escolhido sobreviviam até a próxima abertura
 
 ### Fixed
 
@@ -105,6 +380,61 @@
 - Campos `doctorId`/`doctorName` renomeados para `professionalId`/`professionalName` em todas as features consumidoras (consultas, agendas, exceções de agenda, exames, atestados, receitas, templates de receita, prontuários, dashboard)
 - Página pública de verificação de receita exibe o conselho e número de registro do profissional (`professionalCouncilType`/`professionalRegistrationNumber`) em vez de CRM fixo
 - Suíte E2E (Cypress) migrada por completo para o novo modelo: specs de `doctors/*` renomeadas para `professionals/*` e reescritas para o formulário multi-registro; demais specs (consultas, agendas, exames, prontuários, usuários, mobile) atualizadas para os novos testids e payloads (`registrations` em vez de `crmNumber`)
+
+## [1.3.2] - 2026-08-28
+
+### Fixed
+
+#### Consulta sem prontuário exibia estado de erro e escondia o botão de preencher
+- `GET /medical-records/by-appointment/:id` responde **404** quando ainda não existe prontuário — o caso normal, não uma falha. O estado de erro introduzido junto com a correção de cache tratava esse 404 como erro e escondia o botão "Preencher prontuário"
+- O 404 passa a ser traduzido para "não há prontuário" no use-case, e o estado de erro fica reservado a falhas de verdade
+
+### Changed
+
+#### Testes: 406 erros de tipo corrigidos e o `typecheck` passa a cobri-los
+- O `tsconfig.json` do app exclui `cypress` **e** `**/*.spec.ts(x)`, então nem os 114 arquivos de E2E nem os 427 de Jest eram compilados — 406 erros acumularam sem ninguém ver. `yarn typecheck` agora roda as três árvores, via os novos `typecheck:test` e `typecheck:e2e`, cada uma com seu tsconfig para não misturar os tipos do app com os globais de Jest e Cypress
+- **236 nos testes Jest**, quase todos a mesma coisa: fixtures que envelheceram junto com o produto. Profissional ainda com `crmNumber` (virou `registrations` na generalização para profissional de saúde), especialidade com `rqe` em vez de `registryNumber`, consulta sem `insuranceType` nem os campos de série, paciente sem os campos de parentesco, clínica sem `themeId`/`logoDarkUrl`, template sem `sectionKey`/`sections`, e um `ThemeBorderRadius.MD` que nunca existiu no enum
+- **170 no Cypress**: dois helpers cujo tipo mentia (`visitBackoffice` inferia o tipo do valor padrão, tornando `clinicId` obrigatório; `visitClinic` e `stubClinicLayout` exigiam um `MockAuthUser` completo — daí o `{} as MockAuthUser`) e nove specs sem `import`/`export`, tratadas como scripts e dividindo o escopo global
+- É a mesma classe de defeito que deixou a fixture de paciente sem `dependents` e derrubou o app durante a validação: cada entrega deixava mocks para trás e nada avisava
+
+#### Cypress: stubs das páginas de detalhe centralizados
+- Novos `cy.stubAppointmentDetailWidgets()` e `cy.stubPatientDetailWidgets()`. As páginas de detalhe disparam um GET por widget assim que montam, inclusive de abas que o teste nunca abre; um deles sem stub responde `401`, o api-client tenta refresh, falha e manda o app para `/login` — a spec morre num loop de redirect com um erro que não menciona o stub faltante
+- Antes cada spec repetia os stubs (um deles escondido dentro de uma função chamada `stubExamRequests`), então todo widget novo quebrava a suíte de novo. Agora é uma linha num lugar só
+
+## [1.3.1] - 2026-08-28
+
+### Fixed
+
+#### Agenda mostrava o mesmo horário duas vezes
+- A disponibilidade só retém um slot enquanto a consulta está `scheduled`, então consulta **cancelada, confirmada, concluída ou faltou** voltava como slot livre **e** como consulta — e a grade concatenava as duas listas, renderizando o mesmo horário duas vezes ("15:00 Livre" logo acima de "15:00 Cancelada"). Parecia dupla marcação
+- `useDayAgenda` agora entrega uma linha por horário: a consulta vence, exceto quando é só uma cancelada e o slot de fato voltou a ficar livre — aí a linha útil é a agendável, e o cancelamento segue visível na lista de consultas e no histórico do paciente. Cancelada sem slot livre correspondente continua sendo exibida, para nada sumir sem rastro
+
+#### Prontuário salvo não aparecia até recarregar a página
+- Ao **criar**, o registro era gravado mas a aba continuava em "Prontuário ainda não preenchido" e o cabeçalho seguia oferecendo "Preencher prontuário" — levando o profissional a achar que não salvou e preencher de novo
+- Criar e editar agora escrevem no cache o prontuário que a própria API devolveu (`setQueryData`), em vez de invalidar e esperar uma nova leitura. A resposta do POST/PUT já é a representação autoritativa; descartá-la para perguntar de novo é o que abria a janela
+- A seção também deixava de distinguir **leitura que falhou** de **prontuário inexistente**: um erro na busca renderizava o estado vazio, convidando a duplicar um registro que podia existir. Agora informa a falha
+
+#### Data de nascimento do paciente aparecia um dia antes da cadastrada
+- Mesmo defeito do atestado, em outro módulo: `toPatientModel` fazia `new Date('1987-05-01')` e a lista e a página do paciente mostravam 30/04/1987, contradizendo o próprio formulário de edição e a tela da consulta — que já usava `+ 'T00:00:00'` e acertava
+- Corrigidos junto os mesmos parses em `to-consultation-photo-gallery-item-model` (data da consulta na galeria) e `to-dashboard-model` (período), que ainda não são renderizados mas herdariam o erro na primeira tela que os usasse
+- Os testes de `to-patient-model` e da galeria afirmavam com `toISOString()`, que reintroduz a mesma conversão para UTC do bug; agora afirmam o dia no calendário local
+
+#### Data do atestado aparecia um dia antes da informada
+- `toAtestadoModel` fazia `new Date('2026-08-28')` numa data de calendário, que o JS interpreta como meia-noite **UTC**; formatada em UTC-3 voltava para 27/08. Num atestado de afastamento a data tem peso legal, e o PDF (gerado no backend, que já tratava isso) imprimia a data certa enquanto a tela mostrava a errada
+- `startDate` e `attendanceDate` passam a ser mantidos como a string `YYYY-MM-DD` que a API envia e formatados com o `formatDateToBR` que já existia — data de calendário não é instante
+- O teste da listagem derivava o valor esperado com a mesma expressão bugada da implementação, então concordava com a saída errada e nunca poderia falhar; agora afirma o literal
+
+#### Botão de excluir profissional aparecia para quem não pode excluir
+- Excluir profissional é exclusivo de ADMIN (`ai/context/permissions.md`), mas a lista mostrava o botão para PROFESSIONAL e USER — o backend respondia `403` e o usuário só via um erro. O botão agora é gated por role na tabela e no card mobile
+
+#### "Trocar profissional" aparecia em ocorrência de série
+- O backend recusa reatribuir uma ocorrência de série com `422` (trocar o profissional de uma ocorrência deixaria a série heterogênea). O botão agora só aparece em consulta avulsa
+
+#### Nome do paciente ficava truncado na visão de semana
+- A célula da agenda mostrava `hora | nome | status` nas 7 colunas espremidas da semana, e o nome sobrava em "T…". Na visão de semana a célula entra em modo denso: o rótulo de status sai (a cor da célula já o comunica) e o espaço vai para o nome, que ganha `title` com o nome completo
+
+#### Login dizia "Email ou senha inválidos" para conta desativada
+- Um `401` por conta desativada, conta sem clínica vinculada ou captcha inválido exibia a mesma mensagem de credencial errada, mandando o usuário tentar de novo uma senha que estava certa. Cada caso agora tem sua própria mensagem; a de credencial segue sendo o fallback (e continua sem revelar se o e-mail existe)
 
 ## [1.1.0] - 2026-06-20
 

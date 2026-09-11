@@ -27,6 +27,7 @@ import { SendSetPasswordEmailUseCase } from './use-cases/send-set-password-email
 import { ValidateSetPasswordTokenUseCase } from './use-cases/validate-set-password-token.use-case'
 import { SetPasswordUseCase } from './use-cases/set-password.use-case'
 import { AUTH_ENV } from './use-cases/auth-env.token'
+import { EmailSenderService } from '../../common/email/email-sender.service'
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { AUTH_ENV } from './use-cases/auth-env.token'
   ],
   controllers: [AuthController],
   providers: [
+    EmailSenderService,
     {
       provide: AUTH_ENV,
       useFactory: () => {

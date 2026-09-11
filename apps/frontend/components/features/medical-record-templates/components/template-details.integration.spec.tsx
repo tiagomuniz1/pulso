@@ -24,23 +24,18 @@ function mockAuthStoreAs(role: UserRole) {
 }
 
 function mockMyProfessional(overrides = {}) {
-  ;(professionalsService.getAll as jest.Mock).mockResolvedValue({
-    data: [
-      {
-        id: 'my-professional-uuid',
-        user: { id: 'user-uuid', fullName: 'Dr. João', email: 'joao@example.com', isActive: true },
-        registrations: [{ id: 'reg-1', councilType: CouncilType.CRM, number: '12345', state: 'SP', isPrimary: true }],
-        specialties: [],
-        bio: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        ...overrides,
-      },
-    ],
-    total: 1,
-    page: 1,
-    limit: 20,
-  })
+  ;(professionalsService.getMine as jest.Mock).mockResolvedValue(
+    {
+      id: 'my-professional-uuid',
+      user: { id: 'user-uuid', fullName: 'Dr. João', email: 'joao@example.com', isActive: true },
+      registrations: [{ id: 'reg-1', councilType: CouncilType.CRM, number: '12345', state: 'SP', isPrimary: true }],
+      specialties: [],
+      bio: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      ...overrides,
+    },
+  )
 }
 
 const makeDto = (overrides = {}) => ({
@@ -108,9 +103,9 @@ describe('TemplateDetails (integration)', () => {
       expect(screen.getByText('Sintoma principal')).toBeInTheDocument()
     })
 
-    it('shows the profession for a generalist (null specialty) template and leaves specialty blank', async () => {
+    it('shows the profession for a generalist (null specialty) template and names it Generalista', async () => {
       ;(medicalRecordTemplatesService.getById as jest.Mock).mockResolvedValue(
-        makeDto({ specialtyId: null, specialtyName: null, councilType: 'crm' }),
+        makeDto({ specialtyId: null, specialtyName: null, councilType: CouncilType.CRM }),
       )
 
       renderWithProviders(<TemplateDetails templateId="uuid-1" />)
@@ -118,7 +113,7 @@ describe('TemplateDetails (integration)', () => {
       await waitFor(() => expect(screen.getByTestId('template-details')).toBeInTheDocument())
 
       expect(screen.getByTestId('template-details-profession')).toHaveTextContent('Medicina')
-      expect(screen.getByTestId('template-details-specialty')).toHaveTextContent('—')
+      expect(screen.getByTestId('template-details-specialty')).toHaveTextContent('Generalista')
     })
 
     it('renders error state when fetch fails', async () => {
@@ -378,6 +373,14 @@ describe('TemplateDetails (integration)', () => {
   })
 
   describe('as PROFESSIONAL', () => {
+
+    // Editar mudaria o formulário que a clínica inteira usa — é gestão do
+    // ADMIN. O profissional consulta, não gere.
+    it('nunca mostra o botão de editar ao profissional', () => {
+      renderWithProviders(<TemplateDetails templateId="uuid-1" />)
+
+      expect(screen.queryByTestId('template-details-edit-button')).not.toBeInTheDocument()
+    })
     beforeEach(() => mockAuthStoreAs(UserRole.PROFESSIONAL))
 
     it('never shows the delete button, even when owning the template scope', async () => {
@@ -391,14 +394,6 @@ describe('TemplateDetails (integration)', () => {
       expect(screen.queryByTestId('template-details-delete-button')).not.toBeInTheDocument()
     })
 
-    it('shows the edit button when the professional owns the template specialty', async () => {
-      mockMyProfessional({ specialties: [{ id: 'spec-uuid', name: 'Cardiologia' }] })
-      ;(medicalRecordTemplatesService.getById as jest.Mock).mockResolvedValue(makeDto())
-
-      renderWithProviders(<TemplateDetails templateId="uuid-1" />)
-
-      await waitFor(() => expect(screen.getByTestId('template-details-edit-button')).toBeInTheDocument())
-    })
 
     it('does not show the edit button when the professional does not own the template specialty', async () => {
       mockMyProfessional({ specialties: [{ id: 'other-spec-uuid', name: 'Dermatologia' }] })
@@ -411,19 +406,6 @@ describe('TemplateDetails (integration)', () => {
       expect(screen.queryByTestId('template-details-edit-button')).not.toBeInTheDocument()
     })
 
-    it('shows the edit button for a generalist template matching the professional own council type', async () => {
-      mockMyProfessional({
-        registrations: [{ id: 'reg-1', councilType: CouncilType.CRN, number: '999', state: 'SP', isPrimary: true }],
-        specialties: [],
-      })
-      ;(medicalRecordTemplatesService.getById as jest.Mock).mockResolvedValue(
-        makeDto({ specialtyId: null, specialtyName: null, councilType: CouncilType.CRN }),
-      )
-
-      renderWithProviders(<TemplateDetails templateId="uuid-1" />)
-
-      await waitFor(() => expect(screen.getByTestId('template-details-edit-button')).toBeInTheDocument())
-    })
 
     it('does not show the edit button for a generalist template of a different council type', async () => {
       mockMyProfessional({
@@ -456,7 +438,7 @@ describe('TemplateDetails (integration)', () => {
   describe('profession and specialty fields', () => {
     beforeEach(() => mockAuthStoreAs(UserRole.ADMIN))
 
-    it('shows the profession for a non-CRM (specialty-less) template and leaves specialty blank', async () => {
+    it('shows the profession for a non-CRM (specialty-less) template and names it Generalista', async () => {
       ;(medicalRecordTemplatesService.getById as jest.Mock).mockResolvedValue(
         makeDto({ specialtyId: null, specialtyName: null, councilType: CouncilType.CRN }),
       )
@@ -466,7 +448,7 @@ describe('TemplateDetails (integration)', () => {
       await waitFor(() => {
         expect(screen.getByTestId('template-details-profession')).toHaveTextContent('Nutrição')
       })
-      expect(screen.getByTestId('template-details-specialty')).toHaveTextContent('—')
+      expect(screen.getByTestId('template-details-specialty')).toHaveTextContent('Generalista')
     })
   })
 })

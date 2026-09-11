@@ -1,9 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { DataSource } from 'typeorm'
-import {
-  MedicalRecordTemplateResponseDto,
-  PaginatedMedicalRecordTemplatesResponseDto,
-} from '@app/shared'
+import { MedicalRecordTemplateResponseDto, PaginatedMedicalRecordTemplatesResponseDto, UserRole } from '@app/shared'
 import { BaseUseCase } from '../../../common/base.use-case'
 import { CacheService } from '../../../cache/cache.service'
 import { ICurrentUser } from '../../auth/types/current-user.type'
@@ -11,6 +8,9 @@ import { ISpecialtiesRepository } from '../../specialties/repositories/specialti
 import { MedicalRecordTemplate } from '../entities/medical-record-template.entity'
 import { IMedicalRecordTemplatesRepository } from '../repositories/medical-record-templates.repository.interface'
 import { MedicalRecordTemplateListQueryDto } from '../dto/medical-record-template-list-query.dto'
+import { resolveProfessionalTemplateScope } from '../utils/resolve-professional-template-scope.util'
+import { TemplateReadScope } from '../repositories/medical-record-templates.repository.interface'
+import { IProfessionalsRepository } from '../../professionals/repositories/professionals.repository.interface'
 
 @Injectable()
 export class FindAllMedicalRecordTemplatesUseCase extends BaseUseCase {
@@ -20,6 +20,7 @@ export class FindAllMedicalRecordTemplatesUseCase extends BaseUseCase {
     dataSource: DataSource,
     private readonly templatesRepository: IMedicalRecordTemplatesRepository,
     private readonly specialtiesRepository: ISpecialtiesRepository,
+    private readonly professionalsRepository: IProfessionalsRepository,
     private readonly cacheService: CacheService,
   ) {
     super(dataSource)
@@ -30,9 +31,29 @@ export class FindAllMedicalRecordTemplatesUseCase extends BaseUseCase {
     currentUser: ICurrentUser,
   ): Promise<PaginatedMedicalRecordTemplatesResponseDto> {
     const clinicId = currentUser.clinicId!
-    const { page = 1, limit = 20, specialtyId, generalist, councilType } = query
-    const filterKey = councilType ?? (generalist ? 'generalist' : specialtyId ?? 'all')
-    const cacheKey = `medical_record_templates:list:${clinicId}:${page}:${limit}:${filterKey}`
+    const { page = 1, limit = 20, specialtyId, generalist, councilType, isActive } = query
+    // `isActive` entra na chave: sem isso a lista "só ativos" do seletor e a
+    // lista completa da gestão colidiriam na mesma entrada de cache.
+    const scopeFilterKey = councilType ?? (generalist ? 'generalist' : specialtyId ?? 'all')
+    const filterKey = `${scopeFilterKey}:${isActive ?? 'any'}`
+
+    // O modelo é da clínica, mas o profissional só consulta o que se aplica ao
+    // trabalho dele: as especialidades que exerce e o generalista da própria
+    // profissão. Gerir continua sendo do ADMIN.
+    let scope: TemplateReadScope | undefined
+    if (currentUser.role === UserRole.PROFESSIONAL) {
+      const professional = await this.professionalsRepository.findByUserId(currentUser.id, clinicId)
+      scope = professional
+        ? resolveProfessionalTemplateScope(professional)
+        : { specialtyIds: [], councilType: null }
+    }
+
+    // O escopo entra na chave: sem isso o profissional leria o cache do ADMIN,
+    // que contém o catálogo inteiro.
+    const scopeKey = scope
+      ? `${scope.specialtyIds.slice().sort().join('|') || 'none'}:${scope.councilType ?? 'none'}`
+      : 'all'
+    const cacheKey = `medical_record_templates:list:${clinicId}:${page}:${limit}:${filterKey}:${scopeKey}`
 
     try {
       const cached =
@@ -51,6 +72,8 @@ export class FindAllMedicalRecordTemplatesUseCase extends BaseUseCase {
       specialtyId,
       generalist,
       councilType,
+      scope,
+      isActive,
     )
 
     const specialtyIds = [

@@ -1,6 +1,6 @@
 {
   "name": "@app/frontend",
-  "version": "1.2.0",
+  "version": "1.16.0",
   "private": true,
   "scripts": {
     "dev": "node scripts/load-env.js && next dev",
@@ -10,10 +10,13 @@
     "test:integration": "jest --testPathPattern='.*\\.integration\\.(ts|tsx)$' --passWithNoTests",
     "test": "yarn test:unit && yarn test:integration",
     "test:unit:coverage": "jest --testPathPattern='.*\\.spec\\.(ts|tsx)$' --coverage --passWithNoTests",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && yarn typecheck:test && yarn typecheck:e2e",
+    "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
+    "typecheck:e2e": "tsc --noEmit -p cypress/tsconfig.json",
     "lint": "next lint",
     "e2e:check": "node scripts/check-e2e-env.js",
     "cypress:run": "node scripts/check-e2e-env.js && cypress run",
+    "cypress:run:subdomain": "E2E_SUBDOMAIN_MODE=1 node scripts/check-e2e-env.js && cypress run --config-file cypress.subdomain.config.ts",
     "cypress:run:headed": "node scripts/check-e2e-env.js && cypress run --browser chrome --headed"
   },
   "dependencies": {

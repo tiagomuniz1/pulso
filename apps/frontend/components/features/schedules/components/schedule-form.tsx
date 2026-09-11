@@ -12,11 +12,7 @@ import { cn } from '@/lib/cn'
 import { DAY_OF_WEEK_LABELS } from '../types/schedule-model.types'
 import type { ICreateScheduleInput, IUpdateScheduleInput } from '../types/schedule-input.types'
 import type { IScheduleModel } from '../types/schedule-model.types'
-
-function timeToMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number)
-  return h * 60 + m
-}
+import { describeSlotMismatch, timeToMinutes } from '../utils/slot-fit.util'
 
 function applyTimeMask(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 4)
@@ -28,7 +24,9 @@ const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/
 
 const baseFields = {
-  dayOfWeek: z.nativeEnum(DayOfWeek, { required_error: 'Dia da semana obrigatório' }),
+  // errorMap, not required_error: the empty <option> submits '' rather than
+  // undefined, and required_error only covers undefined.
+  dayOfWeek: z.nativeEnum(DayOfWeek, { errorMap: () => ({ message: 'Dia da semana obrigatório' }) }),
   startTime: z.string().regex(timeRegex, 'Horário inválido. Use HH:MM'),
   endTime: z.string().regex(timeRegex, 'Horário inválido. Use HH:MM'),
   slotDurationInMinutes: z
@@ -48,9 +46,17 @@ function refineSchedule(
     if (timeToMinutes(data.startTime) >= timeToMinutes(data.endTime)) {
       ctx.addIssue({ code: 'custom', path: ['endTime'], message: 'Horário de fim deve ser após o início' })
     }
-    const interval = timeToMinutes(data.endTime) - timeToMinutes(data.startTime)
-    if (interval > 0 && data.slotDurationInMinutes > 0 && interval % data.slotDurationInMinutes !== 0) {
-      ctx.addIssue({ code: 'custom', path: ['slotDurationInMinutes'], message: 'O intervalo de tempo deve ser divisível pela duração do slot' })
+    // A mensagem antiga ("deve ser divisível pela duração do slot") ficava sob o
+    // campo da duração e fazia parecer que o valor digitado era proibido — 40
+    // minutos é válido, só não fecha numa janela de 9h. Agora a conta aparece e
+    // as duas saídas são oferecidas.
+    const mismatch = describeSlotMismatch(
+      data.startTime,
+      data.endTime,
+      data.slotDurationInMinutes,
+    )
+    if (mismatch) {
+      ctx.addIssue({ code: 'custom', path: ['slotDurationInMinutes'], message: mismatch })
     }
   }
   if (data.validFrom && data.validUntil && data.validFrom >= data.validUntil) {

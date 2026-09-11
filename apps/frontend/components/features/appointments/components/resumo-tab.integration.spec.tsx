@@ -19,6 +19,7 @@ function makePatient(overrides: Partial<IAppointmentPatientModel> = {}): IAppoin
 
 const defaultProps = {
   patient: makePatient(),
+  patientId: 'patient-uuid',
   prescriptionCount: 2,
   showPrescriptions: true,
   certificateCount: 1,
@@ -38,6 +39,20 @@ describe('ResumoTab', () => {
     expect(screen.getByTestId('patient-info-name')).toHaveTextContent('Maria Santos')
     expect(screen.getByTestId('patient-info-email')).toHaveTextContent('maria@example.com')
     expect(screen.getByTestId('patient-info-gender')).toHaveTextContent('Feminino')
+  })
+
+  it('formats the CPF when the patient has one', () => {
+    renderWithProviders(<ResumoTab {...defaultProps} />)
+    expect(screen.getByTestId('patient-info-cpf')).toHaveTextContent('123.456.789-01')
+  })
+
+  // A dependent may legitimately have no CPF. Rendering the label with nothing
+  // beside it reads as a loading failure; the patient page says "Não informado".
+  it('says "Não informado" for a patient without a CPF', () => {
+    renderWithProviders(
+      <ResumoTab {...defaultProps} patient={makePatient({ documentNumber: null })} />,
+    )
+    expect(screen.getByTestId('patient-info-cpf')).toHaveTextContent('Não informado')
   })
 
   it('falls back to the raw gender value when it has no known label', () => {
@@ -137,5 +152,14 @@ describe('ResumoTab', () => {
     renderWithProviders(<ResumoTab {...defaultProps} onNavigate={onNavigate} />)
     await userEvent.click(screen.getByTestId('resumo-tab-exames'))
     expect(onNavigate).toHaveBeenCalledWith('exames')
+  })
+
+  // O profissional não acessa a lista de pacientes, onde este mesmo link existe
+  // para ADMIN e recepção. Aqui é a única porta dele para o histórico.
+  it('links to the appointment history of this patient', () => {
+    renderWithProviders(<ResumoTab {...defaultProps} />)
+
+    const link = screen.getByTestId('resumo-tab-patient-appointments-link')
+    expect(link).toHaveAttribute('href', expect.stringContaining('/patients/patient-uuid/appointments'))
   })
 })

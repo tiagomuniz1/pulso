@@ -45,7 +45,7 @@ describe('Patient medical history — real', () => {
               professional.accessToken,
             ).then((appointment) => {
               cy.createMedicalRecordViaApi(
-                { appointmentId: appointment.id, data: { [fieldKey]: 'Dor no peito real' } },
+                { appointmentId: appointment.id, templateId: template.id, data: { [fieldKey]: 'Dor no peito real' } },
                 professional.accessToken,
               ).then(() => {
                 cy.loginAsClinicUser('admin@pulso.center', '123123123', CLINIC_SLUG).then((adminToken) => {
@@ -121,7 +121,7 @@ describe('Patient medical history — real', () => {
               ).then((appointment) => {
                 appointmentIds.push(appointment.id)
                 cy.createMedicalRecordViaApi(
-                  { appointmentId: appointment.id, data: { [fieldKey]: `Registro ${i + 1}` } },
+                  { appointmentId: appointment.id, templateId: template.id, data: { [fieldKey]: `Registro ${i + 1}` } },
                   professional.accessToken,
                 )
               })

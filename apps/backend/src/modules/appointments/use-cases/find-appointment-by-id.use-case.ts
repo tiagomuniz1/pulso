@@ -1,9 +1,15 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import { DataSource } from 'typeorm'
-import { AppointmentDetailResponseDto, AppointmentPatientDto, UserRole } from '@app/shared'
+import {
+  AppointmentDetailResponseDto,
+  AppointmentPatientDto,
+  AppointmentStatus,
+  UserRole,
+} from '@app/shared'
 import { BaseUseCase } from '../../../common/base.use-case'
 import { ICurrentUser } from '../../auth/types/current-user.type'
 import { IProfessionalsRepository } from '../../professionals/repositories/professionals.repository.interface'
+import { toAppointmentResponse } from '../appointment.mapper'
 import { Appointment } from '../entities/appointment.entity'
 import { IAppointmentsRepository } from '../repositories/appointments.repository.interface'
 
@@ -30,13 +36,41 @@ export class FindAppointmentByIdUseCase extends BaseUseCase {
       }
     }
 
-    const [professionalName, patientDetails, specialtyName] = await Promise.all([
-      this.fetchProfessionalName(appointment.professionalId),
-      this.fetchPatientDetails(appointment.patientId),
-      this.fetchSpecialtyName(appointment.specialtyId),
-    ])
+    const [professionalName, patientDetails, specialtyName, seriesFutureCount, hasEarlierVisit] =
+      await Promise.all([
+        this.fetchProfessionalName(appointment.professionalId),
+        this.fetchPatientDetails(appointment.patientId),
+        this.fetchSpecialtyName(appointment.specialtyId),
+        this.countStillCancellableFutureOccurrences(appointment.seriesId, appointment.date, clinicId),
+        this.appointmentsRepository.hasEarlierVisitWithProfessional(appointment, clinicId),
+      ])
 
-    return this.toResponse(appointment, professionalName, patientDetails, specialtyName)
+    return this.toResponse(
+      appointment,
+      professionalName,
+      patientDetails,
+      specialtyName,
+      appointment.series?.createdOccurrenceCount ?? null,
+      seriesFutureCount,
+      !hasEarlierVisit,
+    )
+  }
+
+  /**
+   * Drives the "this and all future" cancellation copy. Counted rather than
+   * derived from seriesTotalOccurrences - seriesSequence, which would wrongly
+   * include occurrences already cancelled or completed.
+   */
+  private async countStillCancellableFutureOccurrences(
+    seriesId: string | null,
+    date: string,
+    clinicId: string,
+  ): Promise<number | null> {
+    if (!seriesId) return null
+    return this.appointmentsRepository.countBySeriesIdAfterDate(seriesId, clinicId, date, [
+      AppointmentStatus.SCHEDULED,
+      AppointmentStatus.CONFIRMED,
+    ])
   }
 
   private async fetchSpecialtyName(specialtyId: string | null): Promise<string | null> {
@@ -103,6 +137,9 @@ export class FindAppointmentByIdUseCase extends BaseUseCase {
     professionalName: string,
     patientDetails: AppointmentPatientDto | null,
     specialtyName: string | null,
+    seriesTotalOccurrences: number | null,
+    seriesFutureCount: number | null,
+    isFirstVisitWithProfessional: boolean,
   ): AppointmentDetailResponseDto {
     const patient: AppointmentPatientDto = patientDetails ?? {
       fullName: '',
@@ -114,24 +151,15 @@ export class FindAppointmentByIdUseCase extends BaseUseCase {
     }
 
     return {
-      id: appointment.id,
-      professionalId: appointment.professionalId,
-      professionalName,
-      patientId: appointment.patientId,
-      patientName: patient.fullName,
-      specialtyId: appointment.specialtyId,
-      specialtyName,
-      scheduleId: appointment.scheduleId,
-      date: appointment.date,
-      startTime: appointment.startTime,
-      endTime: appointment.endTime,
-      status: appointment.status,
-      insuranceType: appointment.insuranceType,
-      reason: appointment.reason,
-      cancellationReason: appointment.cancellationReason,
-      createdAt: appointment.createdAt,
-      updatedAt: appointment.updatedAt,
+      ...toAppointmentResponse(appointment, {
+        professionalName,
+        patientName: patient.fullName,
+        specialtyName,
+        seriesTotalOccurrences,
+      }),
       patient,
+      seriesFutureCount,
+      isFirstVisitWithProfessional,
     }
   }
 }

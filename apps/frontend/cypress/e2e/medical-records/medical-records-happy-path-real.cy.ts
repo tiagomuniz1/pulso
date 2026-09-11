@@ -49,6 +49,9 @@ describe('Medical records — happy path real', () => {
                 cy.visit(`/${CLINIC_SLUG}/appointments/${appointment.id}`)
                 cy.get('[data-testid="tab-prontuario"]', { timeout: 10000 }).click()
                 cy.get('[data-testid="fill-medical-record-button"]', { timeout: 10000 }).click()
+                // Escolha explícita do modelo: a clínica pode ter vários no
+                // mesmo escopo, e nenhum é padrão.
+                cy.get(`[data-testid="template-option-${template.id}"]`, { timeout: 10000 }).click()
                 cy.get('[data-testid="medical-record-form"]').should('be.visible')
                 cy.get(`[data-testid="dynamic-field-${fieldKey}"]`).type('Dor no peito')
                 cy.get('[data-testid="medical-record-form-submit"]').click()
@@ -126,7 +129,7 @@ describe('Medical records — happy path real', () => {
               ],
             }).then(() => {
               cy.createMedicalRecordViaApi(
-                { appointmentId: pastAppointmentId, data: { [fieldKey]: 'Dor no peito' } },
+                { appointmentId: pastAppointmentId, templateId: template.id, data: { [fieldKey]: 'Dor no peito' } },
                 professional.accessToken,
               ).then((record) => {
                 cy.request({

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { Twilio } from 'twilio'
-import * as CircuitBreaker from 'opossum'
+import CircuitBreaker from 'opossum'
 import { getEnvConfig } from '../../../config/env.config'
 import {
   ISendWhatsAppReminderParams,

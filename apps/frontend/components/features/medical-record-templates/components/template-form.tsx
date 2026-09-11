@@ -14,7 +14,7 @@ import { FieldEditor } from './field-editor'
 import { SectionEditor } from './section-editor'
 import { CanonicalFieldPicker } from './canonical-field-picker'
 import { SortableList, SortableItem } from '@/components/ui/molecules/sortable-list/sortable-list'
-import { useSpecialties } from '@/components/features/specialties/hooks/use-specialties.hook'
+import { useClinicSpecialties } from '@/components/features/clinic-specialties/hooks/use-clinic-specialties.hook'
 import type { ITemplateModel } from '../types/template-model.types'
 import type { ICreateTemplateInput, IUpdateTemplateInput, ITemplateFieldInput, ITemplateSectionInput } from '../types/template-input.types'
 import type { ICanonicalFieldModel } from '../types/canonical-field-model.types'
@@ -162,17 +162,23 @@ export function TemplateForm(props: Props) {
 
   const authUser = useAuthStore((s) => s.user)
   const isProfessional = authUser?.role === UserRole.PROFESSIONAL
-  const { data: myProfessional } = useMyProfessional({ enabled: isProfessional })
+  const { data: myProfessional } = useMyProfessional()
   // Defaults to CRM while the professional's own profile is still loading, so the specialty
   // selector doesn't flash hidden-then-visible for the common (CRM) case.
   const isCrmProfessional =
     !myProfessional || getPrimaryCouncilType(myProfessional.registrations) === CouncilType.CRM
 
-  const { data: specialtiesPaginated } = useSpecialties({ limit: 100 })
+  // As especialidades da CLÍNICA, não o catálogo da plataforma: um modelo só faz
+  // sentido para uma especialidade que a clínica atende. O PROFESSIONAL é mais
+  // restrito ainda — só as próprias. A opção "Generalista (sem especialidade)"
+  // é a `value=""` do select e independe desta lista.
+  const { data: clinicSpecialtiesPaginated } = useClinicSpecialties(authUser?.clinicId ?? '', {
+    limit: 100,
+  })
   const specialties =
     isProfessional && myProfessional
       ? myProfessional.specialties.map((s) => ({ id: s.id, name: s.name }))
-      : (specialtiesPaginated?.data ?? [])
+      : (clinicSpecialtiesPaginated?.data ?? []).map((s) => ({ id: s.specialtyId, name: s.name }))
 
   const defaultFlatFields = template
     ? template.fields
@@ -249,7 +255,6 @@ export function TemplateForm(props: Props) {
     }
   }, [showProfessionSelector, watchedCouncilType, watchedSpecialtyId, setValue])
 
-  const canonicalPickerSpecialtyId = isEdit ? props.specialtyId : (watchedSpecialtyId || undefined)
 
   function buildFieldInputs(
     formFields: ITemplateFormValues['fields'],
@@ -552,7 +557,6 @@ export function TemplateForm(props: Props) {
                   register={register}
                   errors={errors}
                   watch={watch}
-                  specialtyId={canonicalPickerSpecialtyId}
                   dragHandleProps={handleProps}
                   fieldMoveToContainers={getSectionFieldMoveToContainers(sectionIndex)}
                   onMoveFieldToContainer={(fieldIndex, targetId) =>
@@ -574,10 +578,7 @@ export function TemplateForm(props: Props) {
         <p className="text-sm text-text-dim">
           Adote campos padronizados da plataforma para garantir consistência entre modelos.
         </p>
-        <CanonicalFieldPicker
-          specialtyId={canonicalPickerSpecialtyId}
-          onAdopt={handleAdoptCanonicalField}
-        />
+        <CanonicalFieldPicker onAdopt={handleAdoptCanonicalField} />
       </div>
 
       <div className="flex gap-3 justify-end">

@@ -68,7 +68,9 @@ describe('Users Detail', () => {
     cy.get('[data-testid="user-details-name"]').should('contain', mockUser.fullName)
     cy.get('[data-testid="user-details-email"]').should('contain', mockUser.email)
     cy.get('[data-testid="user-details-status"]').should('contain', 'Ativo')
-    cy.get('[data-testid="user-details-role"]').should('contain', 'Usuário')
+    // O rotulo do perfil USER e "Recepcionista" (lib/user-role-labels.ts), que
+    // espelha ai/context/permissions.md. A spec ficou com o rotulo anterior.
+    cy.get('[data-testid="user-details-role"]').should('contain', 'Recepcionista')
     cy.get('[data-testid="user-details-created-at"]').should('be.visible')
   })
 
@@ -180,6 +182,82 @@ describe('Users Detail', () => {
     expectClinicPath('/users')
   })
 
+
+  describe('enviar link de definição de senha', () => {
+    function stubUser(overrides = {}) {
+      cy.intercept('GET', `${Cypress.env('API_URL')}/users/${MOCK_USER_ID}`, {
+        statusCode: 200,
+        body: { ...mockUser, ...overrides },
+      }).as('getUser')
+    }
+
+    it('o ADMIN vê o botão e o envio confirma com o e-mail do destinatário', () => {
+      stubUser()
+      cy.intercept('POST', `${Cypress.env('API_URL')}/users/${MOCK_USER_ID}/send-set-password-email`, {
+        statusCode: 200,
+        body: { sent: true },
+      }).as('sendLink')
+
+      visitClinic(`/users/${MOCK_USER_ID}`, mockAuthUser)
+      cy.wait('@getUser')
+
+      cy.get('[data-testid="user-details-send-set-password-button"]').click()
+      cy.wait('@sendLink')
+
+      cy.get('[data-testid="user-details-send-set-password-success"]')
+        .should('be.visible')
+        .and('contain', 'detalhe@test.com')
+    })
+
+    // O que motivou a mudança: em produção o SMTP não está configurado, e o
+    // envio pulado respondia sucesso. Aqui o 503 tem de virar erro na tela.
+    it('mostra erro, não sucesso, quando o envio não sai', () => {
+      stubUser()
+      cy.intercept('POST', `${Cypress.env('API_URL')}/users/${MOCK_USER_ID}/send-set-password-email`, {
+        statusCode: 503,
+        body: {
+          type: 'https://httpstatuses.com/503',
+          title: 'SERVICE_UNAVAILABLE',
+          status: 503,
+          detail: 'O envio de e-mail não está configurado no sistema. Fale com o suporte.',
+        },
+      }).as('sendLinkFail')
+
+      visitClinic(`/users/${MOCK_USER_ID}`, mockAuthUser)
+      cy.wait('@getUser')
+
+      cy.get('[data-testid="user-details-send-set-password-button"]').click()
+      cy.wait('@sendLinkFail')
+
+      cy.get('[data-testid="user-details-send-set-password-error"]').should('be.visible')
+      cy.get('[data-testid="user-details-send-set-password-success"]').should('not.exist')
+    })
+
+    it('a recepcionista não vê o botão', () => {
+      stubUser()
+      visitClinic(`/users/${MOCK_USER_ID}`, { ...mockAuthUser, role: 'user' })
+      cy.wait('@getUser')
+
+      cy.get('[data-testid="user-details"]').should('be.visible')
+      cy.get('[data-testid="user-details-send-set-password-button"]').should('not.exist')
+    })
+
+    it('o profissional não vê o botão', () => {
+      stubUser()
+      visitClinic(`/users/${MOCK_USER_ID}`, { ...mockAuthUser, role: 'professional' })
+      cy.wait('@getUser')
+
+      cy.get('[data-testid="user-details-send-set-password-button"]').should('not.exist')
+    })
+
+    it('desabilita o botão para usuário inativo', () => {
+      stubUser({ isActive: false })
+      visitClinic(`/users/${MOCK_USER_ID}`, mockAuthUser)
+      cy.wait('@getUser')
+
+      cy.get('[data-testid="user-details-send-set-password-button"]').should('be.disabled')
+    })
+  })
 })
 
 export {}

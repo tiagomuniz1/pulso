@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { UserRole } from '@app/shared'
+import { UserRole, CouncilType } from '@app/shared'
 import { AgendaToolbar } from './agenda-toolbar'
 
 const fixedDate = new Date('2025-06-09T12:00:00.000Z') // Monday
@@ -88,7 +88,7 @@ describe('AgendaToolbar', () => {
         {...defaultProps}
         role={UserRole.ADMIN}
         doctors={[
-          { id: 'd1', user: { id: 'u1', fullName: 'Dr. A', email: 'a@a.com' }, crmNumber: '123', specialties: [], bio: null, createdAt: new Date(), updatedAt: new Date() },
+          { id: 'd1', user: { id: 'u1', fullName: 'Dr. A', email: 'a@a.com', isActive: true }, registrations: [{ id: 'reg-uuid', councilType: CouncilType.CRM, number: '123', state: 'SP', isPrimary: true }], specialties: [], bio: null, createdAt: new Date(), updatedAt: new Date() },
         ]}
       />,
     )
@@ -127,6 +127,25 @@ describe('AgendaToolbar', () => {
     expect(label).toContain('–')
   })
 
+  // The week grid renders the sunday-to-saturday week containing the selected
+  // date. The label has to describe that same week: labelling `currentDate`
+  // through `currentDate + 6` puts a different week in the header than the one
+  // on screen for every day except sunday.
+  it.each([
+    ['sunday', '2025-06-08T12:00:00.000Z'],
+    ['monday', '2025-06-09T12:00:00.000Z'],
+    ['saturday', '2025-06-14T12:00:00.000Z'],
+  ])('labels the calendar week containing the selected %s', (_day, iso) => {
+    render(<AgendaToolbar {...defaultProps} currentDate={new Date(iso)} view="week" />)
+    expect(screen.getByTestId('toolbar-date-label')).toHaveTextContent('8 de jun. – 14 de jun. de 2025')
+  })
+
+  // `capitalize` uppercases every word, turning the label into "8 De Jun. De 2025".
+  it('does not uppercase every word of the date label', () => {
+    render(<AgendaToolbar {...defaultProps} view="week" />)
+    expect(screen.getByTestId('toolbar-date-label')).not.toHaveClass('capitalize')
+  })
+
   it('shows day date label in day view', () => {
     render(<AgendaToolbar {...defaultProps} view="day" />)
     const label = screen.getByTestId('toolbar-date-label').textContent
@@ -151,7 +170,7 @@ describe('AgendaToolbar', () => {
         {...defaultProps}
         role={UserRole.ADMIN}
         doctors={[
-          { id: 'd1', user: { id: 'u1', fullName: 'Dr. A', email: 'a@a.com' }, crmNumber: '123', specialties: [], bio: null, createdAt: new Date(), updatedAt: new Date() },
+          { id: 'd1', user: { id: 'u1', fullName: 'Dr. A', email: 'a@a.com', isActive: true }, registrations: [{ id: 'reg-uuid', councilType: CouncilType.CRM, number: '123', state: 'SP', isPrimary: true }], specialties: [], bio: null, createdAt: new Date(), updatedAt: new Date() },
         ]}
       />,
     )
@@ -166,7 +185,7 @@ describe('AgendaToolbar', () => {
         role={UserRole.ADMIN}
         selectedDoctorId="d1"
         doctors={[
-          { id: 'd1', user: { id: 'u1', fullName: 'Dr. A', email: 'a@a.com' }, crmNumber: '123', specialties: [], bio: null, createdAt: new Date(), updatedAt: new Date() },
+          { id: 'd1', user: { id: 'u1', fullName: 'Dr. A', email: 'a@a.com', isActive: true }, registrations: [{ id: 'reg-uuid', councilType: CouncilType.CRM, number: '123', state: 'SP', isPrimary: true }], specialties: [], bio: null, createdAt: new Date(), updatedAt: new Date() },
         ]}
       />,
     )

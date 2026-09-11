@@ -18,6 +18,12 @@ const makeDto = (overrides: Partial<AppointmentDetailResponseDto> = {}): Appoint
   insuranceType: null,
   reason: null,
   cancellationReason: null,
+  label: null,
+  seriesFutureCount: null,
+  isFirstVisitWithProfessional: false,
+  seriesId: null,
+  seriesSequence: null,
+  seriesTotalOccurrences: null,
   createdAt: new Date('2025-01-01T00:00:00.000Z'),
   updatedAt: new Date('2025-01-01T00:00:00.000Z'),
   patient: {
@@ -108,5 +114,13 @@ describe('toAppointmentDetailModel', () => {
     const model = toAppointmentDetailModel(dto)
     expect(model.specialtyId).toBeNull()
     expect(model.specialtyName).toBeNull()
+  })
+
+  // Campo no model sem cópia no mapper some sem erro, sem teste falhando e sem
+  // o TypeScript reclamar — é exatamente o buraco em que `insuranceType` caiu.
+  // Estas duas asserções são a rede para este campo.
+  it.each([true, false])('copia isFirstVisitWithProfessional=%s do DTO', (valor) => {
+    const model = toAppointmentDetailModel(makeDto({ isFirstVisitWithProfessional: valor }))
+    expect(model.isFirstVisitWithProfessional).toBe(valor)
   })
 })

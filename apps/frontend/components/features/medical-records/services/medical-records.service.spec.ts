@@ -82,4 +82,12 @@ describe('medicalRecordsService', () => {
       expect(result).toBe(dto)
     })
   })
+
+  it('downloads the PDF as a blob', async () => {
+    const blob = new Blob(['%PDF'], { type: 'application/pdf' })
+    mockApiClient.getBlob.mockResolvedValue(blob)
+
+    await expect(medicalRecordsService.downloadPdf('uuid-1')).resolves.toBe(blob)
+    expect(mockApiClient.getBlob).toHaveBeenCalledWith('/medical-records/uuid-1/pdf')
+  })
 })

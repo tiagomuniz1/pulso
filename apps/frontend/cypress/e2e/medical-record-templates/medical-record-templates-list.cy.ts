@@ -38,6 +38,27 @@ describe('Medical Record Templates List', () => {
   beforeEach(() => {
     cy.clearCookies()
     cy.clearLocalStorage()
+    // O filtro de escopo lê as especialidades da clínica. Sem este stub a
+    // chamada bate no backend com token mock, dá 401 e derruba a página inteira
+    // num loop de redirect — a listagem nem chega a renderizar.
+    cy.intercept('GET', `${Cypress.env('API_URL')}/clinics/*/specialties*`, {
+      statusCode: 200,
+      body: {
+        data: [
+          {
+            id: 'cs-1',
+            clinicId: CLINIC_ID,
+            specialtyId: 'uuid-spec-1',
+            name: 'Cardiologia',
+            description: null,
+            linkedAt: '2024-01-01T00:00:00.000Z',
+          },
+        ],
+        total: 1,
+        page: 1,
+        limit: 100,
+      },
+    }).as('getClinicSpecialties')
   })
 
   it('redirects to /login when not authenticated', () => {
@@ -93,6 +114,48 @@ describe('Medical Record Templates List', () => {
     cy.get(`[data-testid="template-status-${MOCK_TEMPLATE_ID}"]`).should('contain', 'Ativo')
   })
 
+  // A listagem não paginava e o backend corta em 20 — com vários modelos por
+  // especialidade, o resto sumia sem aviso nenhum.
+  it('paginates through the templates', () => {
+    cy.intercept('GET', `${Cypress.env('API_URL')}/medical-record-templates*`, {
+      statusCode: 200,
+      body: { ...paginatedResponse, total: 45 },
+    }).as('getTemplates')
+
+    visitClinic('/medical-record-templates', mockAdmin)
+    cy.wait('@getTemplates')
+
+    cy.get('[data-testid="template-list-page-info"]').should('contain', 'Página 1 de 3')
+    cy.get('[data-testid="template-list-prev-page"]').should('be.disabled')
+
+    cy.get('[data-testid="template-list-next-page"]').click()
+
+    cy.wait('@getTemplates').its('request.url').should('contain', 'page=2')
+    cy.get('[data-testid="template-list-page-info"]').should('contain', 'Página 2 de 3')
+  })
+
+  it('filters by specialty and by profession', () => {
+    cy.intercept('GET', `${Cypress.env('API_URL')}/medical-record-templates*`, {
+      statusCode: 200,
+      body: paginatedResponse,
+    }).as('getTemplates')
+
+    visitClinic('/medical-record-templates', mockAdmin)
+    cy.wait('@getTemplates')
+    cy.wait('@getClinicSpecialties')
+
+    cy.get('[data-testid="template-list-filter-scope"]').select('uuid-spec-1')
+    cy.wait('@getTemplates').its('request.url').should('contain', 'specialtyId=uuid-spec-1')
+
+    // Escopo por profissão e por especialidade são mutuamente exclusivos no
+    // backend — o seletor é um só para a UI não pedir o que o servidor descarta.
+    cy.get('[data-testid="template-list-filter-scope"]').select('generalist:crn')
+    cy.wait('@getTemplates').then((interception) => {
+      expect(interception.request.url).to.contain('councilType=crn')
+      expect(interception.request.url).to.not.contain('specialtyId')
+    })
+  })
+
   it('shows new template button for ADMIN', () => {
     cy.intercept('GET', `${Cypress.env('API_URL')}/medical-record-templates*`, {
       statusCode: 200,
@@ -104,15 +167,19 @@ describe('Medical Record Templates List', () => {
     cy.get('[data-testid="template-list-new-button"]').should('be.visible')
   })
 
-  it('shows new template button for PROFESSIONAL (can create own template)', () => {
+  // Criar deixou de ser do profissional: o modelo é da clínica, e dois médicos
+  // da mesma especialidade compartilham o mesmo. Gerir é do ADMIN.
+  it('não mostra o botão de novo modelo para PROFESSIONAL', () => {
     cy.intercept('GET', `${Cypress.env('API_URL')}/medical-record-templates*`, {
       statusCode: 200,
-      body: emptyPaginated,
+      body: paginatedResponse,
     }).as('getTemplates')
 
     visitClinic('/medical-record-templates', mockProfessional)
     cy.wait('@getTemplates')
-    cy.get('[data-testid="template-list-new-button"]').should('be.visible')
+
+    cy.get('[data-testid="template-list"]').should('be.visible')
+    cy.get('[data-testid="template-list-new-button"]').should('not.exist')
   })
 
   it('view details link navigates to template page', () => {

@@ -1,4 +1,5 @@
 import { DataSource } from 'typeorm'
+import Redis from 'ioredis'
 import * as path from 'path'
 
 process.env.NODE_ENV = 'test'
@@ -14,6 +15,11 @@ process.env.JWT_REFRESH_EXPIRATION = process.env.JWT_REFRESH_EXPIRATION ?? '7d'
 process.env.FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:3000'
 process.env.REDIS_HOST = process.env.REDIS_HOST ?? 'localhost'
 process.env.REDIS_PORT = process.env.REDIS_PORT ?? '6399'
+// Banco Redis próprio da suíte. Dev e teste apontam para a mesma instância e o
+// id da clínica-semente é idêntico nos dois, então as chaves colidiam e o teste
+// lia dado de desenvolvimento — origem de falhas que mudavam de spec a cada
+// execução. Ver o comentário em `cache.service.ts`.
+process.env.REDIS_DB = process.env.REDIS_DB ?? '1'
 
 export default async function globalSetup() {
   const dataSource = new DataSource({
@@ -31,5 +37,53 @@ export default async function globalSetup() {
 
   await dataSource.initialize()
   await dataSource.runMigrations()
+  await truncateAllTables(dataSource)
   await dataSource.destroy()
+
+  await flushTestCache()
+}
+
+/**
+ * Zera o cache da suíte, pelo mesmo motivo do truncate acima: o que a execução
+ * anterior deixou não pode decidir o resultado desta. É o banco Redis próprio
+ * (`REDIS_DB`), nunca o do desenvolvimento.
+ */
+async function flushTestCache(): Promise<void> {
+  const client = new Redis({
+    host: process.env.REDIS_HOST,
+    port: parseInt(process.env.REDIS_PORT!, 10),
+    db: parseInt(process.env.REDIS_DB!, 10),
+    lazyConnect: true,
+  })
+  try {
+    await client.connect()
+    await client.flushdb()
+  } finally {
+    client.disconnect()
+  }
+}
+
+/**
+ * Zera o schema antes da suíte.
+ *
+ * O schema `test` sobrevive entre execuções — só as migrations rodavam aqui,
+ * nunca uma limpeza. Cada spec limpa o que cria no próprio `afterAll`, mas
+ * quando um deles falha no meio o resto do arquivo não roda, e a execução
+ * seguinte começa suja. Era essa a origem da instabilidade: a suíte falhava
+ * num spec diferente a cada vez, sempre passando quando rodada isolada.
+ *
+ * `CASCADE` porque a ordem entre as tabelas não importa aqui — e ela mudaria
+ * a cada chave estrangeira nova, o que faria esta função apodrecer sozinha.
+ *
+ * A tabela `migrations` fica de fora: apagá-la faria a próxima execução tentar
+ * aplicar tudo de novo sobre um schema que já existe.
+ */
+async function truncateAllTables(dataSource: DataSource): Promise<void> {
+  const tabelas: { tablename: string }[] = await dataSource.query(
+    `SELECT tablename FROM pg_tables WHERE schemaname = 'test' AND tablename <> 'migrations'`,
+  )
+  if (tabelas.length === 0) return
+
+  const lista = tabelas.map(({ tablename }) => `"test"."${tablename}"`).join(', ')
+  await dataSource.query(`TRUNCATE TABLE ${lista} RESTART IDENTITY CASCADE`)
 }

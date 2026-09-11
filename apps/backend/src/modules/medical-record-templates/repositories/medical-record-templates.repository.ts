@@ -1,9 +1,12 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { IsNull, QueryRunner, Repository } from 'typeorm'
+import { QueryRunner, Repository } from 'typeorm'
 import { CouncilType } from '@app/shared'
 import { MedicalRecordTemplate } from '../entities/medical-record-template.entity'
-import { IMedicalRecordTemplatesRepository } from './medical-record-templates.repository.interface'
+import {
+  IMedicalRecordTemplatesRepository,
+  TemplateReadScope,
+} from './medical-record-templates.repository.interface'
 
 @Injectable()
 export class MedicalRecordTemplatesRepository implements IMedicalRecordTemplatesRepository {
@@ -19,10 +22,38 @@ export class MedicalRecordTemplatesRepository implements IMedicalRecordTemplates
     specialtyId?: string,
     generalist?: boolean,
     councilType?: CouncilType,
+    scope?: TemplateReadScope,
+    isActive?: boolean,
   ): Promise<[MedicalRecordTemplate[], number]> {
     const queryBuilder = this.repository
       .createQueryBuilder('template')
       .where('template.clinicId = :clinicId', { clinicId })
+
+    // Recorte de leitura do profissional: as especialidades que ele exerce mais
+    // o generalista da profissão dele. Aplicado aqui, e não depois de buscar,
+    // para o total da paginação bater com o que ele enxerga.
+    if (scope) {
+      const temEspecialidades = scope.specialtyIds.length > 0
+      if (temEspecialidades && scope.councilType) {
+        queryBuilder.andWhere(
+          '(template.specialtyId IN (:...scopeSpecialtyIds) OR (template.specialtyId IS NULL AND template.councilType = :scopeCouncilType))',
+          { scopeSpecialtyIds: scope.specialtyIds, scopeCouncilType: scope.councilType },
+        )
+      } else if (temEspecialidades) {
+        queryBuilder.andWhere('template.specialtyId IN (:...scopeSpecialtyIds)', {
+          scopeSpecialtyIds: scope.specialtyIds,
+        })
+      } else if (scope.councilType) {
+        queryBuilder.andWhere(
+          '(template.specialtyId IS NULL AND template.councilType = :scopeCouncilType)',
+          { scopeCouncilType: scope.councilType },
+        )
+      } else {
+        // Sem especialidade e sem conselho não há escopo algum: melhor nada do
+        // que o catálogo inteiro.
+        queryBuilder.andWhere('1 = 0')
+      }
+    }
 
     if (generalist || councilType) {
       queryBuilder.andWhere('template.specialtyId IS NULL')
@@ -31,6 +62,12 @@ export class MedicalRecordTemplatesRepository implements IMedicalRecordTemplates
       }
     } else if (specialtyId) {
       queryBuilder.andWhere('template.specialtyId = :specialtyId', { specialtyId })
+    }
+
+    // Sem default de propósito: a gestão precisa enxergar os desativados para
+    // reativá-los, e o seletor da consulta pede `isActive=true` explicitamente.
+    if (isActive !== undefined) {
+      queryBuilder.andWhere('template.isActive = :isActive', { isActive })
     }
 
     return queryBuilder
@@ -42,21 +79,6 @@ export class MedicalRecordTemplatesRepository implements IMedicalRecordTemplates
 
   async findById(id: string, clinicId: string): Promise<MedicalRecordTemplate | null> {
     return this.repository.findOneBy({ id, clinicId })
-  }
-
-  async findByClinicAndSpecialty(
-    clinicId: string,
-    specialtyId: string | null,
-    councilType?: CouncilType | null,
-  ): Promise<MedicalRecordTemplate | null> {
-    // A raw null generates `specialty_id = NULL` which never matches — use IsNull(). When
-    // specialtyId is null, councilType disambiguates which profession's generalist template
-    // this is (every such row always has one — see the backfill in the migration that added it).
-    return this.repository.findOneBy(
-      specialtyId
-        ? { clinicId, specialtyId }
-        : { clinicId, specialtyId: IsNull(), councilType: councilType ?? IsNull() },
-    )
   }
 
   async create(

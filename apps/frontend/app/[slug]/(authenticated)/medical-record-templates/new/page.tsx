@@ -31,7 +31,14 @@ export default function NewMedicalRecordTemplatePage({ searchParams }: NewMedica
       onError: (error) => {
         const apiError = error as unknown as IApiError
         if (apiError.status === 409) {
-          setGlobalError('Já existe um modelo com este nome para esta especialidade.')
+          // A clínica pode ter quantos modelos quiser no mesmo escopo — o que ela
+          // não pode é dois com o mesmo nome, porque é pelo nome que o
+          // profissional os distingue no seletor da consulta. Renomear resolve.
+          setGlobalError(
+            data.specialtyId
+              ? 'Já existe um modelo com esse nome nesta especialidade. Escolha outro nome.'
+              : 'Já existe um modelo com esse nome nesta profissão. Escolha outro nome.',
+          )
         } else {
           setGlobalError('Não foi possível criar o modelo. Tente novamente.')
         }

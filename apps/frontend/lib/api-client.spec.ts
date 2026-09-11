@@ -54,7 +54,7 @@ describe('api-client', () => {
 
   describe('normalizeProblemDetails', () => {
     it('returns full problem details when axios error has complete data', async () => {
-      ;(axios.isAxiosError as jest.Mock).mockReturnValue(true)
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true)
       const error = {
         response: {
           status: 422,
@@ -78,7 +78,7 @@ describe('api-client', () => {
     })
 
     it('forwards requiresCaptcha when present in the error body', async () => {
-      ;(axios.isAxiosError as jest.Mock).mockReturnValue(true)
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true)
       const error = {
         response: {
           status: 401,
@@ -92,7 +92,7 @@ describe('api-client', () => {
     })
 
     it('does not include requiresCaptcha when absent from the error body', async () => {
-      ;(axios.isAxiosError as jest.Mock).mockReturnValue(true)
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true)
       const error = {
         response: { status: 401, data: { status: 401, title: 'Unauthorized', detail: 'Invalid credentials' } },
         config: { _retry: true },
@@ -103,7 +103,7 @@ describe('api-client', () => {
     })
 
     it('uses fallback values when data fields are absent', async () => {
-      ;(axios.isAxiosError as jest.Mock).mockReturnValue(true)
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true)
       const error = {
         response: { status: 503, data: {} },
         config: { _retry: true },
@@ -119,7 +119,7 @@ describe('api-client', () => {
     })
 
     it('falls through to the non-axios branch when response.data is falsy', async () => {
-      ;(axios.isAxiosError as jest.Mock).mockReturnValue(true)
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true)
       const error = {
         response: { status: 503, data: null },
         config: { _retry: true },
@@ -130,7 +130,7 @@ describe('api-client', () => {
     })
 
     it('returns 500 with error.message for non-axios Error instances', async () => {
-      ;(axios.isAxiosError as jest.Mock).mockReturnValue(false)
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(false)
 
       await expect(onRejected(new Error('Network failure'))).rejects.toEqual({
         status: 500,
@@ -140,7 +140,7 @@ describe('api-client', () => {
     })
 
     it('returns "An unexpected error occurred" for non-Error thrown values', async () => {
-      ;(axios.isAxiosError as jest.Mock).mockReturnValue(false)
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(false)
 
       await expect(onRejected('raw string')).rejects.toEqual({
         status: 500,
@@ -152,7 +152,7 @@ describe('api-client', () => {
 
   describe('401 retry logic', () => {
     it('retries the original request after successful token refresh', async () => {
-      ;(axios.isAxiosError as jest.Mock).mockReturnValue(true)
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true)
       ;(axios.post as jest.Mock).mockResolvedValue({})
       const retried = { id: 1 }
       axiosInstance.mockResolvedValue(retried)
@@ -174,8 +174,55 @@ describe('api-client', () => {
       expect(result).toBe(retried)
     })
 
+    // O backend rotaciona o refresh token: emitir um novo revoga o anterior. Uma
+    // tela que dispara várias queries de uma vez tinha todas expirando juntas, e
+    // cada uma chamava /auth/refresh por conta própria — a primeira revogava o
+    // token das outras, que tomavam 401 e mandavam o usuário para o login no
+    // meio de uma sessão válida.
+    it('issues a single refresh for several requests that fail with 401 at once', async () => {
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true)
+      let resolveRefresh: (value: unknown) => void = () => {}
+      ;(axios.post as jest.Mock).mockReturnValue(new Promise((resolve) => { resolveRefresh = resolve }))
+      axiosInstance.mockResolvedValue({ ok: true })
+
+      const makeError = (url: string) => ({
+        response: { status: 401, data: {} },
+        config: { _retry: false, url },
+        message: 'Unauthorized',
+      })
+
+      const pending = Promise.all([
+        onRejected(makeError('/a')),
+        onRejected(makeError('/b')),
+        onRejected(makeError('/c')),
+      ])
+
+      resolveRefresh({})
+      await pending
+
+      expect((axios.post as jest.Mock).mock.calls.filter(([url]) => String(url).includes('/auth/refresh'))).toHaveLength(1)
+      expect(axiosInstance).toHaveBeenCalledTimes(3)
+    })
+
+    it('refreshes again on a later 401, once the previous refresh has settled', async () => {
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true)
+      ;(axios.post as jest.Mock).mockResolvedValue({})
+      axiosInstance.mockResolvedValue({ ok: true })
+
+      const makeError = (url: string) => ({
+        response: { status: 401, data: {} },
+        config: { _retry: false, url },
+        message: 'Unauthorized',
+      })
+
+      await onRejected(makeError('/a'))
+      await onRejected(makeError('/b'))
+
+      expect((axios.post as jest.Mock).mock.calls.filter(([url]) => String(url).includes('/auth/refresh'))).toHaveLength(2)
+    })
+
     it('redirects to /login and rejects when refresh fails', async () => {
-      ;(axios.isAxiosError as jest.Mock).mockReturnValue(true)
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true)
       ;(axios.post as jest.Mock).mockRejectedValue(new Error('Refresh failed'))
 
       const error = {
@@ -189,7 +236,7 @@ describe('api-client', () => {
     })
 
     it('skips retry when request is already marked as retried', async () => {
-      ;(axios.isAxiosError as jest.Mock).mockReturnValue(true)
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true)
 
       const error = {
         response: {
@@ -205,7 +252,7 @@ describe('api-client', () => {
     })
 
     it('normalizes non-401 axios errors without retrying', async () => {
-      ;(axios.isAxiosError as jest.Mock).mockReturnValue(true)
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true)
 
       const error = {
         response: {
@@ -307,7 +354,7 @@ describe('api-client', () => {
         configurable: true,
         writable: true,
       })
-      ;(axios.isAxiosError as jest.Mock).mockReturnValue(true)
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true)
       ;(axios.post as jest.Mock).mockResolvedValue({})
       axiosInstance.mockResolvedValue({ id: 1 })
 
@@ -332,7 +379,7 @@ describe('api-client', () => {
         configurable: true,
         writable: true,
       })
-      ;(axios.isAxiosError as jest.Mock).mockReturnValue(true)
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true)
       ;(axios.post as jest.Mock).mockRejectedValue(new Error('Refresh failed'))
 
       const error = {
@@ -351,7 +398,7 @@ describe('api-client', () => {
         configurable: true,
         writable: true,
       })
-      ;(axios.isAxiosError as jest.Mock).mockReturnValue(true)
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true)
       ;(axios.post as jest.Mock).mockRejectedValue(new Error('Refresh failed'))
 
       const error = {
@@ -402,7 +449,7 @@ describe('api-client', () => {
         configurable: true,
         writable: true,
       })
-      ;(axios.isAxiosError as jest.Mock).mockReturnValue(true)
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true)
       ;(axios.post as jest.Mock).mockResolvedValue({})
       axiosInstance.mockResolvedValue({ id: 1 })
 
@@ -428,7 +475,7 @@ describe('api-client', () => {
         configurable: true,
         writable: true,
       })
-      ;(axios.isAxiosError as jest.Mock).mockReturnValue(true)
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true)
       ;(axios.post as jest.Mock).mockRejectedValue(new Error('Refresh failed'))
 
       const error = {

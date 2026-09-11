@@ -4,6 +4,7 @@ import { AppointmentStatus, UserRole } from '@app/shared'
 import { ICurrentUser } from '../../auth/types/current-user.type'
 import { AppointmentsController } from './appointments.controller'
 import { CancelAppointmentUseCase } from '../use-cases/cancel-appointment.use-case'
+import { SetAppointmentLabelUseCase } from '../use-cases/set-appointment-label.use-case'
 import { CompleteAppointmentUseCase } from '../use-cases/complete-appointment.use-case'
 import { ConfirmAppointmentUseCase } from '../use-cases/confirm-appointment.use-case'
 import { CreateAppointmentUseCase } from '../use-cases/create-appointment.use-case'
@@ -13,10 +14,14 @@ import { GetReassignCandidatesUseCase } from '../use-cases/get-reassign-candidat
 import { ReassignAppointmentUseCase } from '../use-cases/reassign-appointment.use-case'
 import { ListAppointmentsUseCase } from '../use-cases/list-appointments.use-case'
 import { MarkAppointmentNoShowUseCase } from '../use-cases/mark-appointment-no-show.use-case'
+import { PreviewRecurringAppointmentsUseCase } from '../use-cases/preview-recurring-appointments.use-case'
+import { CreateRecurringAppointmentsUseCase } from '../use-cases/create-recurring-appointments.use-case'
+import { FindAppointmentSeriesByIdUseCase } from '../use-cases/find-appointment-series-by-id.use-case'
 
 const mockCreate = { execute: jest.fn() } as unknown as jest.Mocked<CreateAppointmentUseCase>
 const mockCancel = { execute: jest.fn() } as unknown as jest.Mocked<CancelAppointmentUseCase>
 const mockComplete = { execute: jest.fn() } as unknown as jest.Mocked<CompleteAppointmentUseCase>
+const mockSetLabel = { execute: jest.fn() } as unknown as jest.Mocked<SetAppointmentLabelUseCase>
 const mockConfirm = { execute: jest.fn() } as unknown as jest.Mocked<ConfirmAppointmentUseCase>
 const mockNoShow = { execute: jest.fn() } as unknown as jest.Mocked<MarkAppointmentNoShowUseCase>
 const mockFindById = { execute: jest.fn() } as unknown as jest.Mocked<FindAppointmentByIdUseCase>
@@ -24,6 +29,9 @@ const mockList = { execute: jest.fn() } as unknown as jest.Mocked<ListAppointmen
 const mockGetAvailability = { execute: jest.fn() } as unknown as jest.Mocked<GetAvailabilityUseCase>
 const mockGetReassignCandidates = { execute: jest.fn() } as unknown as jest.Mocked<GetReassignCandidatesUseCase>
 const mockReassign = { execute: jest.fn() } as unknown as jest.Mocked<ReassignAppointmentUseCase>
+const mockPreviewRecurring = { execute: jest.fn() } as unknown as jest.Mocked<PreviewRecurringAppointmentsUseCase>
+const mockCreateRecurring = { execute: jest.fn() } as unknown as jest.Mocked<CreateRecurringAppointmentsUseCase>
+const mockFindSeries = { execute: jest.fn() } as unknown as jest.Mocked<FindAppointmentSeriesByIdUseCase>
 
 const CLINIC_ID = 'clinic-uuid'
 
@@ -57,14 +65,63 @@ describe('AppointmentsController', () => {
       mockCreate,
       mockCancel,
       mockComplete,
+      mockSetLabel,
       mockConfirm,
       mockNoShow,
       mockFindById,
       mockList,
       mockGetAvailability,
       mockGetReassignCandidates,
+      mockPreviewRecurring,
+      mockCreateRecurring,
+      mockFindSeries,
       mockReassign,
     )
+  })
+
+  it('createRecurring delegates to CreateRecurringAppointmentsUseCase', async () => {
+    const dto = {
+      patientId: faker.string.uuid(),
+      startTime: '08:00',
+      recurrenceInterval: 'every_week',
+      dates: ['2099-06-20', '2099-06-27'],
+      occurrenceCount: 2,
+    } as any
+    const response = { seriesId: faker.string.uuid(), appointments: [] }
+    mockCreateRecurring.execute.mockResolvedValue(response as any)
+
+    const result = await controller.createRecurring(dto, adminUser)
+
+    expect(mockCreateRecurring.execute).toHaveBeenCalledWith(dto, adminUser)
+    expect(result).toBe(response)
+  })
+
+  it('findSeriesById delegates to FindAppointmentSeriesByIdUseCase', async () => {
+    const seriesId = faker.string.uuid()
+    const response = { id: seriesId, occurrences: [] }
+    mockFindSeries.execute.mockResolvedValue(response as any)
+
+    const result = await controller.findSeriesById(seriesId, adminUser)
+
+    expect(mockFindSeries.execute).toHaveBeenCalledWith(seriesId, adminUser)
+    expect(result).toBe(response)
+  })
+
+  it('previewRecurring delegates to PreviewRecurringAppointmentsUseCase', async () => {
+    const query = {
+      patientId: faker.string.uuid(),
+      date: '2099-06-20',
+      startTime: '08:00',
+      recurrenceInterval: 'every_week',
+      occurrenceCount: 4,
+    } as any
+    const response = { occurrences: [] }
+    mockPreviewRecurring.execute.mockResolvedValue(response as any)
+
+    const result = await controller.previewRecurring(query, adminUser)
+
+    expect(mockPreviewRecurring.execute).toHaveBeenCalledWith(query, adminUser)
+    expect(result).toBe(response)
   })
 
   it('create delegates to CreateAppointmentUseCase', async () => {
@@ -190,5 +247,25 @@ describe('AppointmentsController', () => {
 
     expect(mockReassign.execute).toHaveBeenCalledWith(id, dto, adminUser)
     expect(result).toBe(response)
+  })
+
+  it('setLabel delegates to SetAppointmentLabelUseCase', async () => {
+    const id = faker.string.uuid()
+    const dto = { labelId: faker.string.uuid() }
+    ;(mockSetLabel.execute as jest.Mock).mockResolvedValue(makeAppointmentResponse())
+
+    await controller.setLabel(id, dto, adminUser)
+
+    expect(mockSetLabel.execute).toHaveBeenCalledWith(id, dto, adminUser)
+  })
+
+  // `null` é desmarcar — precisa chegar ao use-case, não ser tratado como ausência.
+  it('setLabel forwards a null labelId to unset', async () => {
+    const id = faker.string.uuid()
+    ;(mockSetLabel.execute as jest.Mock).mockResolvedValue(makeAppointmentResponse())
+
+    await controller.setLabel(id, { labelId: null }, adminUser)
+
+    expect(mockSetLabel.execute).toHaveBeenCalledWith(id, { labelId: null }, adminUser)
   })
 })

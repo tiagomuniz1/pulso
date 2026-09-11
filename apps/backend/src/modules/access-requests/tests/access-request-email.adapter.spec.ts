@@ -1,33 +1,16 @@
-jest.mock('nodemailer')
-jest.mock('opossum')
 jest.mock('../../../config/env.config')
 
-import * as nodemailer from 'nodemailer'
-import * as CircuitBreakerModule from 'opossum'
 import { getEnvConfig } from '../../../config/env.config'
+import { EmailSenderService } from '../../../common/email/email-sender.service'
 import { AccessRequestEmailAdapter } from '../adapters/access-request-email.adapter'
 
 const mockGetEnvConfig = getEnvConfig as jest.Mock
 
-function makePassThroughBreaker(sendFn: (params: any) => Promise<void>) {
-  return {
-    fire: jest.fn().mockImplementation((params: any) => sendFn(params)),
-    fallback: jest.fn(),
-  }
-}
-
+// O adapter ficou fino: monta assunto e corpo. Provedor, circuito e log vivem
+// em EmailSenderService, que tem spec própria.
 describe('AccessRequestEmailAdapter', () => {
-  let mockBreaker: ReturnType<typeof makePassThroughBreaker>
-  let mockSendMail: jest.Mock
-
-  const baseEnv = {
-    SMTP_HOST: 'smtp.example.com',
-    SMTP_PORT: 587,
-    SMTP_USER: 'user',
-    SMTP_PASS: 'pass',
-    SMTP_FROM: 'noreply@pulso.center',
-    ACCESS_REQUEST_TO_EMAIL: 'tiagomuniz1@gmail.com',
-  }
+  const emailSender = { sendEmail: jest.fn() } as unknown as jest.Mocked<EmailSenderService>
+  let adapter: AccessRequestEmailAdapter
 
   const baseParams = {
     fullName: 'Ana Costa',
@@ -37,120 +20,70 @@ describe('AccessRequestEmailAdapter', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    mockSendMail = jest.fn().mockResolvedValue({})
-    ;(nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail: mockSendMail })
+    mockGetEnvConfig.mockReturnValue({ ACCESS_REQUEST_TO_EMAIL: 'contato@pulso.center' })
+    ;(emailSender.sendEmail as jest.Mock).mockResolvedValue({ sent: true })
+    adapter = new AccessRequestEmailAdapter(emailSender)
   })
 
-  function buildAdapter() {
-    let capturedSendFn: (params: any) => Promise<void>
-    ;(CircuitBreakerModule as any).mockImplementation((fn: any, _opts: any) => {
-      capturedSendFn = fn
-      mockBreaker = makePassThroughBreaker(capturedSendFn)
-      return mockBreaker
+  it('repassa o desfecho do envio, sem inventar sucesso', async () => {
+    ;(emailSender.sendEmail as jest.Mock).mockResolvedValue({ sent: false, reason: 'not_configured' })
+
+    await expect(adapter.sendAccessRequestEmail(baseParams)).resolves.toEqual({
+      sent: false,
+      reason: 'not_configured',
     })
-    return new AccessRequestEmailAdapter()
-  }
+  })
 
-  describe('sendAccessRequestEmail', () => {
-    it('fires the circuit breaker with the provided params', async () => {
-      mockGetEnvConfig.mockReturnValue(baseEnv)
-      const adapter = buildAdapter()
+  // Responder o e-mail fala direto com quem solicitou, não com a plataforma.
+  it('envia para o destinatário configurado, com replyTo de quem solicitou', async () => {
+    await adapter.sendAccessRequestEmail(baseParams)
 
-      await adapter.sendAccessRequestEmail(baseParams)
+    expect(emailSender.sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'contato@pulso.center',
+        replyTo: 'ana@clinica.com',
+        fromName: 'Pulso',
+        subject: 'Solicitação de acesso — Clínica do Vale',
+      }),
+    )
+  })
 
-      expect(mockBreaker.fire).toHaveBeenCalledWith(baseParams)
-    })
+  it('inclui nome, e-mail e clínica no corpo', async () => {
+    await adapter.sendAccessRequestEmail(baseParams)
 
-    it('sends email to the configured recipient with replyTo set to the requester', async () => {
-      mockGetEnvConfig.mockReturnValue(baseEnv)
-      const adapter = buildAdapter()
+    const { html } = (emailSender.sendEmail as jest.Mock).mock.calls[0][0]
+    expect(html).toContain('Ana Costa')
+    expect(html).toContain('ana@clinica.com')
+    expect(html).toContain('Clínica do Vale')
+  })
 
-      await adapter.sendAccessRequestEmail(baseParams)
+  it('inclui o telefone quando informado', async () => {
+    await adapter.sendAccessRequestEmail({ ...baseParams, phone: '11999998888' })
 
-      expect(nodemailer.createTransport).toHaveBeenCalledWith({
-        host: 'smtp.example.com',
-        port: 587,
-        secure: false,
-        auth: { user: 'user', pass: 'pass' },
-      })
-      expect(mockSendMail).toHaveBeenCalledWith(
-        expect.objectContaining({
-          from: 'Pulso <noreply@pulso.center>',
-          to: 'tiagomuniz1@gmail.com',
-          replyTo: 'ana@clinica.com',
-          subject: 'Solicitação de acesso — Clínica do Vale',
-        }),
-      )
-    })
+    const { html } = (emailSender.sendEmail as jest.Mock).mock.calls[0][0]
+    expect(html).toContain('11999998888')
+    expect(html).toContain('Telefone')
+  })
 
-    it('includes fullName, email and clinicName in the body', async () => {
-      mockGetEnvConfig.mockReturnValue(baseEnv)
-      const adapter = buildAdapter()
+  it('omite a linha de telefone quando não informado', async () => {
+    await adapter.sendAccessRequestEmail(baseParams)
 
-      await adapter.sendAccessRequestEmail(baseParams)
+    const { html } = (emailSender.sendEmail as jest.Mock).mock.calls[0][0]
+    expect(html).not.toContain('Telefone')
+  })
 
-      const [{ html }] = mockSendMail.mock.calls[0]
-      expect(html).toContain('Ana Costa')
-      expect(html).toContain('ana@clinica.com')
-      expect(html).toContain('Clínica do Vale')
-    })
-
-    it('includes phone in the body when provided', async () => {
-      mockGetEnvConfig.mockReturnValue(baseEnv)
-      const adapter = buildAdapter()
-
-      await adapter.sendAccessRequestEmail({ ...baseParams, phone: '11999998888' })
-
-      const [{ html }] = mockSendMail.mock.calls[0]
-      expect(html).toContain('11999998888')
+  // O formulário é público: o que o solicitante digita não pode virar markup.
+  it('escapa HTML dos campos vindos do solicitante', async () => {
+    await adapter.sendAccessRequestEmail({
+      ...baseParams,
+      fullName: '<script>alert(1)</script>',
+      clinicName: 'Clínica "A" & B',
     })
 
-    it('omits the phone line when phone is not provided', async () => {
-      mockGetEnvConfig.mockReturnValue(baseEnv)
-      const adapter = buildAdapter()
-
-      await adapter.sendAccessRequestEmail(baseParams)
-
-      const [{ html }] = mockSendMail.mock.calls[0]
-      expect(html).not.toContain('Telefone')
-    })
-
-    it('escapes HTML in requester-provided fields', async () => {
-      mockGetEnvConfig.mockReturnValue(baseEnv)
-      const adapter = buildAdapter()
-
-      await adapter.sendAccessRequestEmail({
-        ...baseParams,
-        fullName: '<script>alert(1)</script>',
-      })
-
-      const [{ html }] = mockSendMail.mock.calls[0]
-      expect(html).not.toContain('<script>')
-      expect(html).toContain('&lt;script&gt;')
-    })
-
-    it('skips send and does not throw when SMTP_HOST is not configured', async () => {
-      mockGetEnvConfig.mockReturnValue({ ...baseEnv, SMTP_HOST: undefined })
-      const adapter = buildAdapter()
-
-      await expect(adapter.sendAccessRequestEmail(baseParams)).resolves.toBeUndefined()
-
-      expect(nodemailer.createTransport).not.toHaveBeenCalled()
-    })
-
-    it('registers a fallback on the circuit breaker during construction', () => {
-      mockGetEnvConfig.mockReturnValue(baseEnv)
-      buildAdapter()
-
-      expect(mockBreaker.fallback).toHaveBeenCalledWith(expect.any(Function))
-    })
-
-    it('fallback function does not throw when invoked (circuit open)', () => {
-      mockGetEnvConfig.mockReturnValue(baseEnv)
-      buildAdapter()
-
-      const fallbackFn: () => void = mockBreaker.fallback.mock.calls[0][0]
-      expect(() => fallbackFn()).not.toThrow()
-    })
+    const { html } = (emailSender.sendEmail as jest.Mock).mock.calls[0][0]
+    expect(html).not.toContain('<script>')
+    expect(html).toContain('&lt;script&gt;')
+    expect(html).toContain('&quot;A&quot;')
+    expect(html).toContain('&amp;')
   })
 })

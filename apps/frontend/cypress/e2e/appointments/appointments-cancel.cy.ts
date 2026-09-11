@@ -65,6 +65,9 @@ describe('Appointments — cancel', () => {
   beforeEach(() => {
     cy.clearCookies()
     cy.clearLocalStorage()
+    // A ficha do próprio usuário: neste spec ele é o profissional.
+    // O glob `/professionals*` não cobre esta rota — `*` não atravessa a barra.
+    cy.intercept('GET', `${Cypress.env('API_URL')}/professionals/me`, { statusCode: 200, body: mockProfessionalsList.data[0] })
     cy.intercept('GET', `${Cypress.env('API_URL')}/professionals*`, { statusCode: 200, body: mockProfessionalsList })
     cy.intercept('GET', `${Cypress.env('API_URL')}/appointments/${APPT_UUID}`, {
       statusCode: 200,
@@ -90,6 +93,23 @@ describe('Appointments — cancel', () => {
       statusCode: 200,
       body: [],
     })
+    // A página de detalhe monta a aba de fotos; sem stub a chamada dá 401 e o
+    // interceptor do api-client joga o app num loop de redirect login/dashboard.
+    cy.intercept('GET', `${Cypress.env('API_URL')}/consultation-photos*`, { statusCode: 200, body: [] })
+
+  // A aba Vacinas monta no load da página, não ao clicar na aba: doses lançadas
+  // nesta consulta e indicações emitidas nela. Sem stub, a chamada bate no
+  // backend real com token mock, dá 401 e o interceptor do api-client joga o
+  // app num loop de redirect — a página inteira some, inclusive o estado de erro.
+  cy.intercept('GET', `${Cypress.env('API_URL')}/vaccinations*`, {
+    statusCode: 200,
+    body: { data: [], total: 0, page: 1, limit: 20 },
+  })
+  cy.intercept('GET', `${Cypress.env('API_URL')}/vaccine-indications*`, { statusCode: 200, body: [] })
+  cy.intercept('GET', `${Cypress.env('API_URL')}/vaccines*`, {
+    statusCode: 200,
+    body: { data: [], total: 0, page: 1, limit: 100 },
+  })
   })
 
   it('PROFESSIONAL sees cancel button on appointment detail page', () => {

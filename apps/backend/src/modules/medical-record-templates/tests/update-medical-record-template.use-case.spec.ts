@@ -13,7 +13,6 @@ import { UpdateMedicalRecordTemplateUseCase } from '../use-cases/update-medical-
 const mockTemplatesRepository: jest.Mocked<IMedicalRecordTemplatesRepository> = {
   findAll: jest.fn(),
   findById: jest.fn(),
-  findByClinicAndSpecialty: jest.fn(),
   create: jest.fn(),
   update: jest.fn(),
   delete: jest.fn(),
@@ -538,69 +537,7 @@ describe('UpdateMedicalRecordTemplateUseCase', () => {
     })
   })
 
-  describe('PROFESSIONAL', () => {
-    it('throws when the professional record is not found', async () => {
-      const template = makeTemplate()
-      mockTemplatesRepository.findById.mockResolvedValue(template as any)
-      mockProfessionalsRepository.findByUserId.mockResolvedValue(null)
-
-      await expect(
-        useCase.execute(template.id, { name: 'X2' }, professionalCurrentUser),
-      ).rejects.toThrow(NotFoundException)
-      expect(mockTemplatesRepository.update).not.toHaveBeenCalled()
-    })
-
-    it('CRM professional updates a template for their own specialty', async () => {
-      const template = makeTemplate()
-      mockTemplatesRepository.findById.mockResolvedValue(template as any)
-      mockTemplatesRepository.update.mockResolvedValue(makeTemplate({ id: template.id, name: 'Novo' }) as any)
-      mockProfessionalsRepository.findByUserId.mockResolvedValue(makeProfessional() as any)
-
-      const result = await useCase.execute(template.id, { name: 'Novo' }, professionalCurrentUser)
-
-      expect(result.name).toBe('Novo')
-    })
-
-    it('CRM professional is rejected when the template belongs to a different specialty', async () => {
-      const template = makeTemplate()
-      mockTemplatesRepository.findById.mockResolvedValue(template as any)
-      mockProfessionalsRepository.findByUserId.mockResolvedValue(
-        makeProfessional({ professionalSpecialties: [{ specialtyId: 'other-spec' }] }) as any,
-      )
-
-      await expect(
-        useCase.execute(template.id, { name: 'X2' }, professionalCurrentUser),
-      ).rejects.toThrow(ForbiddenException)
-      expect(mockTemplatesRepository.update).not.toHaveBeenCalled()
-    })
-
-    it('professional updates their own profession-wide generalist template', async () => {
-      const template = makeTemplate({ specialtyId: null, councilType: CouncilType.CRN })
-      mockTemplatesRepository.findById.mockResolvedValue(template as any)
-      mockTemplatesRepository.update.mockResolvedValue(
-        makeTemplate({ id: template.id, specialtyId: null, councilType: CouncilType.CRN, name: 'Novo' }) as any,
-      )
-      mockProfessionalsRepository.findByUserId.mockResolvedValue(
-        makeProfessional({
-          registrations: [{ id: 'reg-1', councilType: CouncilType.CRN, isPrimary: true }],
-          professionalSpecialties: [],
-        }) as any,
-      )
-
-      const result = await useCase.execute(template.id, { name: 'Novo' }, professionalCurrentUser)
-
-      expect(result.name).toBe('Novo')
-    })
-
-    it('professional is rejected from updating another profession\'s generalist template', async () => {
-      const template = makeTemplate({ specialtyId: null, councilType: CouncilType.CRN })
-      mockTemplatesRepository.findById.mockResolvedValue(template as any)
-      mockProfessionalsRepository.findByUserId.mockResolvedValue(makeProfessional() as any)
-
-      await expect(
-        useCase.execute(template.id, { name: 'X2' }, professionalCurrentUser),
-      ).rejects.toThrow(ForbiddenException)
-      expect(mockTemplatesRepository.update).not.toHaveBeenCalled()
-    })
-  })
+  // O bloco 'PROFESSIONAL' saiu junto com o comportamento: editar modelo é
+  // gestão do ADMIN, porque o modelo é compartilhado pela clínica e editar
+  // mudaria o formulário do colega.
 })

@@ -6,12 +6,20 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common'
 import { ConflictException } from '@nestjs/common'
-import { DataSource, OptimisticLockVersionMismatchError } from 'typeorm'
-import { AppointmentResponseDto, AppointmentStatus, CancelAppointmentDto, UserRole } from '@app/shared'
+import { DataSource, OptimisticLockVersionMismatchError, QueryRunner } from 'typeorm'
+import {
+  AppointmentCancellationScope,
+  AppointmentResponseDto,
+  AppointmentStatus,
+  CancelAppointmentDto,
+  CancelAppointmentResponseDto,
+  UserRole,
+} from '@app/shared'
 import { BaseUseCase } from '../../../common/base.use-case'
 import { CacheService } from '../../../cache/cache.service'
 import { ICurrentUser } from '../../auth/types/current-user.type'
 import { IProfessionalsRepository } from '../../professionals/repositories/professionals.repository.interface'
+import { toAppointmentResponse } from '../appointment.mapper'
 import { Appointment } from '../entities/appointment.entity'
 import { IAppointmentsRepository } from '../repositories/appointments.repository.interface'
 
@@ -28,7 +36,11 @@ export class CancelAppointmentUseCase extends BaseUseCase {
     super(dataSource)
   }
 
-  async execute(id: string, dto: CancelAppointmentDto, currentUser: ICurrentUser): Promise<AppointmentResponseDto> {
+  async execute(
+    id: string,
+    dto: CancelAppointmentDto,
+    currentUser: ICurrentUser,
+  ): Promise<CancelAppointmentResponseDto> {
     const clinicId = currentUser.clinicId!
 
     const appointment = await this.appointmentsRepository.findById(id, clinicId)
@@ -48,12 +60,27 @@ export class CancelAppointmentUseCase extends BaseUseCase {
       throw new UnprocessableEntityException('Only scheduled or confirmed appointments can be cancelled')
     }
 
+    const scope = dto.scope ?? AppointmentCancellationScope.SINGLE_OCCURRENCE
+    const cancelsWholeSeries = scope === AppointmentCancellationScope.THIS_AND_FUTURE_OCCURRENCES
+
+    if (cancelsWholeSeries && !appointment.seriesId) {
+      throw new UnprocessableEntityException('Appointment does not belong to a recurring series')
+    }
+
     let updated: Appointment
+    let cancelledAppointmentIds: string[]
     try {
-      updated = await this.appointmentsRepository.update(id, {
-        status: AppointmentStatus.CANCELLED,
-        cancellationReason: dto.cancellationReason ?? null,
-      })
+      if (cancelsWholeSeries) {
+        const cancelled = await this.cancelSeriesFrom(appointment, dto.cancellationReason ?? null, clinicId)
+        updated = cancelled.find((candidate) => candidate.id === id) ?? cancelled[0]
+        cancelledAppointmentIds = cancelled.map((candidate) => candidate.id)
+      } else {
+        updated = await this.appointmentsRepository.update(id, {
+          status: AppointmentStatus.CANCELLED,
+          cancellationReason: dto.cancellationReason ?? null,
+        })
+        cancelledAppointmentIds = [updated.id]
+      }
     } catch (error) {
       if (error instanceof OptimisticLockVersionMismatchError) {
         throw new ConflictException('Record was modified by another process. Please try again.')
@@ -75,7 +102,52 @@ export class CancelAppointmentUseCase extends BaseUseCase {
       this.fetchSpecialtyName(updated.specialtyId),
     ])
 
-    return this.toResponse(updated, professionalName, patientName, specialtyName)
+    return {
+      ...this.toResponse(
+        updated,
+        professionalName,
+        patientName,
+        specialtyName,
+        appointment.series?.createdOccurrenceCount ?? null,
+      ),
+      cancelledOccurrenceCount: cancelledAppointmentIds.length,
+      cancelledAppointmentIds,
+    }
+  }
+
+  /**
+   * Cancels the given occurrence and every later one in the same series, in one
+   * transaction. "Future" means later in the series, not later than now: an
+   * occurrence that already passed but is still scheduled counts. The ownership
+   * check on the target covers the siblings, since a series has a single
+   * professional — reassigning one occurrence is blocked for that reason.
+   */
+  private async cancelSeriesFrom(
+    appointment: Appointment,
+    cancellationReason: string | null,
+    clinicId: string,
+  ): Promise<Appointment[]> {
+    return this.runInTransaction(async (queryRunner: QueryRunner) => {
+      const occurrences = await this.appointmentsRepository.findBySeriesIdFromDate(
+        appointment.seriesId!,
+        clinicId,
+        appointment.date,
+        [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED],
+        queryRunner,
+      )
+
+      const cancelled: Appointment[] = []
+      for (const occurrence of occurrences) {
+        cancelled.push(
+          await this.appointmentsRepository.update(
+            occurrence.id,
+            { status: AppointmentStatus.CANCELLED, cancellationReason },
+            queryRunner,
+          ),
+        )
+      }
+      return cancelled
+    })
   }
 
   private async fetchSpecialtyName(specialtyId: string | null): Promise<string | null> {
@@ -119,25 +191,13 @@ export class CancelAppointmentUseCase extends BaseUseCase {
     professionalName: string,
     patientName: string,
     specialtyName: string | null,
+    seriesTotalOccurrences: number | null,
   ): AppointmentResponseDto {
-    return {
-      id: appointment.id,
-      professionalId: appointment.professionalId,
+    return toAppointmentResponse(appointment, {
       professionalName,
-      patientId: appointment.patientId,
       patientName,
-      specialtyId: appointment.specialtyId,
       specialtyName,
-      scheduleId: appointment.scheduleId,
-      date: appointment.date,
-      startTime: appointment.startTime,
-      endTime: appointment.endTime,
-      status: appointment.status,
-      insuranceType: appointment.insuranceType,
-      reason: appointment.reason,
-      cancellationReason: appointment.cancellationReason,
-      createdAt: appointment.createdAt,
-      updatedAt: appointment.updatedAt,
-    }
+      seriesTotalOccurrences,
+    })
   }
 }

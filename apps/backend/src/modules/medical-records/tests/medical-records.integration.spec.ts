@@ -1,10 +1,11 @@
+import { randomUUID } from 'node:crypto'
 import { INestApplication, ValidationPipe } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import { faker } from '@faker-js/faker'
 import * as bcrypt from 'bcrypt'
-import * as cookieParser from 'cookie-parser'
-import * as request from 'supertest'
+import cookieParser from 'cookie-parser'
+import request from 'supertest'
 import { Repository } from 'typeorm'
 import { AppointmentStatus, CouncilType, DayOfWeek, MedicalRecordFieldType, PatientGender, UserRole } from '@app/shared'
 import { AppModule } from '../../../app.module'
@@ -17,6 +18,7 @@ import { Schedule } from '../../schedules/entities/schedule.entity'
 import { Appointment } from '../../appointments/entities/appointment.entity'
 import { MedicalRecordTemplate } from '../../medical-record-templates/entities/medical-record-template.entity'
 import { MedicalRecord } from '../entities/medical-record.entity'
+import { CacheService } from '../../../cache/cache.service'
 
 const SEED_CLINIC_ID = '10000000-0000-4000-8000-000000000099'
 
@@ -43,12 +45,14 @@ describe('MedicalRecordsController (integration)', () => {
   let specialtyRepository: Repository<Specialty>
   let scheduleRepository: Repository<Schedule>
   let appointmentRepository: Repository<Appointment>
+  let cacheService: CacheService
   let templateRepository: Repository<MedicalRecordTemplate>
   let recordRepository: Repository<MedicalRecord>
 
   let adminToken: string
   let doctorToken: string
   let otherDoctorToken: string
+  let otherSpecialtyDoctorToken: string
   let userToken: string
   let professionalId: string
   let otherDoctorId: string
@@ -79,6 +83,7 @@ describe('MedicalRecordsController (integration)', () => {
     specialtyRepository = module.get(getRepositoryToken(Specialty))
     scheduleRepository = module.get(getRepositoryToken(Schedule))
     appointmentRepository = module.get(getRepositoryToken(Appointment))
+    cacheService = module.get(CacheService)
     templateRepository = module.get(getRepositoryToken(MedicalRecordTemplate))
     recordRepository = module.get(getRepositoryToken(MedicalRecord))
   })
@@ -138,6 +143,16 @@ describe('MedicalRecordsController (integration)', () => {
       }),
     )
 
+    const otherSpecialtyDoctorUser = await userRepository.save(
+      userRepository.create({
+        fullName: 'Nutritionist Doe',
+        email: 'nutri@mr.test',
+        password: hashed,
+        role: UserRole.PROFESSIONAL,
+        clinicId: SEED_CLINIC_ID,
+      }),
+    )
+
     await userRepository.save(
       userRepository.create({
         fullName: 'Regular User',
@@ -152,6 +167,10 @@ describe('MedicalRecordsController (integration)', () => {
       specialtyRepository.create({ name: 'Cardiologia' }),
     )
     specialtyId = specialty.id
+
+    const otherSpecialty = await specialtyRepository.save(
+      specialtyRepository.create({ name: 'Nutrição' }),
+    )
 
     const doctorEntity = doctorRepository.create({
       userId: doctorUser.id,
@@ -170,6 +189,17 @@ describe('MedicalRecordsController (integration)', () => {
     otherDoctorEntity.professionalSpecialties = ([specialty]).map((s: any) => ({ specialtyId: s.id, registryNumber: null })) as any
     const otherDoctorProfile = await doctorRepository.save(otherDoctorEntity)
     otherDoctorId = otherDoctorProfile.id
+
+    // Exerce outra especialidade — é ele quem prova que o recorte por
+    // especialidade recorta mesmo. `otherDoctor` divide a Cardiologia com o
+    // autor e por isso enxerga o prontuário dele.
+    const otherSpecialtyDoctorEntity = doctorRepository.create({
+      userId: otherSpecialtyDoctorUser.id,
+      clinicId: SEED_CLINIC_ID,
+    })
+    otherSpecialtyDoctorEntity.registrations = [{ clinicId: SEED_CLINIC_ID, councilType: CouncilType.CRN, number: '77777', state: 'SP', isPrimary: true }] as any
+    otherSpecialtyDoctorEntity.professionalSpecialties = ([otherSpecialty]).map((s: any) => ({ specialtyId: s.id, registryNumber: null })) as any
+    await doctorRepository.save(otherSpecialtyDoctorEntity)
 
     const patientUser = await userRepository.save(
       userRepository.create({
@@ -274,6 +304,7 @@ describe('MedicalRecordsController (integration)', () => {
     adminToken = await loginAndExtractToken('admin@mr.test')
     doctorToken = await loginAndExtractToken('doctor@mr.test')
     otherDoctorToken = await loginAndExtractToken('other@mr.test')
+    otherSpecialtyDoctorToken = await loginAndExtractToken('nutri@mr.test')
     userToken = await loginAndExtractToken('user@mr.test')
   })
 
@@ -298,7 +329,7 @@ describe('MedicalRecordsController (integration)', () => {
       const { body } = await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: { weight_abc1: 75 } })
+        .send({ appointmentId, templateId, data: { weight_abc1: 75 } })
         .expect(201)
 
       expect(body.id).toBeDefined()
@@ -317,7 +348,7 @@ describe('MedicalRecordsController (integration)', () => {
       const { body } = await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(201)
 
       expect(body.templateSchemaSnapshot[0].key).toBe('weight_abc1')
@@ -328,7 +359,7 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${doctorToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(201)
     })
 
@@ -336,7 +367,7 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${otherDoctorToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(403)
     })
 
@@ -358,7 +389,7 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(422)
     })
 
@@ -366,7 +397,7 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: { unknown_field: 'value' } })
+        .send({ appointmentId, templateId, data: { unknown_field: 'value' } })
         .expect(422)
     })
 
@@ -374,7 +405,7 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: { weight_abc1: 'not-a-number' } })
+        .send({ appointmentId, templateId, data: { weight_abc1: 'not-a-number' } })
         .expect(422)
     })
 
@@ -382,13 +413,13 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(201)
 
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(409)
     })
 
@@ -411,12 +442,12 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId: noSpecAppt.id, data: {} })
+        .send({ appointmentId: noSpecAppt.id, templateId: randomUUID(), data: {} })
         .expect(404)
     })
 
     it('creates a generalist record (null specialty) via the clinic generalist template', async () => {
-      await templateRepository.save(
+      const generalistTemplate = await templateRepository.save(
         templateRepository.create({
           clinicId: SEED_CLINIC_ID,
           specialtyId: null,
@@ -446,7 +477,7 @@ describe('MedicalRecordsController (integration)', () => {
       const { body } = await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId: generalistAppt.id, data: {} })
+        .send({ appointmentId: generalistAppt.id, templateId: generalistTemplate.id, data: {} })
         .expect(201)
 
       expect(body.specialtyId).toBeNull()
@@ -457,15 +488,176 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${userToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(403)
     })
 
     it('returns 401 for unauthenticated requests', async () => {
       await request(app.getHttpServer())
         .post('/medical-records')
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(401)
+    })
+
+    it('returns 400 when templateId is missing', async () => {
+      await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, data: {} })
+        .expect(400)
+    })
+
+    it('returns 404 when the template belongs to another clinic', async () => {
+      const otherClinic = await clinicRepository.save(
+        clinicRepository.create({ name: 'Outra', slug: 'mr-outra', isActive: true }),
+      )
+      const alheio = await templateRepository.save(
+        templateRepository.create({
+          clinicId: otherClinic.id,
+          specialtyId,
+          name: 'Alheio',
+          fields: templateFields,
+          isActive: true,
+        }),
+      )
+
+      await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, templateId: alheio.id, data: {} })
+        .expect(404)
+    })
+
+    it('returns 422 when the chosen template is inactive', async () => {
+      await templateRepository.update(templateId, { isActive: false })
+
+      await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, templateId, data: {} })
+        .expect(422)
+    })
+
+    it('returns 422 when the chosen template is from another specialty', async () => {
+      const outra = await specialtyRepository.save(
+        specialtyRepository.create({ name: 'Dermatologia' }),
+      )
+      const deOutra = await templateRepository.save(
+        templateRepository.create({
+          clinicId: SEED_CLINIC_ID,
+          specialtyId: outra.id,
+          name: 'Prontuário Dermatologia',
+          fields: templateFields,
+          isActive: true,
+        }),
+      )
+
+      await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, templateId: deOutra.id, data: {} })
+        .expect(422)
+    })
+
+    // A FK composta é MATCH SIMPLE: com specialty nula dos dois lados o banco
+    // nem checa. Aqui a validação do use-case é a única barreira.
+    it('returns 422 when a generalist template belongs to another profession', async () => {
+      const doNutricionista = await templateRepository.save(
+        templateRepository.create({
+          clinicId: SEED_CLINIC_ID,
+          specialtyId: null,
+          councilType: CouncilType.CRN,
+          name: 'Prontuário de Nutrição',
+          fields: templateFields,
+          isActive: true,
+        }),
+      )
+      const generalistAppt = await appointmentRepository.save(
+        appointmentRepository.create({
+          clinicId: SEED_CLINIC_ID,
+          professionalId,
+          patientId,
+          specialtyId: null,
+          scheduleId: (await scheduleRepository.findOneByOrFail({ professionalId })).id,
+          date: '2026-01-08',
+          startTime: '10:00',
+          endTime: '10:30',
+          status: AppointmentStatus.SCHEDULED,
+          reason: null,
+          cancellationReason: null,
+        }),
+      )
+
+      await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId: generalistAppt.id, templateId: doNutricionista.id, data: {} })
+        .expect(422)
+    })
+
+    // O teste-âncora: dois modelos na mesma especialidade, e cada prontuário
+    // congela o que foi de fato escolhido — não um resolvido pelo servidor.
+    it('snapshots whichever of the specialty templates was chosen', async () => {
+      const retorno = await templateRepository.save(
+        templateRepository.create({
+          clinicId: SEED_CLINIC_ID,
+          specialtyId,
+          name: 'Retorno',
+          fields: [
+            {
+              key: 'evolucao_xy12',
+              label: 'Evolução',
+              type: MedicalRecordFieldType.TEXTAREA,
+              required: false,
+              order: 1,
+              options: null,
+              placeholder: null,
+              helpText: null,
+              canonical: false,
+              canonicalKey: null,
+            },
+          ],
+          isActive: true,
+        }),
+      )
+
+      const { body: comRetorno } = await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, templateId: retorno.id, data: { evolucao_xy12: 'estável' } })
+        .expect(201)
+
+      expect(comRetorno.templateId).toBe(retorno.id)
+      expect(comRetorno.templateSchemaSnapshot.map((f: any) => f.key)).toEqual(['evolucao_xy12'])
+
+      // A outra consulta, com o outro modelo do mesmo escopo.
+      const segundaConsulta = await appointmentRepository.save(
+        appointmentRepository.create({
+          clinicId: SEED_CLINIC_ID,
+          professionalId,
+          patientId,
+          specialtyId,
+          scheduleId: (await scheduleRepository.findOneByOrFail({ professionalId })).id,
+          date: '2026-01-09',
+          startTime: '10:30',
+          endTime: '11:00',
+          status: AppointmentStatus.SCHEDULED,
+          reason: null,
+          cancellationReason: null,
+        }),
+      )
+
+      const { body: comPadrao } = await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId: segundaConsulta.id, templateId, data: {} })
+        .expect(201)
+
+      expect(comPadrao.templateId).toBe(templateId)
+      expect(comPadrao.templateSchemaSnapshot.map((f: any) => f.key)).toEqual([
+        'weight_abc1',
+        'notes_def2',
+      ])
     })
 
     it('enforces FK composta: template specialty must match appointment specialty', async () => {
@@ -492,7 +684,7 @@ describe('MedicalRecordsController (integration)', () => {
       const { body } = await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(201)
       recordId = body.id
     })
@@ -513,10 +705,23 @@ describe('MedicalRecordsController (integration)', () => {
         .expect(200)
     })
 
-    it('returns 404 for DOCTOR accessing another doctor record', async () => {
-      await request(app.getHttpServer())
+    // Ler segue a mesma regra da listagem: o que ele escreveu OU o que foi
+    // escrito numa especialidade que ele exerce. Antes aqui era 404, e o
+    // histórico do paciente listava o prontuário do colega que ninguém
+    // conseguia abrir.
+    it('returns 200 for DOCTOR from the same specialty', async () => {
+      const { body } = await request(app.getHttpServer())
         .get(`/medical-records/${recordId}`)
         .set('Cookie', `access_token=${otherDoctorToken}`)
+        .expect(200)
+
+      expect(body.id).toBe(recordId)
+    })
+
+    it('returns 404 for DOCTOR from another specialty', async () => {
+      await request(app.getHttpServer())
+        .get(`/medical-records/${recordId}`)
+        .set('Cookie', `access_token=${otherSpecialtyDoctorToken}`)
         .expect(404)
     })
 
@@ -535,6 +740,71 @@ describe('MedicalRecordsController (integration)', () => {
     })
   })
 
+  describe('GET /medical-records/:id/pdf', () => {
+    let recordId: string
+
+    beforeEach(async () => {
+      const { body } = await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, templateId, data: {} })
+        .expect(201)
+      recordId = body.id
+    })
+
+    // `.buffer(true)` com parser próprio: sem isto o supertest trata o corpo
+    // como texto e os bytes chegam corrompidos, com o `%PDF` intacto por acaso.
+    const baixar = (token: string) =>
+      request(app.getHttpServer())
+        .get(`/medical-records/${recordId}/pdf`)
+        .set('Cookie', `access_token=${token}`)
+        .buffer(true)
+        .parse((res, callback) => {
+          const chunks: Buffer[] = []
+          res.on('data', (chunk: Buffer) => chunks.push(chunk))
+          res.on('end', () => callback(null, Buffer.concat(chunks)))
+        })
+
+    it('returns a PDF for ADMIN', async () => {
+      const res = await baixar(adminToken).expect(200)
+
+      expect(res.headers['content-type']).toMatch(/application\/pdf/)
+      expect(res.headers['content-disposition']).toContain(`prontuario-${recordId}.pdf`)
+      expect(Buffer.from(res.body).slice(0, 4).toString('ascii')).toBe('%PDF')
+    })
+
+    it('returns a PDF for the DOCTOR who wrote it', async () => {
+      const res = await baixar(doctorToken).expect(200)
+      expect(Buffer.from(res.body).slice(0, 4).toString('ascii')).toBe('%PDF')
+    })
+
+    // Baixar segue a regra de ler, e ler alcança a especialidade que ele
+    // exerce. É o caso que o histórico do paciente oferece.
+    it('returns a PDF for a DOCTOR from the same specialty', async () => {
+      const res = await baixar(otherDoctorToken).expect(200)
+      expect(Buffer.from(res.body).slice(0, 4).toString('ascii')).toBe('%PDF')
+    })
+
+    it('returns 404 for a DOCTOR from another specialty', async () => {
+      await baixar(otherSpecialtyDoctorToken).expect(404)
+    })
+
+    it('returns 403 for USER', async () => {
+      await baixar(userToken).expect(403)
+    })
+
+    it('returns 404 when the record does not exist', async () => {
+      await request(app.getHttpServer())
+        .get('/medical-records/00000000-0000-0000-0000-000000000000/pdf')
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(404)
+    })
+
+    it('returns 401 without a cookie', async () => {
+      await request(app.getHttpServer()).get(`/medical-records/${recordId}/pdf`).expect(401)
+    })
+  })
+
   describe('GET /medical-records/by-appointment/:appointmentId', () => {
     it('returns 404 when no record exists for appointment', async () => {
       await request(app.getHttpServer())
@@ -547,7 +817,7 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(201)
 
       const { body } = await request(app.getHttpServer())
@@ -571,7 +841,7 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(201)
 
       const { body } = await request(app.getHttpServer())
@@ -590,7 +860,7 @@ describe('MedicalRecordsController (integration)', () => {
       await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${doctorToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(201)
 
       const { body } = await request(app.getHttpServer())
@@ -619,7 +889,7 @@ describe('MedicalRecordsController (integration)', () => {
       const { body } = await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(201)
       recordId = body.id
     })
@@ -702,7 +972,7 @@ describe('MedicalRecordsController (integration)', () => {
       const { body } = await request(app.getHttpServer())
         .post('/medical-records')
         .set('Cookie', `access_token=${adminToken}`)
-        .send({ appointmentId, data: {} })
+        .send({ appointmentId, templateId, data: {} })
         .expect(201)
       recordId = body.id
     })
@@ -738,4 +1008,98 @@ describe('MedicalRecordsController (integration)', () => {
         .expect(404)
     })
   })
+  describe('GET /medical-records — histórico por especialidade', () => {
+    // O recorte que a aba de histórico da consulta usa.
+    it('filtra por especialidade', async () => {
+      await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, templateId, data: { weight_abc1: 75 } })
+        .expect(201)
+
+      const { body } = await request(app.getHttpServer())
+        .get(`/medical-records?patientId=${patientId}&specialtyId=${specialtyId}`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(200)
+
+      expect(body.data.every((r: { specialtyId: string }) => r.specialtyId === specialtyId)).toBe(true)
+    })
+
+    it('exclui a consulta atual do próprio histórico', async () => {
+      const { body } = await request(app.getHttpServer())
+        .get(`/medical-records?patientId=${patientId}&excludeAppointmentId=${appointmentId}`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(200)
+
+      expect(body.data.every((r: { appointmentId: string }) => r.appointmentId !== appointmentId)).toBe(true)
+    })
+
+    // Data e horário do ATENDIMENTO, não do registro: é o que situa a consulta
+    // no tempo para quem lê o histórico.
+    it('devolve data e horário do atendimento', async () => {
+      await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, templateId, data: { weight_abc1: 75 } })
+        .expect(201)
+
+      const { body } = await request(app.getHttpServer())
+        .get(`/medical-records?patientId=${patientId}`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(200)
+
+      expect(body.data.length).toBeGreaterThan(0)
+      expect(body.data[0]).toHaveProperty('appointmentDate')
+      expect(body.data[0]).toHaveProperty('appointmentStartTime')
+      expect(body.data[0].appointmentDate).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    })
+
+    // Decisão de produto: atendimento excluído não aparece no histórico. O
+    // INNER JOIN em `baseQuery` faz o TypeORM acrescentar `deleted_at IS NULL`
+    // ao join, e o prontuário some junto com a consulta.
+    //
+    // A limpeza de cache abaixo não é maquiagem: a listagem guarda o resultado
+    // por 60s e a chave não muda quando a consulta é excluída, então sem isso o
+    // teste leria a resposta anterior. Na prática a janela é inofensiva —
+    // nenhum fluxo exclui consulta hoje (o repositório de appointments não tem
+    // delete; a interface cancela, que é status, não exclusão).
+    it('não devolve prontuário de consulta excluída', async () => {
+      await request(app.getHttpServer())
+        .post('/medical-records')
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ appointmentId, templateId, data: { weight_abc1: 75 } })
+        .expect(201)
+
+      const { body: antes } = await request(app.getHttpServer())
+        .get(`/medical-records?patientId=${patientId}`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(200)
+      expect(antes.total).toBe(1)
+
+      await appointmentRepository.softDelete(appointmentId)
+      await cacheService.delByPattern('medical_records:*')
+
+      const { body: depois } = await request(app.getHttpServer())
+        .get(`/medical-records?patientId=${patientId}`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(200)
+      expect(depois.total).toBe(0)
+      expect(depois.data).toHaveLength(0)
+    })
+
+    it('400 quando specialtyId não é uuid nem "null"', async () => {
+      await request(app.getHttpServer())
+        .get(`/medical-records?patientId=${patientId}&specialtyId=abc`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(400)
+    })
+
+    it('aceita specialtyId=null para o caso generalista', async () => {
+      await request(app.getHttpServer())
+        .get(`/medical-records?patientId=${patientId}&specialtyId=null`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(200)
+    })
+  })
+
 })

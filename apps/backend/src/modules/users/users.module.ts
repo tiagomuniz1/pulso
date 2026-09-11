@@ -1,4 +1,5 @@
 import { forwardRef, Module } from '@nestjs/common'
+import { AuthModule } from '../auth/auth.module'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { CacheModule } from '../../cache/cache.module'
 import { ProfessionalsModule } from '../professionals/professionals.module'
@@ -11,6 +12,7 @@ import { ActivateUserUseCase } from './use-cases/activate-user.use-case'
 import { CreateUserUseCase } from './use-cases/create-user.use-case'
 import { FindAllUsersUseCase } from './use-cases/find-all-users.use-case'
 import { FindUserByIdUseCase } from './use-cases/find-user-by-id.use-case'
+import { SendUserSetPasswordEmailUseCase } from './use-cases/send-user-set-password-email.use-case'
 import { UpdateUserUseCase } from './use-cases/update-user.use-case'
 import { DeleteUserUseCase } from './use-cases/delete-user.use-case'
 import { IUsersRepository } from './repositories/users.repository.interface'
@@ -20,6 +22,7 @@ import { UsersRepository } from './repositories/users.repository'
   imports: [
     TypeOrmModule.forFeature([User]),
     CacheModule,
+    forwardRef(() => AuthModule),
     forwardRef(() => ProfessionalsModule),
     forwardRef(() => PatientsModule),
   ],
@@ -31,6 +34,7 @@ import { UsersRepository } from './repositories/users.repository'
     FindUserByIdUseCase,
     UpdateUserUseCase,
     DeleteUserUseCase,
+    SendUserSetPasswordEmailUseCase,
     { provide: IUsersRepository, useClass: UsersRepository },
     { provide: INotificationAdapter, useClass: NotificationAdapter },
   ],

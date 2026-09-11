@@ -12,8 +12,9 @@ import { useAppointment } from '@/components/features/appointments/hooks/use-app
 import { useCompleteAppointment } from '@/components/features/appointments/hooks/use-complete-appointment.hook'
 import { useCancelAppointment } from '@/components/features/appointments/hooks/use-cancel-appointment.hook'
 import { useReassignAppointment } from '@/components/features/appointments/hooks/use-reassign-appointment.hook'
-import { useProfessionals } from '@/components/features/professionals/hooks/use-professionals.hook'
+import { useMyProfessional } from '@/components/features/professionals/hooks/use-my-professional.hook'
 import { usePrescriptions } from '@/components/features/prescriptions/hooks/use-prescriptions.hook'
+import { useVaccineIndications } from '@/components/features/vaccine-indications/hooks/use-vaccine-indications.hook'
 import { useAtestados } from '@/components/features/atestados/hooks/use-atestados.hook'
 import { useExamRequests } from '@/components/features/exames/hooks/use-exam-requests.hook'
 import { useAppointmentPhotos } from '@/components/features/consultation-photos/hooks/use-appointment-photos.hook'
@@ -22,15 +23,21 @@ import { AppointmentHeaderCard } from '@/components/features/appointments/compon
 import { ResumoTab } from '@/components/features/appointments/components/resumo-tab'
 import { MedicalRecordSection } from '@/components/features/appointments/components/medical-record-section'
 import { PrescriptionSection } from '@/components/features/prescriptions/components/prescription-section'
+import { VaccineIndicationSection } from '@/components/features/vaccine-indications/components/vaccine-indication-section'
+import { AppointmentHistorySection } from '@/components/features/appointments/components/appointment-history-section'
 import { AtestadoSection } from '@/components/features/atestados/components/atestado-section'
 import { ExameSection } from '@/components/features/exames/components/exame-section'
 import { PhotoSection } from '@/components/features/consultation-photos/components/photo-section'
 import { CancelAppointmentDialog } from '@/components/features/appointments/components/cancel-appointment-dialog'
+import type { ICancelConfirmInput } from '@/components/features/appointments/components/cancel-appointment-dialog'
+import { SeriesOccurrencesDialog } from '@/components/features/appointments/components/series-occurrences-dialog'
 import { CompleteAppointmentDialog } from '@/components/features/appointments/components/complete-appointment-dialog'
 import { ReassignProfessionalDialog } from '@/components/features/appointments/components/reassign-professional-dialog'
+import { VaccinationHistory } from '@/components/features/vaccinations/components/vaccination-history'
+import { useVaccinations } from '@/components/features/vaccinations/hooks/use-vaccinations.hook'
 import type { IApiError } from '@/types/api.types'
 
-type TabId = 'resumo' | 'prontuario' | 'receitas' | 'atestados' | 'exames' | 'fotos'
+type TabId = 'resumo' | 'prontuario' | 'historico' | 'receitas' | 'atestados' | 'exames' | 'fotos' | 'vacinas'
 
 export default function AppointmentDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -38,9 +45,10 @@ export default function AppointmentDetailPage() {
   const currentUser = useAuthStore((s) => s.user)
   const role = currentUser?.role ?? UserRole.USER
 
-  const isProfessional = role === UserRole.PROFESSIONAL
-  const { data: doctors } = useProfessionals({ limit: 100 })
-  const currentDoctorId = isProfessional ? doctors?.[0]?.id : undefined
+  // A própria ficha, se houver. Antes vinha de `doctors?.[0]`, que só acerta
+  // para PROFESSIONAL — para um ADMIN aquela lista é a clínica inteira.
+  const { data: myProfessional } = useMyProfessional()
+  const currentDoctorId = myProfessional?.id
 
   const { data: appointment, isLoading, isError } = useAppointment(id)
 
@@ -53,12 +61,20 @@ export default function AppointmentDetailPage() {
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [showCompleteDialog, setShowCompleteDialog] = useState(false)
   const [showReassignDialog, setShowReassignDialog] = useState(false)
+  const [showSeriesDialog, setShowSeriesDialog] = useState(false)
 
   const canManage =
     role === UserRole.ADMIN ||
     (role === UserRole.PROFESSIONAL && appointment?.professionalId === currentDoctorId)
 
-  const canReassign = role === UserRole.ADMIN && appointment?.status === AppointmentStatus.SCHEDULED
+  // A series is assumed to have a single professional — the ownership check when
+  // cancelling "this and all future" relies on it — so the backend rejects
+  // reassigning one occurrence with 422. Offering the button would only produce
+  // a guaranteed error.
+  const canReassign =
+    role === UserRole.ADMIN &&
+    appointment?.status === AppointmentStatus.SCHEDULED &&
+    !appointment?.seriesId
 
   const canSeeMedicalRecord =
     role === UserRole.ADMIN ||
@@ -66,10 +82,17 @@ export default function AppointmentDetailPage() {
 
   const canAct = canManage && appointment?.status === AppointmentStatus.SCHEDULED
 
+  // Emitir receita/atestado/exame e enviar foto vem da ficha de profissional,
+  // não do cargo — e só na própria consulta, porque o documento carrega o
+  // registro de quem atendeu.
+  const canIssue = !!currentDoctorId && appointment?.professionalId === currentDoctorId
+
   const { data: prescriptions } = usePrescriptions(id)
   const { data: atestados } = useAtestados(id)
   const { data: examRequests } = useExamRequests(id)
   const { data: photos } = useAppointmentPhotos(id)
+  const { data: appointmentVaccinations } = useVaccinations({ appointmentId: id })
+  const { data: vaccineIndications } = useVaccineIndications(id)
   const { data: record } = useMedicalRecordByAppointment(canSeeMedicalRecord ? id : '')
 
   const completeApiError = completeError as IApiError | null
@@ -87,9 +110,9 @@ export default function AppointmentDetailPage() {
     })
   }
 
-  function handleCancelConfirm(cancellationReason?: string) {
+  function handleCancelConfirm({ cancellationReason, scope }: ICancelConfirmInput) {
     cancel(
-      { id, data: { cancellationReason } },
+      { id, data: { cancellationReason, scope } },
       {
         onSuccess: () => setShowCancelDialog(false),
       },
@@ -123,6 +146,10 @@ export default function AppointmentDetailPage() {
   const tabItems = [
     { id: 'resumo', label: 'Resumo' },
     ...(canSeeMedicalRecord ? [{ id: 'prontuario', label: 'Prontuário' }] : []),
+    // Ao lado do Prontuário de propósito: é o contexto que embasa o que se
+    // escreve ali. Sem contagem — o número de atendimentos anteriores não é
+    // uma pendência a zerar.
+    ...(canSeeMedicalRecord ? [{ id: 'historico', label: 'Histórico' }] : []),
     ...(canManage
       ? [{ id: 'receitas', label: 'Receitas', count: prescriptions?.length ?? 0 }]
       : []),
@@ -134,6 +161,18 @@ export default function AppointmentDetailPage() {
       : []),
     ...(canManage
       ? [{ id: 'fotos', label: 'Fotos', count: photos?.length ?? 0 }]
+      : []),
+    // A caderneta é do paciente, não da consulta: a contagem aqui é do que ESTE
+    // atendimento lançou — doses registradas mais indicações emitidas —, e a aba
+    // abre o histórico inteiro do paciente.
+    ...(canSeeMedicalRecord
+      ? [
+          {
+            id: 'vacinas',
+            label: 'Vacinas',
+            count: (appointmentVaccinations?.total ?? 0) + (vaccineIndications?.length ?? 0),
+          },
+        ]
       : []),
   ]
 
@@ -178,6 +217,7 @@ export default function AppointmentDetailPage() {
               onCancel={() => setShowCancelDialog(true)}
               onComplete={() => setShowCompleteDialog(true)}
               onReassign={handleOpenReassign}
+              onViewSeries={() => setShowSeriesDialog(true)}
               isPendingComplete={isCompleting}
               isPendingCancel={isCancelling}
             />
@@ -199,6 +239,7 @@ export default function AppointmentDetailPage() {
               {activeTab === 'resumo' && (
                 <ResumoTab
                   patient={appointment.patient}
+                  patientId={appointment.patientId}
                   prescriptionCount={canManage ? (prescriptions?.length ?? 0) : undefined}
                   showPrescriptions={canManage}
                   certificateCount={canManage ? (atestados?.length ?? 0) : undefined}
@@ -221,12 +262,20 @@ export default function AppointmentDetailPage() {
                 />
               )}
 
+              {activeTab === 'historico' && canSeeMedicalRecord && (
+                <AppointmentHistorySection
+                  patientId={appointment.patientId}
+                  specialtyId={appointment.specialtyId}
+                  appointmentId={id}
+                />
+              )}
+
               {activeTab === 'receitas' && canManage && (
                 <PrescriptionSection
                   appointmentId={id}
                   professionalId={appointment.professionalId}
                   canManage={canManage}
-                  userRole={role}
+                  canIssue={canIssue}
                 />
               )}
 
@@ -235,7 +284,7 @@ export default function AppointmentDetailPage() {
                   appointmentId={id}
                   professionalId={appointment.professionalId}
                   canManage={canManage}
-                  userRole={role}
+                  canIssue={canIssue}
                 />
               )}
 
@@ -244,12 +293,23 @@ export default function AppointmentDetailPage() {
                   appointmentId={id}
                   professionalId={appointment.professionalId}
                   canManage={canManage}
-                  userRole={role}
+                  canIssue={canIssue}
                 />
               )}
 
               {activeTab === 'fotos' && canManage && (
-                <PhotoSection appointmentId={id} canManage={canManage} userRole={role} />
+                <PhotoSection appointmentId={id} canManage={canManage} canIssue={canIssue} />
+              )}
+
+              {activeTab === 'vacinas' && canSeeMedicalRecord && (
+                <div className="flex flex-col gap-8">
+                  <VaccineIndicationSection
+                    appointmentId={id}
+                    canManage={canManage}
+                    canIssue={canIssue}
+                  />
+                  <VaccinationHistory patientId={appointment.patientId} appointmentId={id} />
+                </div>
               )}
             </div>
           </>
@@ -301,6 +361,17 @@ export default function AppointmentDetailPage() {
           isPending={isCancelling}
           onClose={() => setShowCancelDialog(false)}
           onConfirm={handleCancelConfirm}
+          seriesId={appointment.seriesId}
+          seriesFutureCount={appointment.seriesFutureCount}
+        />
+      )}
+
+      {appointment?.seriesId && (
+        <SeriesOccurrencesDialog
+          seriesId={appointment.seriesId}
+          isOpen={showSeriesDialog}
+          onClose={() => setShowSeriesDialog(false)}
+          currentAppointmentId={id}
         />
       )}
 

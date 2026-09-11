@@ -10,6 +10,13 @@ export class CacheService implements OnModuleDestroy {
     this.client = new Redis({
       host: process.env.REDIS_HOST ?? 'localhost',
       port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
+      // Redis numera bancos de 0 a 15, e eles não compartilham chave nenhuma.
+      // A suíte de integração usa um só seu (ver `test.seed.ts`): dev e teste
+      // apontam para a mesma instância, e o id da clínica-semente é o mesmo nos
+      // dois — então `clinic:10000000-…` colidia exatamente. O teste lia a
+      // clínica do ambiente de desenvolvimento e falhava afirmando o nome dela,
+      // num spec diferente a cada execução conforme o TTL de 300s vencia.
+      db: parseInt(process.env.REDIS_DB ?? '0', 10),
       lazyConnect: true,
     })
 

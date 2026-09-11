@@ -48,6 +48,46 @@
         --radius-lg: 12px;
         --radius-xl: 16px;
 
+        /* ===== RÓTULOS DE CONSULTA — modo claro =====
+           Luminosidade constante (L=0.52 OKLCh) e croma limitado a 0.105 — entre 41%
+           e 49% do croma dos accents das clínicas. É isso que faz as dezesseis lerem
+           como uma família subordinada à marca, em vez de dezesseis adesivos.
+           NÃO adicionar estas variáveis a CSS_VARS em
+           use-apply-clinic-theme.hook.ts: é essa ausência que as mantém
+           imunes ao tema da clínica. */
+        --label-rose: #984D67;
+        --label-rose-soft: #FFEAF1;
+        --label-red: #9C4E4C;
+        --label-red-soft: #FFEBE9;
+        --label-terracotta: #99542F;
+        --label-terracotta-soft: #FFECE1;
+        --label-bronze: #896026;
+        --label-bronze-soft: #FDF0E0;
+        --label-mustard: #746A27;
+        --label-mustard-soft: #F5F3E0;
+        --label-moss: #5A732A;
+        --label-moss-soft: #EDF6E1;
+        --label-green: #337A49;
+        --label-green-soft: #E4F8E8;
+        --label-emerald: #2C7865;
+        --label-emerald-soft: #E3F7F1;
+        --label-petrol: #2C757E;
+        --label-petrol-soft: #E3F6F9;
+        --label-blue: #2B7096;
+        --label-blue-soft: #E2F5FF;
+        --label-indigo: #4568A5;
+        --label-indigo-soft: #E7F3FF;
+        --label-violet: #635FA3;
+        --label-violet-soft: #EFF0FF;
+        --label-plum: #7B5696;
+        --label-plum-soft: #F8EDFF;
+        --label-magenta: #8D5082;
+        --label-magenta-soft: #FFEBFA;
+        --label-stone: #70675E;
+        --label-stone-soft: #F4F1EE;
+        --label-slate: #5C6B7A;
+        --label-slate-soft: #EEF2F7;
+
         color-scheme: light;
     }
 
@@ -83,6 +123,44 @@
         /* Danger mais consistente com UI moderna */
         --danger: #F2786A;
         --dangerSoft: #2F1715;
+
+        /* ===== RÓTULOS DE CONSULTA — modo escuro =====
+           Mesma regra, L=0.80.
+           NÃO adicionar estas variáveis a CSS_VARS em
+           use-apply-clinic-theme.hook.ts: é essa ausência que as mantém
+           imunes ao tema da clínica. */
+        --label-rose: #E8A9BC;
+        --label-rose-soft: #391E27;
+        --label-red: #E8ACA8;
+        --label-red-soft: #39201F;
+        --label-terracotta: #E8AF93;
+        --label-terracotta-soft: #392115;
+        --label-bronze: #E4B478;
+        --label-bronze-soft: #372308;
+        --label-mustard: #CBC076;
+        --label-mustard-soft: #2D2807;
+        --label-moss: #AEC986;
+        --label-moss-soft: #212C0F;
+        --label-green: #90D09F;
+        --label-green-soft: #132F1B;
+        --label-emerald: #78D2B9;
+        --label-emerald-soft: #032F26;
+        --label-petrol: #77CEDA;
+        --label-petrol-soft: #002E33;
+        --label-blue: #90C6E7;
+        --label-blue-soft: #122B39;
+        --label-indigo: #A7BFE7;
+        --label-indigo-soft: #1E2839;
+        --label-violet: #B9B8E7;
+        --label-violet-soft: #262539;
+        --label-plum: #CEAFE7;
+        --label-plum-soft: #2F2139;
+        --label-magenta: #E4A7D7;
+        --label-magenta-soft: #361E32;
+        --label-stone: #C8BBAD;
+        --label-stone-soft: #2C2721;
+        --label-slate: #ABC0D7;
+        --label-slate-soft: #1F2932;
 
         color-scheme: dark;
     }

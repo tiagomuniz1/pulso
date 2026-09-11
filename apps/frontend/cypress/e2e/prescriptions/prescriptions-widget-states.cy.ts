@@ -57,6 +57,10 @@ describe('Prescriptions — widget states (mocked)', () => {
   beforeEach(() => {
     cy.clearCookies()
     cy.clearLocalStorage()
+    // Registered first on purpose: any spec-specific intercept below overrides
+    // it, and the widgets this spec does not care about stop 401-ing the app
+    // into a login/dashboard redirect loop.
+    cy.stubAppointmentDetailWidgets()
     cy.intercept('GET', `${Cypress.env('API_URL')}/professionals*`, {
       statusCode: 200,
       body: {
@@ -72,6 +76,21 @@ describe('Prescriptions — widget states (mocked)', () => {
         total: 1,
         page: 1,
         limit: 200,
+      },
+    })
+    // Mesma armadilha de glob: `/professionals/me` é a ficha do próprio usuário,
+    // e é ela que decide se o botão de emitir aparece. Este spec roda como o
+    // profissional dono da consulta.
+    cy.intercept('GET', `${Cypress.env('API_URL')}/professionals/me`, {
+      statusCode: 200,
+      body: {
+        id: PROFESSIONAL_UUID,
+        user: { id: 'professional-user-uuid', fullName: 'Dr. João', email: 'professional@pulso.center', isActive: true },
+        registrations: [{ id: 'reg-1', councilType: 'crm', number: '12345/SP', state: 'SP', isPrimary: true }],
+        specialties: [{ id: SPEC_UUID, name: 'Cardiologia' }],
+        bio: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       },
     })
     // ProfessionalSignatureSelect always fetches GET /professionals/:id (even when it

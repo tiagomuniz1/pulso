@@ -14,6 +14,8 @@ export interface CreateAppointmentData {
   endTime: string
   reason: string | null
   insuranceType?: AppointmentInsuranceType | null
+  seriesId?: string | null
+  seriesSequence?: number | null
 }
 
 export interface UpdateAppointmentData {
@@ -22,6 +24,8 @@ export interface UpdateAppointmentData {
   professionalId?: string
   scheduleId?: string
   endTime?: string
+  /** `null` desmarca o rótulo — por isso `null` é valor válido, não ausência. */
+  labelId?: string | null
 }
 
 export abstract class IAppointmentsRepository {
@@ -29,6 +33,19 @@ export abstract class IAppointmentsRepository {
   abstract findById(id: string, clinicId: string): Promise<Appointment | null>
   abstract findActiveByProfessionalAndDate(professionalId: string, date: string, clinicId: string): Promise<Appointment[]>
   abstract findActiveBySlot(professionalId: string, date: string, startTime: string, clinicId: string, queryRunner?: QueryRunner): Promise<Appointment | null>
+  abstract findActiveByDatesAndTime(professionalId: string, clinicId: string, dates: string[], startTime: string, queryRunner?: QueryRunner): Promise<Appointment[]>
+  abstract findBySeriesId(seriesId: string, clinicId: string): Promise<Appointment[]>
+  abstract findBySeriesIdFromDate(seriesId: string, clinicId: string, fromDate: string, statuses: AppointmentStatus[], queryRunner?: QueryRunner): Promise<Appointment[]>
+  abstract countBySeriesIdAfterDate(seriesId: string, clinicId: string, afterDate: string, statuses: AppointmentStatus[]): Promise<number>
+  /**
+   * Houve atendimento anterior desta paciente com este profissional?
+   *
+   * "Anterior" é em relação à própria consulta (`date`, `startTime`), não a
+   * hoje: assim o resultado é uma propriedade da consulta e não do instante em
+   * que se olha — abrir uma consulta antiga continua dizendo a verdade sobre
+   * aquele dia, e o teste não precisa congelar relógio.
+   */
+  abstract hasEarlierVisitWithProfessional(appointment: Appointment, clinicId: string): Promise<boolean>
   abstract hasFutureByScheduleId(scheduleId: string, clinicId: string): Promise<boolean>
   abstract hasFutureByProfessionalId(professionalId: string, clinicId: string): Promise<boolean>
   abstract create(data: CreateAppointmentData, queryRunner?: QueryRunner): Promise<Appointment>

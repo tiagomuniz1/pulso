@@ -1,3 +1,4 @@
+import { AppointmentLabelColor } from '@app/shared'
 jest.mock('./use-appointments.hook')
 jest.mock('./use-availability.hook')
 
@@ -5,8 +6,8 @@ import { AppointmentStatus } from '@app/shared'
 import { renderHook } from '@testing-library/react'
 import { useAppointments } from './use-appointments.hook'
 import { useAvailability } from './use-availability.hook'
-import { useDayAgenda } from './use-day-agenda.hook'
-import type { IAppointmentModel, IAvailableSlotModel } from '../types/appointment-model.types'
+import { filterSlotsByLabel, mergeSlotsByStartTime, useDayAgenda } from './use-day-agenda.hook'
+import type { IAgendaSlot, IAppointmentModel, IAvailableSlotModel } from '../types/appointment-model.types'
 
 const makeSlot = (startTime = '08:00'): IAvailableSlotModel => ({
   startTime,
@@ -17,10 +18,13 @@ const makeSlot = (startTime = '08:00'): IAvailableSlotModel => ({
 
 const makeAppointment = (startTime = '09:00'): IAppointmentModel => ({
   id: 'apt-uuid',
+  label: null,
   professionalId: 'doc-uuid',
   professionalName: 'Dr. Test',
   patientId: 'pat-uuid',
   patientName: 'Patient',
+  specialtyId: null,
+  specialtyName: null,
   scheduleId: 'sched-uuid',
   date: '2025-06-20',
   startTime,
@@ -28,6 +32,9 @@ const makeAppointment = (startTime = '09:00'): IAppointmentModel => ({
   status: AppointmentStatus.SCHEDULED,
   reason: null,
   cancellationReason: null,
+  seriesId: null,
+  seriesSequence: null,
+  seriesTotalOccurrences: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 })
@@ -131,5 +138,120 @@ describe('useDayAgenda', () => {
     expect(result.current.slots).toHaveLength(1)
     expect(result.current.slots[0].status).toBe('booked')
     expect(result.current.slots[0].appointment?.status).toBe(AppointmentStatus.COMPLETED)
+  })
+  // Availability only withholds a slot while the appointment is SCHEDULED, so every
+  // other status came back as a free slot AND as an appointment, and the agenda
+  // rendered the same time twice — which reads as a double booking.
+  describe('one row per start time', () => {
+    const setup = (slots: IAvailableSlotModel[], appointments: IAppointmentModel[]) => {
+      ;(useAvailability as jest.Mock).mockReturnValue(makeQueryResult(slots))
+      ;(useAppointments as jest.Mock).mockReturnValue(makeQueryResult({ data: appointments }))
+      return renderHook(() => useDayAgenda('doc-uuid', '2025-06-20')).result.current.slots
+    }
+
+    it('shows the free slot, not the cancelled appointment, when both land on 15:00', () => {
+      const cancelled = { ...makeAppointment('15:00'), status: AppointmentStatus.CANCELLED }
+      const slots = setup([makeSlot('15:00')], [cancelled])
+
+      expect(slots).toHaveLength(1)
+      expect(slots[0].status).toBe('free')
+      expect(slots[0].appointment).toBeNull()
+    })
+
+    it('keeps a cancelled appointment when no free slot covers its time', () => {
+      const cancelled = { ...makeAppointment('15:00'), status: AppointmentStatus.CANCELLED }
+      const slots = setup([], [cancelled])
+
+      expect(slots).toHaveLength(1)
+      expect(slots[0].appointment?.status).toBe(AppointmentStatus.CANCELLED)
+    })
+
+    it.each([
+      AppointmentStatus.CONFIRMED,
+      AppointmentStatus.COMPLETED,
+      AppointmentStatus.NO_SHOW,
+    ])('shows the %s appointment instead of the free slot at the same time', (status) => {
+      const appointment = { ...makeAppointment('15:00'), status }
+      const slots = setup([makeSlot('15:00')], [appointment])
+
+      expect(slots).toHaveLength(1)
+      expect(slots[0].status).toBe('booked')
+      expect(slots[0].appointment?.status).toBe(status)
+    })
+
+    it('prefers the active appointment over a cancelled one in the same slot', () => {
+      const cancelled = { ...makeAppointment('15:00'), id: 'old', status: AppointmentStatus.CANCELLED }
+      const scheduled = { ...makeAppointment('15:00'), id: 'new', status: AppointmentStatus.SCHEDULED }
+      const slots = setup([], [cancelled, scheduled])
+
+      expect(slots).toHaveLength(1)
+      expect(slots[0].appointment?.id).toBe('new')
+    })
+
+    it('leaves distinct times untouched and ordered', () => {
+      const slots = setup(
+        [makeSlot('16:00'), makeSlot('08:00')],
+        [makeAppointment('09:00')],
+      )
+
+      expect(slots.map((s) => s.startTime)).toEqual(['08:00', '09:00', '16:00'])
+    })
+  })
+})
+
+describe('filterSlotsByLabel', () => {
+  const comRotulo = (id: string, labelId: string | null): IAgendaSlot => ({
+    startTime: '08:00',
+    endTime: '08:30',
+    status: 'booked',
+    appointment: {
+      id,
+      label: labelId ? { id: labelId, name: 'Retorno', color: AppointmentLabelColor.GREEN } : null,
+    } as any,
+  })
+  const livre: IAgendaSlot = { startTime: '09:00', endTime: '09:30', status: 'free', appointment: null }
+
+  it('returns everything when there is no filter', () => {
+    const slots = [comRotulo('a', 'l1'), livre]
+
+    expect(filterSlotsByLabel(slots, null)).toBe(slots)
+    expect(filterSlotsByLabel(slots, undefined)).toBe(slots)
+    expect(filterSlotsByLabel(slots, '')).toBe(slots)
+  })
+
+  it('keeps only the appointments carrying the chosen label', () => {
+    const result = filterSlotsByLabel([comRotulo('a', 'l1'), comRotulo('b', 'l2'), livre], 'l1')
+
+    expect(result).toHaveLength(1)
+    expect(result[0]!.appointment!.id).toBe('a')
+  })
+
+  it('keeps only the unlabelled appointments under "none"', () => {
+    const result = filterSlotsByLabel([comRotulo('a', 'l1'), comRotulo('b', null), livre], 'none')
+
+    expect(result).toHaveLength(1)
+    expect(result[0]!.appointment!.id).toBe('b')
+  })
+
+  // Quem filtra por "Retorno" quer a lista curta, não vinte linhas de "Livre".
+  it('drops free slots while a filter is on', () => {
+    expect(filterSlotsByLabel([livre], 'l1')).toHaveLength(0)
+    expect(filterSlotsByLabel([livre], 'none')).toHaveLength(0)
+  })
+
+  // A regressão que justifica o filtro ser no cliente: se ele estivesse no
+  // servidor, a consulta sumiria do payload e `pickSlot` cairia no slot livre —
+  // o horário voltaria como "Livre" por cima de uma consulta que existe, e a
+  // recepção agendaria em cima.
+  it('never turns a hidden appointment back into a free slot', () => {
+    const mesmoHorario: IAgendaSlot[] = [
+      { startTime: '08:00', endTime: '08:30', status: 'free', appointment: null },
+      comRotulo('ocupada', 'l1'),
+    ]
+
+    const merged = mergeSlotsByStartTime([mesmoHorario[0]!], [mesmoHorario[1]!])
+    const result = filterSlotsByLabel(merged, 'outro-label')
+
+    expect(result.some((slot) => slot.status === 'free')).toBe(false)
   })
 })

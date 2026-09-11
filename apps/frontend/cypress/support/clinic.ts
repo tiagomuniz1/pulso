@@ -10,7 +10,38 @@ export const CLINIC_ID = '10000000-0000-4000-8000-000000000000'
 
 const MOCK_TOKEN = 'mock-access-token'
 
-interface MockAuthUser {
+// ----- Modo de roteamento -----
+//
+// Produção resolve a clínica pelo subdomínio (`pulso.pulso.center`); o dev local
+// resolve pelo caminho (`localhost:3000/pulso`). São dois modos de verdade
+// diferentes, e bugs já chegaram em produção morando exatamente na diferença:
+// o QR da receita apontava para a URL errada, e a Sidebar identificava o
+// backoffice pelo pathname — que sob subdomínio não tem o prefixo.
+//
+// Definido em cypress.subdomain.config.ts. Vazio → modo path, como sempre.
+const BASE_DOMAIN = (Cypress.env('SUBDOMAIN_BASE_DOMAIN') as string | undefined) || undefined
+
+export function isSubdomainMode(): boolean {
+  return Boolean(BASE_DOMAIN)
+}
+
+// URL de uma página da clínica. Em modo subdomínio o slug vive no host e o
+// caminho não o carrega; em modo path é o prefixo de sempre.
+export function clinicUrl(path: string): string {
+  return BASE_DOMAIN ? `http://${CLINIC_SLUG}.${BASE_DOMAIN}${path}` : `/${CLINIC_SLUG}${path}`
+}
+
+export function backofficeUrl(path: string): string {
+  return BASE_DOMAIN ? `http://backoffice.${BASE_DOMAIN}${path}` : `/backoffice${path}`
+}
+
+// O cookie precisa valer para todos os subdomínios em modo subdomínio (é o que
+// COOKIE_DOMAIN faz em produção) e para `localhost` em modo path.
+function cookieDomain(): string {
+  return BASE_DOMAIN ? `.${BASE_DOMAIN}` : 'localhost'
+}
+
+export interface MockAuthUser {
   id: string
   fullName: string
   email: string
@@ -54,7 +85,10 @@ const mockActiveThemeResponse = {
 // Registra os intercepts que o layout autenticado da clínica dispara
 // (auth/me, clinic-by-slug, theme ativo). Use em testes que aterrissam numa
 // página autenticada sem passar por visitClinic (ex.: redirect pós-login).
-export function stubClinicLayout(authUser: MockAuthUser = {} as MockAuthUser) {
+// Partial porque os testes passam só os campos que lhes importam — o resto vem
+// dos defaults abaixo. Tipar como MockAuthUser completo obrigava o `{} as`, que
+// mentia para o compilador e ainda marcava os defaults como código morto.
+export function stubClinicLayout(authUser: Partial<MockAuthUser> = {}) {
   const user: MockAuthUser = {
     id: 'mock-auth-user-id',
     fullName: 'Mock User',
@@ -67,7 +101,7 @@ export function stubClinicLayout(authUser: MockAuthUser = {} as MockAuthUser) {
   cy.intercept('GET', `${Cypress.env('API_URL')}/auth/me`, {
     statusCode: 200,
     body: user,
-  })
+  }).as('clinicAuthMe')
 
   cy.intercept('GET', `${Cypress.env('API_URL')}/clinics/slug/${CLINIC_SLUG}`, {
     statusCode: 200,
@@ -82,8 +116,9 @@ export function stubClinicLayout(authUser: MockAuthUser = {} as MockAuthUser) {
 
 // Visita uma página dentro da clínica `pulso`. `path` é o caminho SEM o slug
 // (ex: '/professionals/123/edit'); o slug é prefixado internamente.
-export function visitClinic(path: string, authUser: MockAuthUser) {
-  const user: MockAuthUser = { clinicId: CLINIC_ID, ...authUser }
+// Partial pelo mesmo motivo de stubClinicLayout, para onde os defaults vão.
+export function visitClinic(path: string, authUser: Partial<MockAuthUser>) {
+  const user: Partial<MockAuthUser> = { clinicId: CLINIC_ID, ...authUser }
 
   stubClinicLayout(user)
 
@@ -92,10 +127,10 @@ export function visitClinic(path: string, authUser: MockAuthUser) {
     secure: false,
     sameSite: 'strict',
     path: '/',
-    domain: 'localhost',
+    domain: cookieDomain(),
   })
 
-  cy.visit(`/${CLINIC_SLUG}${path}`, {
+  cy.visit(clinicUrl(path), {
     onBeforeLoad(win) {
       win.localStorage.setItem(
         'auth-user',
@@ -108,7 +143,9 @@ export function visitClinic(path: string, authUser: MockAuthUser) {
 // Asserção exata de pathname dentro da clínica. `path` é SEM o slug.
 // Mais estrito que should('include', ...) — pega regressão de prefixo de slug.
 export function expectClinicPath(path: string) {
-  cy.location('pathname').should('eq', `/${CLINIC_SLUG}${path}`)
+  // Em modo subdomínio o slug está no host, não no caminho — asserir o prefixo
+  // aqui faria todo teste de navegação falhar por um motivo que não é o dele.
+  cy.location('pathname').should('eq', BASE_DOMAIN ? path : `/${CLINIC_SLUG}${path}`)
 }
 
 // ----- Backoffice (PLATFORM_ADMIN, rotas /backoffice/*) -----
@@ -130,7 +167,9 @@ const mockPlatformAdmin = {
 // (ex: '/clinics/123/edit'); o prefixo é adicionado internamente.
 export function visitBackoffice(
   path: string,
-  authUser = mockPlatformAdmin,
+  // Sem a anotação o tipo era inferido de mockPlatformAdmin, que tem
+  // `clinicId: null`, e todo chamador que omitia o campo virava erro de tipo.
+  authUser: Partial<MockAuthUser> = mockPlatformAdmin,
   themesResponse?: { statusCode: number; body: object; delay?: number },
 ) {
   const user = { clinicId: null, ...authUser }
@@ -138,7 +177,7 @@ export function visitBackoffice(
   cy.intercept('GET', `${Cypress.env('API_URL')}/auth/me`, {
     statusCode: 200,
     body: user,
-  })
+  }).as('backofficeAuthMe')
 
   // A listagem de clínicas (ClinicList) busca os temas via GET /themes?page&limit
   // para o seletor de tema. Sem este intercept a chamada bate no backend real com
@@ -155,17 +194,17 @@ export function visitBackoffice(
       statusCode: 200,
       body: { data: [mockActiveThemeResponse], total: 1, page: 1, limit: 50 },
     },
-  )
+  ).as('backofficeThemes')
 
   cy.setCookie('access_token', MOCK_TOKEN, {
     httpOnly: true,
     secure: false,
     sameSite: 'strict',
     path: '/',
-    domain: 'localhost',
+    domain: cookieDomain(),
   })
 
-  cy.visit(`/backoffice${path}`, {
+  cy.visit(backofficeUrl(path), {
     onBeforeLoad(win) {
       win.localStorage.setItem(
         'auth-user',
@@ -177,7 +216,7 @@ export function visitBackoffice(
 
 // Asserção exata de pathname dentro do backoffice. `path` é SEM o prefixo.
 export function expectBackofficePath(path: string) {
-  cy.location('pathname').should('eq', `/backoffice${path}`)
+  cy.location('pathname').should('eq', BASE_DOMAIN ? path : `/backoffice${path}`)
 }
 
 export { mockPlatformAdmin }

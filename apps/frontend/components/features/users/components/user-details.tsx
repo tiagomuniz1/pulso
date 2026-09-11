@@ -1,9 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { UserRole } from '@app/shared'
 import { useBasePath } from '@/lib/slug-context'
 import { Button } from '@/components/ui/atoms/button/button'
+import { Alert } from '@/components/ui/molecules/alert/alert'
+import { UserRole } from '@app/shared'
+import { useSendSetPasswordEmail } from '../hooks/use-send-set-password-email.hook'
+import type { IApiError } from '@/types/api.types'
 import { Typography } from '@/components/ui/atoms/typography/typography'
 import { Skeleton } from '@/components/ui/atoms/skeleton/skeleton'
 import { cn } from '@/lib/cn'
@@ -16,6 +19,8 @@ interface UserDetailsProps {
   user: IUserModel
   canDelete: boolean
   onDeleteClick: () => void
+  /** Reenviar o link de definição de senha é ação exclusiva do ADMIN. */
+  canSendSetPasswordEmail: boolean
 }
 
 function DetailRow({
@@ -40,14 +45,46 @@ function DetailRow({
   )
 }
 
-export function UserDetails({ user, canDelete, onDeleteClick }: UserDetailsProps) {
+export function UserDetails({
+  user,
+  canDelete,
+  onDeleteClick,
+  canSendSetPasswordEmail,
+}: UserDetailsProps) {
   const basePath = useBasePath()
-  const isProfessional = user.role === UserRole.PROFESSIONAL
+  // `isProfessional` do modelo diz se o usuário TEM ficha; o cargo só diz o que
+  // ele administra. Igual a `user-form.tsx:156` — um ADMIN que também atende
+  // tem CRM para mostrar, e o cargo esconderia.
+  const hasProfessionalProfile = user.isProfessional
+  const {
+    mutate: sendSetPasswordEmail,
+    isPending: isSendingEmail,
+    isSuccess: emailSent,
+    error: sendEmailError,
+    reset: resetSendEmail,
+  } = useSendSetPasswordEmail()
+
+  // PATIENT não faz login, então o link não tem para onde levar — o botão
+  // some em vez de aparecer e falhar.
+  const isPatient = user.role === UserRole.PATIENT
+  const showSetPasswordButton = canSendSetPasswordEmail && !isPatient
+
+  const sendEmailApiError = sendEmailError as IApiError | null
+  // O backend responde 503 quando o e-mail não sai. Nunca exibimos o `detail`
+  // técnico: a mensagem é traduzida por status.
+  const sendEmailMessage = sendEmailApiError
+    ? sendEmailApiError.status === 503
+      ? 'Não foi possível enviar o e-mail. O envio pode não estar configurado — fale com o suporte.'
+      : sendEmailApiError.status === 422
+        ? 'Ative o usuário antes de enviar o link.'
+        : 'Ocorreu um erro ao enviar o e-mail. Tente novamente.'
+    : null
+
   const {
     professional,
     isPending: isProfessionalPending,
     isError: isProfessionalError,
-  } = useProfessionalByUserId(user.id, { enabled: isProfessional })
+  } = useProfessionalByUserId(user.id, { enabled: hasProfessionalProfile })
 
   return (
     <div className="flex flex-col gap-6" data-testid="user-details">
@@ -66,6 +103,22 @@ export function UserDetails({ user, canDelete, onDeleteClick }: UserDetailsProps
               Editar
             </Button>
           </Link>
+          {showSetPasswordButton && (
+            <Button
+              variant="ghost"
+              size="sm"
+              isLoading={isSendingEmail}
+              disabled={isSendingEmail || !user.isActive}
+              title={!user.isActive ? 'Ative o usuário antes de enviar o link' : undefined}
+              onClick={() => {
+                resetSendEmail()
+                sendSetPasswordEmail(user.id)
+              }}
+              data-testid="user-details-send-set-password-button"
+            >
+              Enviar link de senha
+            </Button>
+          )}
           {canDelete && (
             <Button
               variant="primary"
@@ -79,6 +132,18 @@ export function UserDetails({ user, canDelete, onDeleteClick }: UserDetailsProps
           )}
         </div>
       </div>
+
+      {emailSent && (
+        <Alert variant="success" data-testid="user-details-send-set-password-success">
+          Link de definição de senha enviado para {user.email}.
+        </Alert>
+      )}
+
+      {sendEmailMessage && (
+        <Alert variant="error" data-testid="user-details-send-set-password-error">
+          {sendEmailMessage}
+        </Alert>
+      )}
 
       <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
         <div className="grid grid-cols-1 gap-px bg-line sm:grid-cols-2">
@@ -115,12 +180,12 @@ export function UserDetails({ user, canDelete, onDeleteClick }: UserDetailsProps
               testId="user-details-created-at"
             />
           </div>
-          {isProfessional && isProfessionalPending && (
+          {hasProfessionalProfile && isProfessionalPending && (
             <div className="bg-surface px-6 py-4" data-testid="user-details-profession-cell">
               <Skeleton height={16} className="w-40" />
             </div>
           )}
-          {isProfessional && !isProfessionalPending && !isProfessionalError && professional && (
+          {hasProfessionalProfile && !isProfessionalPending && !isProfessionalError && professional && (
             <div className="bg-surface px-6 py-4" data-testid="user-details-profession-cell">
               <DetailRow
                 label="Profissão"

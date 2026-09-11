@@ -1,11 +1,4 @@
-import {
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  Logger,
-  NotFoundException,
-  UnprocessableEntityException,
-} from '@nestjs/common'
+import { Injectable, Logger, UnprocessableEntityException } from '@nestjs/common'
 import { DataSource } from 'typeorm'
 import {
   CouncilType,
@@ -14,16 +7,14 @@ import {
   MedicalRecordTemplateSectionDto,
   MedicalRecordTemplateFieldDto,
   MedicalRecordTemplateResponseDto,
-  UserRole,
 } from '@app/shared'
 import { BaseUseCase } from '../../../common/base.use-case'
+import { toTemplateNameConflict } from '../utils/template-name-conflict.util'
 import { CacheService } from '../../../cache/cache.service'
 import { ICurrentUser } from '../../auth/types/current-user.type'
 import { IClinicSpecialtiesRepository } from '../../clinic-specialties/repositories/clinic-specialties.repository.interface'
 import { ISpecialtiesRepository } from '../../specialties/repositories/specialties.repository.interface'
 import { IMedicalRecordCanonicalFieldsRepository } from '../../medical-record-canonical-fields/repositories/medical-record-canonical-fields.repository.interface'
-import { IProfessionalsRepository } from '../../professionals/repositories/professionals.repository.interface'
-import { getPrimaryCouncilType } from '../../professionals/utils/get-primary-council-type.util'
 import {
   MedicalRecordTemplate,
   MedicalRecordTemplateField,
@@ -47,7 +38,6 @@ export class CreateMedicalRecordTemplateUseCase extends BaseUseCase {
     private readonly clinicSpecialtiesRepository: IClinicSpecialtiesRepository,
     private readonly specialtiesRepository: ISpecialtiesRepository,
     private readonly canonicalFieldsRepository: IMedicalRecordCanonicalFieldsRepository,
-    private readonly professionalsRepository: IProfessionalsRepository,
     private readonly cacheService: CacheService,
   ) {
     super(dataSource)
@@ -58,7 +48,7 @@ export class CreateMedicalRecordTemplateUseCase extends BaseUseCase {
     currentUser: ICurrentUser,
   ): Promise<MedicalRecordTemplateResponseDto> {
     const clinicId = currentUser.clinicId!
-    const { specialtyId, councilType } = await this.resolveScope(dto, currentUser, clinicId)
+    const { specialtyId, councilType } = this.resolveScope(dto)
 
     // Generalist template (no specialty) has no clinic-specialty link to validate.
     if (specialtyId) {
@@ -69,27 +59,23 @@ export class CreateMedicalRecordTemplateUseCase extends BaseUseCase {
       if (!link) throw new UnprocessableEntityException('Specialty is not linked to this clinic')
     }
 
-    const existing = await this.templatesRepository.findByClinicAndSpecialty(
-      clinicId,
-      specialtyId,
-      councilType,
-    )
-    if (existing) {
-      throw new ConflictException(
-        specialtyId
-          ? 'A template already exists for this specialty'
-          : 'A template already exists for this profession',
-      )
-    }
-
     const sections = this.resolveSections(dto.sections ?? [])
     const validSectionKeys = new Set(sections.map((s) => s.key))
     const fields = await this.resolveFields(dto.fields, validSectionKeys)
 
-    const created = await this.templatesRepository.create(
-      { specialtyId, councilType, name: dto.name, fields, sections },
-      clinicId,
-    )
+    // A clínica pode ter vários modelos no mesmo escopo, mas não dois com o
+    // mesmo nome: sem modelo padrão, o nome é o único discriminador que o
+    // profissional vê no seletor. Deixado a cargo do índice único parcial — ler
+    // antes de escrever teria janela de corrida e daria 500 quando perdesse.
+    let created: MedicalRecordTemplate
+    try {
+      created = await this.templatesRepository.create(
+        { specialtyId, councilType, name: dto.name, fields, sections },
+        clinicId,
+      )
+    } catch (error) {
+      throw toTemplateNameConflict(error)
+    }
 
     try {
       await this.cacheService.delByPattern(`medical_record_templates:list:${clinicId}*`)
@@ -113,38 +99,13 @@ export class CreateMedicalRecordTemplateUseCase extends BaseUseCase {
   // their own specialties (or none, for the clinic's shared CRM-generalist template); every
   // other council type is barred from specialties entirely and always targets their own
   // profession-wide template.
-  private async resolveScope(
-    dto: CreateMedicalRecordTemplateDto,
-    currentUser: ICurrentUser,
-    clinicId: string,
-  ): Promise<ResolvedScope> {
+  /**
+   * O escopo vem do que o ADMIN informou. Não há mais ramo por profissional:
+   * criar modelo é gestão da clínica, e a rota só aceita ADMIN.
+   */
+  private resolveScope(dto: CreateMedicalRecordTemplateDto): ResolvedScope {
     const specialtyId = dto.specialtyId ?? null
-
-    if (currentUser.role !== UserRole.PROFESSIONAL) {
-      return { specialtyId, councilType: specialtyId ? null : (dto.councilType ?? CouncilType.CRM) }
-    }
-
-    const professional = await this.professionalsRepository.findByUserId(currentUser.id, clinicId)
-    if (!professional) throw new NotFoundException('Professional not found')
-
-    const primaryCouncilType = getPrimaryCouncilType(professional)
-
-    if (primaryCouncilType !== CouncilType.CRM) {
-      if (specialtyId) {
-        throw new UnprocessableEntityException('Specialties are not applicable to this profession')
-      }
-      return { specialtyId: null, councilType: primaryCouncilType }
-    }
-
-    if (!specialtyId) return { specialtyId: null, councilType: CouncilType.CRM }
-
-    const ownsSpecialty = professional.professionalSpecialties.some(
-      (professionalSpecialty) => professionalSpecialty.specialtyId === specialtyId,
-    )
-    if (!ownsSpecialty) {
-      throw new ForbiddenException('You can only create a template for your own specialty')
-    }
-    return { specialtyId, councilType: null }
+    return { specialtyId, councilType: specialtyId ? null : (dto.councilType ?? CouncilType.CRM) }
   }
 
   private resolveSections(

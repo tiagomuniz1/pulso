@@ -91,6 +91,11 @@ describe('MedicalRecordForm', () => {
   it('renders submit button', () => {
     renderWithProviders(<MedicalRecordForm {...defaultProps} />)
     expect(screen.getByTestId('medical-record-form-submit')).toBeInTheDocument()
+    // Dentro da barra fixa: solto no corpo do modal, o botão cai abaixo da
+    // dobra assim que o formulário cresce.
+    expect(screen.getByTestId('modal-form-actions')).toContainElement(
+      screen.getByTestId('medical-record-form-submit'),
+    )
   })
 
   it('disables submit button when isPending', () => {

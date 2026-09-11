@@ -1,0 +1,200 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`MedicalRecordPdfBuilderService — conteúdo do documento mantém a definição do documento estável 1`] = `
+{
+  "content": [
+    {
+      "margin": [
+        0,
+        0,
+        0,
+        4,
+      ],
+      "stack": [
+        {
+          "style": "clinicName",
+          "text": "Clínica Pulso",
+        },
+        {
+          "fontSize": 9,
+          "text": "Rua das Flores, 100, Sala 2",
+        },
+        {
+          "fontSize": 9,
+          "text": "Centro — São Paulo — SP",
+        },
+        {
+          "fontSize": 9,
+          "text": "CEP 01001000",
+        },
+      ],
+    },
+    {
+      "canvas": [
+        {
+          "lineColor": "#cccccc",
+          "lineWidth": 0.5,
+          "type": "line",
+          "x1": 0,
+          "x2": 495,
+          "y1": 0,
+          "y2": 0,
+        },
+      ],
+    },
+    {
+      "alignment": "center",
+      "margin": [
+        0,
+        20,
+        0,
+        16,
+      ],
+      "style": "title",
+      "text": "Prontuário",
+    },
+    {
+      "columnGap": 16,
+      "columns": [
+        {
+          "stack": [
+            {
+              "style": "fieldLabel",
+              "text": "Paciente",
+            },
+            {
+              "text": "Clara Monteiro Alves",
+            },
+            {
+              "fontSize": 9,
+              "text": "CPF 123.456.789-01",
+            },
+          ],
+        },
+        {
+          "stack": [
+            {
+              "style": "fieldLabel",
+              "text": "Atendimento",
+            },
+            {
+              "text": "04/09/2026 às 14:30",
+            },
+            {
+              "fontSize": 9,
+              "text": "Ginecologia e Obstetrícia",
+            },
+          ],
+        },
+        {
+          "stack": [
+            {
+              "style": "fieldLabel",
+              "text": "Profissional",
+            },
+            {
+              "text": "Dra. Helena Vasconcelos",
+            },
+          ],
+        },
+      ],
+      "margin": [
+        0,
+        0,
+        0,
+        12,
+      ],
+    },
+    {
+      "margin": [
+        0,
+        0,
+        0,
+        8,
+      ],
+      "stack": [
+        {
+          "style": "fieldLabel",
+          "text": "Queixa principal",
+        },
+        {
+          "text": "Cefaleia há três dias",
+        },
+      ],
+      "unbreakable": true,
+    },
+    {
+      "margin": [
+        0,
+        0,
+        0,
+        8,
+      ],
+      "stack": [
+        {
+          "style": "fieldLabel",
+          "text": "Diagnóstico",
+        },
+        {
+          "text": "Hipertensão grau 2",
+        },
+      ],
+      "unbreakable": true,
+    },
+    {
+      "style": "sectionLabel",
+      "text": "Observações",
+    },
+    {
+      "text": "Retorno em 30 dias.",
+    },
+  ],
+  "defaultStyle": {
+    "font": "Roboto",
+    "fontSize": 10,
+    "lineHeight": 1.4,
+  },
+  "footer": [Function],
+  "header": [Function],
+  "pageMargins": [
+    50,
+    50,
+    50,
+    50,
+  ],
+  "styles": {
+    "clinicName": {
+      "bold": true,
+      "fontSize": 13,
+    },
+    "fieldLabel": {
+      "bold": true,
+      "color": "#555555",
+      "fontSize": 9,
+    },
+    "footerCity": {
+      "fontSize": 10,
+      "margin": [
+        0,
+        24,
+        0,
+        32,
+      ],
+    },
+    "sectionLabel": {
+      "bold": true,
+      "fontSize": 10,
+      "margin": [
+        0,
+        12,
+        0,
+        4,
+      ],
+    },
+    "title": {
+      "bold": true,
+      "fontSize": 16,
+    },
+  },
+}
+`;

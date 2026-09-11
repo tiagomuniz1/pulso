@@ -45,13 +45,28 @@ describe('Medical Record Templates Create', () => {
   beforeEach(() => {
     cy.clearCookies()
     cy.clearLocalStorage()
+    // ADMIN sem ficha: o formulário pergunta "eu exerço?" e a resposta é não.
+    // Sem stub a chamada bate no backend real com token mock e vira 401.
+    cy.intercept('GET', `${Cypress.env('API_URL')}/professionals/me`, { statusCode: 200, body: null })
     cy.intercept('GET', `${Cypress.env('API_URL')}/medical-record-canonical-fields*`, {
       statusCode: 200,
       body: [],
     }).as('getCanonicalFields')
-    cy.intercept('GET', `${Cypress.env('API_URL')}/specialties*`, {
+    // O formulário lê as especialidades VINCULADAS À CLÍNICA, não o catálogo
+    // da plataforma.
+    cy.intercept('GET', `${Cypress.env('API_URL')}/clinics/*/specialties*`, {
       statusCode: 200,
-      body: mockSpecialties,
+      body: {
+        ...mockSpecialties,
+        data: mockSpecialties.data.map((s) => ({
+          id: `link-${s.id}`,
+          clinicId: CLINIC_ID,
+          specialtyId: s.id,
+          name: s.name,
+          description: s.description ?? null,
+          linkedAt: '2024-01-01T00:00:00.000Z',
+        })),
+      },
     }).as('getSpecialties')
   })
 
@@ -119,7 +134,7 @@ describe('Medical Record Templates Create', () => {
     cy.get('[data-testid="field-editor-options-error-0"]').should('be.visible')
   })
 
-  it('shows global error on 409 conflict', () => {
+  it('shows a name conflict on 409', () => {
     cy.intercept('POST', `${Cypress.env('API_URL')}/medical-record-templates`, {
       statusCode: 409,
       body: { title: 'Conflict' },
@@ -134,7 +149,30 @@ describe('Medical Record Templates Create', () => {
     cy.get('[data-testid="template-form-submit"]').click()
 
     cy.wait('@createTemplate')
-    cy.get('[data-testid="template-form-global-error"]').should('be.visible')
+    // A clínica pode ter vários modelos na mesma especialidade; o que ela não
+    // pode é dois com o mesmo nome. Renomear resolve, e a mensagem diz isso.
+    cy.get('[data-testid="template-form-global-error"]')
+      .should('be.visible')
+      .and('contain', 'Já existe um modelo com esse nome nesta especialidade')
+  })
+
+  it('names the profession, not the specialty, when the conflict is on a generalist template', () => {
+    cy.intercept('POST', `${Cypress.env('API_URL')}/medical-record-templates`, {
+      statusCode: 409,
+      body: { title: 'Conflict' },
+    }).as('createTemplate')
+
+    visitClinic('/medical-record-templates/new', mockAdmin)
+    cy.wait('@getSpecialties')
+    cy.get('[data-testid="template-form-name"]').type('Generalista')
+    cy.get('[data-testid="template-form-add-field"]').click()
+    cy.get('[data-testid="field-editor-label-0"]').type('Sintoma')
+    cy.get('[data-testid="template-form-submit"]').click()
+
+    cy.wait('@createTemplate')
+    cy.get('[data-testid="template-form-global-error"]')
+      .should('be.visible')
+      .and('contain', 'Já existe um modelo com esse nome nesta profissão')
   })
 
   // Real-backend happy path lives in medical-record-templates-happy-path-real.cy.ts.

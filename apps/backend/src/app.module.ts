@@ -10,6 +10,7 @@ import { UsersModule } from './modules/users/users.module'
 import { PatientsModule } from './modules/patients/patients.module'
 import { ProfessionalsModule } from './modules/professionals/professionals.module'
 import { SchedulesModule } from './modules/schedules/schedules.module'
+import { AppointmentLabelsModule } from './modules/appointment-labels/appointment-labels.module'
 import { AppointmentsModule } from './modules/appointments/appointments.module'
 import { SpecialtiesModule } from './modules/specialties/specialties.module'
 import { ClinicsModule } from './modules/clinics/clinics.module'
@@ -20,6 +21,10 @@ import { MedicalRecordCanonicalFieldsModule } from './modules/medical-record-can
 import { MedicalRecordTemplatesModule } from './modules/medical-record-templates/medical-record-templates.module'
 import { MedicalRecordsModule } from './modules/medical-records/medical-records.module'
 import { MedicationsModule } from './modules/medications/medications.module'
+import { VaccinesModule } from './modules/vaccines/vaccines.module'
+import { VaccinationsModule } from './modules/vaccinations/vaccinations.module'
+import { VaccineSchedulesModule } from './modules/vaccine-schedules/vaccine-schedules.module'
+import { VaccineIndicationsModule } from './modules/vaccine-indications/vaccine-indications.module'
 import { PrescriptionsModule } from './modules/prescriptions/prescriptions.module'
 import { PrescriptionTemplatesModule } from './modules/prescription-templates/prescription-templates.module'
 import { MedicalCertificatesModule } from './modules/medical-certificates/medical-certificates.module'
@@ -48,6 +53,7 @@ import { RolesGuard } from './modules/auth/guards/roles.guard'
     ProfessionalsModule,
     SchedulesModule,
     AppointmentsModule,
+    AppointmentLabelsModule,
     SpecialtiesModule,
     ClinicsModule,
     ClinicSpecialtiesModule,
@@ -57,6 +63,10 @@ import { RolesGuard } from './modules/auth/guards/roles.guard'
     MedicalRecordTemplatesModule,
     MedicalRecordsModule,
     MedicationsModule,
+    VaccinesModule,
+    VaccinationsModule,
+    VaccineSchedulesModule,
+    VaccineIndicationsModule,
     PrescriptionsModule,
     PrescriptionTemplatesModule,
     MedicalCertificatesModule,

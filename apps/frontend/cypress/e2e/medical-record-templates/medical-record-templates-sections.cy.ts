@@ -99,13 +99,28 @@ describe('Medical Record Templates — Sections', () => {
   beforeEach(() => {
     cy.clearCookies()
     cy.clearLocalStorage()
+    // ADMIN sem ficha: o formulário pergunta "eu exerço?" e a resposta é não.
+    // Sem stub a chamada bate no backend real com token mock e vira 401.
+    cy.intercept('GET', `${Cypress.env('API_URL')}/professionals/me`, { statusCode: 200, body: null })
     cy.intercept('GET', `${Cypress.env('API_URL')}/medical-record-canonical-fields*`, {
       statusCode: 200,
       body: [],
     }).as('getCanonicalFields')
-    cy.intercept('GET', `${Cypress.env('API_URL')}/specialties*`, {
+    // O formulário lê as especialidades VINCULADAS À CLÍNICA, não o catálogo
+    // da plataforma.
+    cy.intercept('GET', `${Cypress.env('API_URL')}/clinics/*/specialties*`, {
       statusCode: 200,
-      body: mockSpecialties,
+      body: {
+        ...mockSpecialties,
+        data: mockSpecialties.data.map((s) => ({
+          id: `link-${s.id}`,
+          clinicId: CLINIC_ID,
+          specialtyId: s.id,
+          name: s.name,
+          description: s.description ?? null,
+          linkedAt: '2024-01-01T00:00:00.000Z',
+        })),
+      },
     }).as('getSpecialties')
   })
 

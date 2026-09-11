@@ -1,3 +1,4 @@
+import { CouncilType } from '@app/shared'
 jest.mock('@/components/features/medications/services/medications.service')
 jest.mock('@/components/features/prescription-templates/services/prescription-templates.service')
 jest.mock('@/components/features/professionals/hooks/use-professional.hook')
@@ -56,8 +57,8 @@ const doctorWithSignatureOptions = {
   id: 'doctor-uuid',
   user: { id: 'user-uuid', fullName: 'Dr. Test', email: 'dr@example.com', isActive: true },
   registrations: [
-    { id: 'crm-1', councilType: 'crm', number: '12345', state: 'SP', isPrimary: true },
-    { id: 'crm-2', councilType: 'crm', number: '67890', state: 'RJ', isPrimary: false },
+    { id: 'crm-1', councilType: CouncilType.CRM, number: '12345', state: 'SP', isPrimary: true },
+    { id: 'crm-2', councilType: CouncilType.CRM, number: '67890', state: 'RJ', isPrimary: false },
   ],
   specialties: [
     { id: 'spec-1', name: 'Cardiologia', registryNumber: '111' },
@@ -84,6 +85,11 @@ describe('PrescriptionForm (integration)', () => {
     expect(screen.getByTestId('prescription-form-tab-ingredient')).toBeInTheDocument()
     expect(screen.getByTestId('prescription-form-notes')).toBeInTheDocument()
     expect(screen.getByTestId('prescription-form-submit')).toBeInTheDocument()
+    // Dentro da barra fixa: solto no corpo do modal, o botão cai abaixo da
+    // dobra assim que o formulário cresce.
+    expect(screen.getByTestId('modal-form-actions')).toContainElement(
+      screen.getByTestId('prescription-form-submit'),
+    )
   })
 
   it('starts in medication tab by default', () => {

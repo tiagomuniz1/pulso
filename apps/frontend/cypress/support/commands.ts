@@ -139,6 +139,8 @@ interface CreateMedicalRecordTemplateInput {
 
 interface CreateMedicalRecordInput {
   appointmentId: string
+  /** Obrigatório desde que a clínica passou a ter vários modelos por escopo. */
+  templateId: string
   data: Record<string, unknown>
   notes?: string
 }
@@ -148,12 +150,17 @@ interface CreateMedicationInput {
   activeIngredient?: string
 }
 
+interface CreateVaccineInput {
+  name: string
+  abbreviation?: string | null
+  preventedDiseases?: string | null
+}
+
 interface CreateCanonicalFieldInput {
   canonicalKey: string
   label: string
   type: string
   unit?: string
-  specialtyId?: string
 }
 
 declare global {
@@ -192,7 +199,11 @@ declare global {
       createMedicalRecordViaApi(input: CreateMedicalRecordInput, accessToken: string): Chainable<{ id: string }>
       createMedicationViaApi(input: CreateMedicationInput, accessToken: string): Chainable<{ id: string; name: string }>
       deleteMedicationViaApi(id: string, accessToken?: string): Chainable<void>
+      createVaccineViaApi(input: CreateVaccineInput, accessToken: string): Chainable<{ id: string; name: string }>
+      deleteVaccineViaApi(id: string, accessToken?: string): Chainable<void>
       createCanonicalFieldViaApi(input: CreateCanonicalFieldInput, accessToken: string): Chainable<{ id: string; canonicalKey: string; label: string }>
+      stubAppointmentDetailWidgets(overrides?: AppointmentDetailWidgetStubs): Chainable<void>
+      stubPatientDetailWidgets(overrides?: PatientDetailWidgetStubs): Chainable<void>
     }
   }
 }
@@ -683,6 +694,25 @@ Cypress.Commands.add('deleteMedicationViaApi', (id: string, accessToken?: string
   })
 })
 
+// O catálogo de vacinas é do PLATFORM_ADMIN — passe um platformAdminToken.
+Cypress.Commands.add('createVaccineViaApi', (input: CreateVaccineInput, accessToken: string) => {
+  cy.request({
+    method: 'POST',
+    url: `${Cypress.env('API_URL')}/vaccines`,
+    body: input,
+    headers: { Authorization: `Bearer ${accessToken}` },
+  }).then((response) => ({ id: response.body.id as string, name: response.body.name as string }))
+})
+
+Cypress.Commands.add('deleteVaccineViaApi', (id: string, accessToken?: string) => {
+  cy.request({
+    method: 'DELETE',
+    url: `${Cypress.env('API_URL')}/vaccines/${id}`,
+    failOnStatusCode: false,
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+  })
+})
+
 Cypress.Commands.add('createCanonicalFieldViaApi', (input: CreateCanonicalFieldInput, accessToken: string) => {
   cy.request({
     method: 'POST',
@@ -694,6 +724,191 @@ Cypress.Commands.add('createCanonicalFieldViaApi', (input: CreateCanonicalFieldI
     canonicalKey: response.body.canonicalKey as string,
     label: response.body.label as string,
   }))
+})
+
+/**
+ * Every widget the appointment detail page mounts fires its own GET as soon as
+ * the page renders — including tabs the test never opens. An un-stubbed one
+ * answers 401, the api-client tries to refresh, fails, and sends the app to
+ * /login: the spec then dies in a login/dashboard redirect loop with an error
+ * that says nothing about the missing stub.
+ *
+ * Stubbing them here instead of in each spec means adding a widget tomorrow is a
+ * one-line change, not a hunt through a dozen files. Pass `overrides` to give a
+ * specific endpoint a real body; everything else answers empty.
+ */
+/** O modelo devolvido por padrão pelos stubs da aba de prontuário. */
+export const STUB_TEMPLATE = {
+  id: 'stub-template-uuid',
+  specialtyId: null,
+  specialtyName: null,
+  councilType: 'crm',
+  name: 'Modelo padrão',
+  sections: [],
+  fields: [
+    {
+      key: 'observacoes_stub',
+      label: 'Observações',
+      type: 'textarea',
+      required: false,
+      order: 0,
+      options: null,
+      placeholder: null,
+      helpText: null,
+      canonical: false,
+      canonicalKey: null,
+      sectionKey: null,
+    },
+  ],
+  isActive: true,
+  createdAt: '2026-01-01T10:00:00.000Z',
+  updatedAt: '2026-01-01T10:00:00.000Z',
+}
+
+export interface AppointmentDetailWidgetStubs {
+  appointmentLabels?: unknown
+  medicalRecord?: unknown
+  templates?: unknown
+  prescriptions?: unknown
+  atestados?: unknown
+  examRequests?: unknown
+  consultationPhotos?: unknown
+  vaccinations?: unknown
+  vaccineIndications?: unknown
+  vaccines?: unknown
+}
+
+Cypress.Commands.add('stubAppointmentDetailWidgets', (overrides: AppointmentDetailWidgetStubs = {}) => {
+  const api = Cypress.env('API_URL')
+  const emptyPage = { data: [], total: 0, page: 1, limit: 20 }
+
+  // A ficha do próprio usuário, que decide se ele pode emitir. Default: não tem.
+  // Um spec que precise de ficha registra o seu depois — este comando roda
+  // primeiro de propósito. O glob `/professionals*` NÃO cobre esta rota: no
+  // minimatch o `*` não atravessa a barra, e sem stub a chamada bate no backend
+  // real com token mock, dá 401 e joga o app num loop de redirect.
+  cy.intercept('GET', `${api}/professionals/me`, { statusCode: 200, body: null })
+
+  cy.intercept('GET', `${api}/medical-records/by-appointment/*`, {
+    statusCode: 200,
+    body: overrides.medicalRecord ?? null,
+  }).as('getMedicalRecord')
+
+  // Um modelo mínimo por padrão: sem nenhum, a aba de prontuário nem oferece o
+  // botão de preencher, e o default deste comando é "a aba monta e não explode".
+  // Passe `templates` para um cenário específico — inclusive lista vazia.
+  cy.intercept('GET', `${api}/medical-record-templates*`, {
+    statusCode: 200,
+    body: overrides.templates ?? {
+      data: [STUB_TEMPLATE],
+      total: 1,
+      page: 1,
+      limit: 50,
+    },
+  }).as('getTemplates')
+
+  // A agenda e o diálogo de detalhes leem o catálogo de rótulos. Sem stub a
+  // chamada bate no backend com token mock, dá 401 e derruba a tela num loop.
+  cy.intercept('GET', `${api}/appointment-labels*`, {
+    statusCode: 200,
+    body: overrides.appointmentLabels ?? { data: [], total: 0, page: 1, limit: 100 },
+  }).as('getAppointmentLabels')
+
+  // O glob acima NÃO cobre `/medical-record-templates/:id` — no minimatch o `*`
+  // não atravessa a barra. É por essa rota que a tela busca as seções de um
+  // prontuário já salvo, e sem stub ela bate no backend com token mock e derruba
+  // o app num loop de redirect.
+  cy.intercept('GET', `${api}/medical-record-templates/*`, {
+    statusCode: 200,
+    body: STUB_TEMPLATE,
+  }).as('getTemplateById')
+
+  cy.intercept('GET', `${api}/prescriptions*`, {
+    statusCode: 200,
+    body: overrides.prescriptions ?? emptyPage,
+  }).as('getPrescriptions')
+
+  cy.intercept('GET', `${api}/medical-certificates*`, {
+    statusCode: 200,
+    body: overrides.atestados ?? [],
+  }).as('getAtestados')
+
+  cy.intercept('GET', `${api}/exam-requests*`, {
+    statusCode: 200,
+    body: overrides.examRequests ?? [],
+  }).as('getExamRequests')
+
+  cy.intercept('GET', `${api}/consultation-photos*`, {
+    statusCode: 200,
+    body: overrides.consultationPhotos ?? [],
+  }).as('getConsultationPhotos')
+
+  // A aba Vacinas monta duas coisas no load da página, não ao clicar na aba: a
+  // contagem de doses lançadas nesta consulta e as indicações emitidas nela.
+  cy.intercept('GET', `${api}/vaccinations*`, {
+    statusCode: 200,
+    body: overrides.vaccinations ?? emptyPage,
+  }).as('getAppointmentVaccinations')
+
+  cy.intercept('GET', `${api}/vaccine-indications*`, {
+    statusCode: 200,
+    body: overrides.vaccineIndications ?? [],
+  }).as('getVaccineIndications')
+
+  // O seletor do formulário de indicação lê o catálogo.
+  cy.intercept('GET', `${api}/vaccines*`, {
+    statusCode: 200,
+    body: overrides.vaccines ?? { data: [], total: 0, page: 1, limit: 100 },
+  }).as('getVaccines')
+})
+
+/**
+ * The patient detail page mounts the medical history and the evolution photo
+ * gallery on load. Same trap as the appointment page: an un-stubbed 401 sends the
+ * app to /login and the spec dies in a redirect loop.
+ */
+export interface PatientDetailWidgetStubs {
+  medicalHistory?: unknown
+  photoGallery?: unknown
+  vaccinations?: unknown
+  vaccines?: unknown
+  vaccineStatus?: unknown
+}
+
+Cypress.Commands.add('stubPatientDetailWidgets', (overrides: PatientDetailWidgetStubs = {}) => {
+  const api = Cypress.env('API_URL')
+
+  cy.intercept('GET', `${api}/medical-records*`, {
+    statusCode: 200,
+    body: overrides.medicalHistory ?? { data: [], total: 0, page: 1, limit: 10 },
+  }).as('getPatientHistory')
+
+  cy.intercept('GET', `${api}/consultation-photos/by-patient/*`, {
+    statusCode: 200,
+    body: overrides.photoGallery ?? { data: [], total: 0, page: 1, limit: 20 },
+  }).as('getPatientPhotos')
+
+  // A ficha do paciente também monta a caderneta e a situação vacinal. Mesma
+  // armadilha do 401 acima: sem stub, o app sai para /login e o spec morre.
+  cy.intercept('GET', `${api}/vaccinations*`, {
+    statusCode: 200,
+    body: overrides.vaccinations ?? { data: [], total: 0, page: 1, limit: 20 },
+  }).as('getPatientVaccinations')
+
+  cy.intercept('GET', `${api}/vaccines*`, {
+    statusCode: 200,
+    body: overrides.vaccines ?? { data: [], total: 0, page: 1, limit: 100 },
+  }).as('getVaccinesCatalog')
+
+  // `*` não atravessa a barra no minimatch: `/vaccine-schedules*` NÃO cobre
+  // `/vaccine-schedules/patients/:id`. Precisa do padrão com o caminho inteiro.
+  cy.intercept('GET', `${api}/vaccine-schedules/patients/*`, {
+    statusCode: 200,
+    body: overrides.vaccineStatus ?? { patientId: 'stub', ageInMonths: 0, items: [] },
+  }).as('getPatientVaccineStatus')
+
+  // Registrar dose e conduta dependem da ficha do próprio usuário. Default: não tem.
+  cy.intercept('GET', `${api}/professionals/me`, { statusCode: 200, body: null })
 })
 
 export {}

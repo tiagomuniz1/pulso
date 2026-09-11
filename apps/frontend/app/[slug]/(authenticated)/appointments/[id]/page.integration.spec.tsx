@@ -15,7 +15,7 @@ jest.mock('next/navigation', () => ({
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AppointmentStatus, PatientGender, UserRole } from '@app/shared'
+import { AppointmentStatus, PatientGender, UserRole, CouncilType } from '@app/shared'
 import { useRouter } from 'next/navigation'
 import { appointmentsService } from '@/components/features/appointments/services/appointments.service'
 import { professionalsService } from '@/components/features/professionals/services/professionals.service'
@@ -51,16 +51,27 @@ function mockAuth(role: UserRole, userId = 'user-uuid') {
   )
 }
 
+// A ficha do próprio usuário — o que decide se ele pode emitir. `null` = não exerce.
+const makeMyProfessional = (id = DOCTOR_ID) => ({
+  id,
+  user: { id: DOCTOR_USER_ID, fullName: 'Dr. Test', email: 'doctor@test.com', isActive: true },
+  registrations: [{ id: 'crm-1', councilType: CouncilType.CRM, number: '12345', state: 'SP', isPrimary: true }],
+  specialties: [],
+  bio: null,
+  createdAt: new Date().toISOString() as unknown as Date,
+  updatedAt: new Date().toISOString() as unknown as Date,
+})
+
 const makeDoctorsResponse = (id = DOCTOR_ID) => ({
   data: [
     {
       id,
       user: { id: DOCTOR_USER_ID, fullName: 'Dr. Test', email: 'doctor@test.com', isActive: true },
-      registrations: [{ id: 'crm-1', councilType: 'crm', number: '12345', state: 'SP', isPrimary: true }],
+      registrations: [{ id: 'crm-1', councilType: CouncilType.CRM, number: '12345', state: 'SP', isPrimary: true }],
       specialties: [],
       bio: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString() as unknown as Date,
+      updatedAt: new Date().toISOString() as unknown as Date,
     },
   ],
   total: 1,
@@ -84,6 +95,13 @@ const makeAppointmentDto = (overrides: object = {}) => ({
   insuranceType: null,
   reason: null,
   cancellationReason: null,
+  label: null,
+  // Campos de série: null porque a consulta não pertence a nenhuma.
+  seriesFutureCount: null,
+  isFirstVisitWithProfessional: false,
+  seriesId: null,
+  seriesSequence: null,
+  seriesTotalOccurrences: null,
   createdAt: new Date(),
   updatedAt: new Date(),
   patient: {
@@ -102,6 +120,7 @@ describe('AppointmentDetailPage (integration)', () => {
     jest.clearAllMocks()
     mockAuth(UserRole.ADMIN)
     mockDoctorsService.getAll.mockResolvedValue(makeDoctorsResponse())
+    mockDoctorsService.getMine.mockResolvedValue(null)
     mockMedicalRecordsService.getByAppointment.mockResolvedValue(null)
     mockTemplatesService.getAll.mockResolvedValue({ data: [], total: 0, page: 1, limit: 1 })
     mockPrescriptionsService.getByAppointment.mockResolvedValue([])
@@ -187,7 +206,7 @@ describe('AppointmentDetailPage (integration)', () => {
 
   it('DOCTOR sees actions for own appointment', async () => {
     mockAuth(UserRole.PROFESSIONAL, DOCTOR_USER_ID)
-    mockDoctorsService.getAll.mockResolvedValue(makeDoctorsResponse(DOCTOR_ID))
+    mockDoctorsService.getMine.mockResolvedValue(makeMyProfessional(DOCTOR_ID) as any)
     mockAppointmentsService.getById.mockResolvedValue(makeAppointmentDto({ professionalId: DOCTOR_ID }))
     renderWithProviders(<AppointmentDetailPage />)
     await waitFor(() => {
@@ -197,7 +216,7 @@ describe('AppointmentDetailPage (integration)', () => {
 
   it('DOCTOR does not see actions for another doctor appointment', async () => {
     mockAuth(UserRole.PROFESSIONAL, DOCTOR_USER_ID)
-    mockDoctorsService.getAll.mockResolvedValue(makeDoctorsResponse(DOCTOR_ID))
+    mockDoctorsService.getMine.mockResolvedValue(makeMyProfessional(DOCTOR_ID) as any)
     mockAppointmentsService.getById.mockResolvedValue(
       makeAppointmentDto({ professionalId: 'other-doctor-id' }),
     )
@@ -374,7 +393,12 @@ describe('AppointmentDetailPage (integration)', () => {
   it('confirming cancel dialog calls cancel service', async () => {
     mockAppointmentsService.getById.mockResolvedValue(makeAppointmentDto())
     mockAppointmentsService.cancel.mockResolvedValue(
-      makeAppointmentDto({ status: AppointmentStatus.CANCELLED }),
+      // cancel() devolve AppointmentResponseDto + a contagem do escopo cancelado.
+      {
+        ...makeAppointmentDto({ status: AppointmentStatus.CANCELLED }),
+        cancelledOccurrenceCount: 1,
+        cancelledAppointmentIds: ['appt-uuid'],
+      },
     )
     mockAppointmentsService.getAll.mockResolvedValue({ data: [], total: 0, page: 1, limit: 100 })
     mockAppointmentsService.getAvailability.mockResolvedValue({ professionalId: DOCTOR_ID, date: '2025-06-10', slots: [] })
@@ -393,5 +417,24 @@ describe('AppointmentDetailPage (integration)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('appointment-detail-reason')).toHaveTextContent('Dor de cabeça')
     })
+  })
+  it('ADMIN sees the reassign button on a standalone appointment', async () => {
+    mockAppointmentsService.getById.mockResolvedValue(makeAppointmentDto())
+    renderWithProviders(<AppointmentDetailPage />)
+    await waitFor(() => {
+      expect(screen.getByTestId('appointment-detail-reassign-button')).toBeInTheDocument()
+    })
+  })
+
+  it('hides the reassign button on a series occurrence, which the backend rejects with 422', async () => {
+    mockAppointmentsService.getById.mockResolvedValue(
+      makeAppointmentDto({ seriesId: 'series-uuid', seriesSequence: 2, seriesTotalOccurrences: 5 }),
+    )
+    renderWithProviders(<AppointmentDetailPage />)
+    await waitFor(() => {
+      expect(screen.getByTestId('appointment-detail-cancel-button')).toBeInTheDocument()
+    })
+    expect(screen.queryByTestId('appointment-detail-reassign-button')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('appointment-detail-reassign-button-mobile')).not.toBeInTheDocument()
   })
 })

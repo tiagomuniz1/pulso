@@ -13,6 +13,7 @@ import { Professional } from '../../professionals/entities/professional.entity'
 import { Patient } from '../../patients/entities/patient.entity'
 import { Specialty } from '../../specialties/entities/specialty.entity'
 import { MedicalRecordTemplateField } from '../../medical-record-templates/entities/medical-record-template.entity'
+import { Appointment } from '../../appointments/entities/appointment.entity'
 
 @Entity('medical_records')
 export class MedicalRecord {
@@ -24,6 +25,16 @@ export class MedicalRecord {
 
   @Column({ name: 'appointment_id', type: 'uuid' })
   appointmentId: string
+
+  // A data e o horário do ATENDIMENTO, não do registro. O histórico clínico
+  // precisa de quando a paciente foi vista; `createdAt` é quando o prontuário
+  // foi digitado, e os dois divergem quando o médico preenche depois.
+  //
+  // Sempre carregada: a query junta por INNER JOIN, e prontuário sem consulta
+  // viva não é devolvido.
+  @ManyToOne(() => Appointment, { eager: false })
+  @JoinColumn({ name: 'appointment_id' })
+  appointment: Appointment
 
   @ManyToOne(() => Patient, { eager: false })
   @JoinColumn({ name: 'patient_id' })

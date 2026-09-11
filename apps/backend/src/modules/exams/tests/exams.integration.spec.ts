@@ -3,8 +3,8 @@ import { Test } from '@nestjs/testing'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import { faker } from '@faker-js/faker'
 import * as bcrypt from 'bcrypt'
-import * as cookieParser from 'cookie-parser'
-import * as request from 'supertest'
+import cookieParser from 'cookie-parser'
+import request from 'supertest'
 import { Repository } from 'typeorm'
 import { AppointmentStatus, CouncilType, DayOfWeek, PatientGender, UserRole } from '@app/shared'
 import { AppModule } from '../../../app.module'
@@ -314,7 +314,7 @@ describe('ExamRequestsController (integration)', () => {
       expect(body.items[2].observations).toBe('Incidência PA e perfil')
     })
 
-    it('returns 403 when ADMIN tries to request exams', async () => {
+    it('returns 403 when ADMIN without a professional profile tries to request exams', async () => {
       await request(app.getHttpServer())
         .post('/exam-requests')
         .set('Cookie', `access_token=${adminToken}`)
@@ -686,7 +686,7 @@ describe('ExamRequestsController (integration)', () => {
         .expect(422)
     })
 
-    it('returns 403 when ADMIN tries to attach a result', async () => {
+    it('returns 403 when ADMIN without a professional profile tries to attach a result', async () => {
       await request(app.getHttpServer())
         .post(`/exam-requests/${examRequestId}/results`)
         .set('Cookie', `access_token=${adminToken}`)
@@ -776,7 +776,7 @@ describe('ExamRequestsController (integration)', () => {
       expect(body.results).toHaveLength(1)
     })
 
-    it('returns 403 when ADMIN tries to remove a result', async () => {
+    it('returns 403 when ADMIN without a professional profile tries to remove a result', async () => {
       await request(app.getHttpServer())
         .delete(`/exam-results/${resultId}`)
         .set('Cookie', `access_token=${adminToken}`)

@@ -15,6 +15,7 @@ beforeEach(() => {
 const makeSchedule = (overrides: Partial<IScheduleModel> = {}): IScheduleModel => ({
   id: 'uuid-1',
   professionalId: 'doc-uuid-1',
+  professionalName: 'Dr. Test',
   dayOfWeek: DayOfWeek.MONDAY,
   startTime: '08:00',
   endTime: '12:00',
@@ -57,8 +58,8 @@ describe('ScheduleDetails', () => {
         onDeleteClick={jest.fn()}
       />,
     )
-    expect(screen.getByTestId('schedule-details-valid-from')).toHaveTextContent('2025-03-01')
-    expect(screen.getByTestId('schedule-details-valid-until')).toHaveTextContent('2025-12-31')
+    expect(screen.getByTestId('schedule-details-valid-from')).toHaveTextContent('01/03/2025')
+    expect(screen.getByTestId('schedule-details-valid-until')).toHaveTextContent('31/12/2025')
   })
 
   it('renders edit and delete buttons when canManageSchedules is true', () => {

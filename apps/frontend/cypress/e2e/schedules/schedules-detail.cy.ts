@@ -73,8 +73,8 @@ describe('Schedule Detail', () => {
     visitClinic(`/schedules/${mockScheduleWithValidity.id}`, mockProfessionalUser)
     cy.wait('@getSchedule')
 
-    cy.get('[data-testid="schedule-details-valid-from"]').should('contain', '2025-01-01')
-    cy.get('[data-testid="schedule-details-valid-until"]').should('contain', '2025-12-31')
+    cy.get('[data-testid="schedule-details-valid-from"]').should('contain', '01/01/2025')
+    cy.get('[data-testid="schedule-details-valid-until"]').should('contain', '31/12/2025')
   })
 
   it('shows edit and delete action buttons', () => {
@@ -100,6 +100,9 @@ describe('Schedule Detail', () => {
   it('back button navigates to schedules list', () => {
     cy.intercept('GET', `${Cypress.env('API_URL')}/schedules/${mockSchedule.id}`, { statusCode: 200, body: mockSchedule }).as('getSchedule')
     cy.intercept('GET', `${Cypress.env('API_URL')}/schedules*`, { statusCode: 200, body: { data: [], total: 0, page: 1, limit: 20 } })
+    // Sem ficha de profissional: o default para quem só administra ou recepciona.
+    // O glob `/professionals*` não cobre esta rota — `*` não atravessa a barra.
+    cy.intercept('GET', `${Cypress.env('API_URL')}/professionals/me`, { statusCode: 200, body: null })
     cy.intercept('GET', `${Cypress.env('API_URL')}/professionals*`, { statusCode: 200, body: { data: [], total: 0, page: 1, limit: 100 } })
 
     visitClinic(`/schedules/${mockSchedule.id}`, mockProfessionalUser)

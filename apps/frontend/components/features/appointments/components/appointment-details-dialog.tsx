@@ -8,9 +8,14 @@ import { Alert } from '@/components/ui/molecules/alert/alert'
 import { useBasePath } from '@/lib/slug-context'
 import { cn } from '@/lib/cn'
 import { useAppointment } from '../hooks/use-appointment.hook'
+import { FirstVisitBadge } from './first-visit-badge'
 import { APPOINTMENT_STATUS_LABELS } from '../types/appointment-model.types'
 import { APPOINTMENT_STATUS_BADGE_CLASS } from '@/lib/appointment-status'
 import { formatDateToBR } from '@/lib/format-date'
+import { AppointmentLabelSelect } from '@/components/features/appointment-labels/components/appointment-label-select'
+import { AppointmentLabelPill } from '@/components/features/appointment-labels/components/appointment-label-pill'
+import { useSetAppointmentLabel } from '../hooks/use-set-appointment-label.hook'
+import { RecurrenceBadge } from './recurrence-badge'
 
 interface AppointmentDetailsDialogProps {
   appointmentId: string | null
@@ -24,12 +29,17 @@ export function AppointmentDetailsDialog({
   appointmentId,
   isOpen,
   onClose,
-  role: _role,
-  currentDoctorId: _currentDoctorId,
+  role,
+  currentDoctorId,
 }: AppointmentDetailsDialogProps) {
   const router = useRouter()
   const basePath = useBasePath()
   const { data: appointment, isLoading, isError } = useAppointment(appointmentId ?? '')
+  const { mutate: setLabel, isPending: salvandoRotulo } = useSetAppointmentLabel()
+
+  // A mesma regra de `canManage` da tela cheia: o ADMIN mexe em qualquer
+  // consulta da clínica, o profissional só na dele.
+  const canLabel = role === UserRole.ADMIN || appointment?.professionalId === currentDoctorId
 
   function handleGoToAppointment() {
     // Only reachable once `appointment` has loaded below, which requires a non-null appointmentId
@@ -73,7 +83,15 @@ export function AppointmentDetailsDialog({
 
           <dl className="grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
             <dt className="text-text/50">Paciente</dt>
-            <dd data-testid="details-patient">{appointment.patientName}</dd>
+            <dd data-testid="details-patient" className="flex flex-wrap items-center gap-2">
+              {appointment.patientName}
+              {appointment.isFirstVisitWithProfessional && (
+                <FirstVisitBadge
+                  patientName={appointment.patientName}
+                  professionalName={appointment.professionalName}
+                />
+              )}
+            </dd>
 
             <dt className="text-text/50">Profissional</dt>
             <dd data-testid="details-professional">{appointment.professionalName}</dd>
@@ -84,6 +102,41 @@ export function AppointmentDetailsDialog({
             <dt className="text-text/50">Horário</dt>
             <dd data-testid="details-time">
               {appointment.startTime} – {appointment.endTime}
+            </dd>
+
+            {appointment.seriesId &&
+              appointment.seriesSequence !== null &&
+              appointment.seriesTotalOccurrences !== null && (
+                <>
+                  <dt className="text-text/50">Recorrência</dt>
+                  <dd>
+                    <RecurrenceBadge
+                      sequence={appointment.seriesSequence}
+                      total={appointment.seriesTotalOccurrences}
+                      data-testid="details-series"
+                    />
+                  </dd>
+                </>
+              )}
+
+            <dt className="text-text/50">Rótulo</dt>
+            <dd data-testid="details-label">
+              {canLabel ? (
+                <AppointmentLabelSelect
+                  value={appointment.label}
+                  isPending={salvandoRotulo}
+                  onChange={(labelId) => setLabel({ id: appointment.id, labelId })}
+                  data-testid="details-label-select"
+                />
+              ) : appointment.label ? (
+                <AppointmentLabelPill
+                  name={appointment.label.name}
+                  color={appointment.label.color}
+                  data-testid="details-label-pill"
+                />
+              ) : (
+                '—'
+              )}
             </dd>
 
             {appointment.reason && (

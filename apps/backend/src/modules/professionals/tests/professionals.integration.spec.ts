@@ -3,7 +3,7 @@ import { Test } from '@nestjs/testing'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import { faker } from '@faker-js/faker'
 import * as bcrypt from 'bcrypt'
-import * as request from 'supertest'
+import request from 'supertest'
 import { Repository } from 'typeorm'
 import { CouncilType, SubscriptionPlan, UserRole } from '@app/shared'
 import { AppModule } from '../../../app.module'
@@ -308,6 +308,37 @@ describe('ProfessionalsController (integration)', () => {
         .set('Authorization', `Bearer ${userToken}`)
         .send(makePayload(targetUser.id))
         .expect(403)
+    })
+  })
+
+  describe('GET /professionals/me', () => {
+    it('returns the caller own professional profile', async () => {
+      const { body } = await request(app.getHttpServer())
+        .get('/professionals/me')
+        .set('Authorization', `Bearer ${doctorToken}`)
+        .expect(200)
+
+      expect(body.id).toBe(doctorProfileId)
+    })
+
+    // Não ter ficha é uma resposta comum, não uma falha: 404 faria o React Query
+    // tratar como erro e repetir a chamada.
+    it('returns 200 with null when the caller has no professional profile', async () => {
+      const { body } = await request(app.getHttpServer())
+        .get('/professionals/me')
+        .set('Authorization', `Bearer ${doctorWithoutProfileToken}`)
+        .expect(200)
+
+      expect(body).toEqual({})
+    })
+
+    it('returns null for an ADMIN who does not practise', async () => {
+      const { body } = await request(app.getHttpServer())
+        .get('/professionals/me')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200)
+
+      expect(body).toEqual({})
     })
   })
 
@@ -813,12 +844,46 @@ describe('ProfessionalsController (integration)', () => {
       expect(user?.deletedAt).toBeNull()
     })
 
-    it('returns 403 when admin tries to delete own professional profile', async () => {
+    // Cargo dá escopo, ficha dá exercício: um ADMIN que largou a ficha continua
+    // administrando. O guard só existe contra a autodestruição, que é o caso do
+    // PROFESSIONAL — cujo usuário é apagado junto com a ficha.
+    it('lets an admin delete their own professional profile and keeps the user as ADMIN', async () => {
       const { body: created } = await createProfessional(authUserId, { crmNumber: '11111/SP' }).expect(201)
 
       await request(app.getHttpServer())
         .delete(`/professionals/${created.id}`)
         .set('Authorization', `Bearer ${accessToken}`)
+        .expect(204)
+
+      const user = await userRepository.findOne({ where: { id: authUserId }, withDeleted: true })
+      expect(user?.deletedAt).toBeNull()
+      expect(user?.role).toBe(UserRole.ADMIN)
+      expect(user?.isActive).toBe(true)
+
+      const professional = await professionalRepository.findOne({ where: { id: created.id }, withDeleted: true })
+      expect(professional?.deletedAt).not.toBeNull()
+    })
+
+    it('returns 403 when a PROFESSIONAL tries to delete their own profile', async () => {
+      const password = 'Password123!'
+      const hashedPassword = await bcrypt.hash(password, 1)
+      const selfUser = await userRepository.save(
+        userRepository.create({
+          fullName: 'Self Deleting Professional',
+          email: 'selfdelete@professionals.test',
+          password: hashedPassword,
+          role: UserRole.PROFESSIONAL,
+          isActive: true,
+          clinicId: SEED_CLINIC_ID,
+        }),
+      )
+      const { body: created } = await createProfessional(selfUser.id, { crmNumber: '77777/SP' }).expect(201)
+
+      const selfToken = await loginUser(selfUser.email, password)
+
+      await request(app.getHttpServer())
+        .delete(`/professionals/${created.id}`)
+        .set('Authorization', `Bearer ${selfToken}`)
         .expect(403)
     })
 

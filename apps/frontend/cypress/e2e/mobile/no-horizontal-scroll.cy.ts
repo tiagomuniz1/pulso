@@ -159,6 +159,28 @@ describe('Mobile (375px) — sem scroll horizontal', () => {
     cy.viewport(375, 667)
     cy.clearCookies()
     cy.clearLocalStorage()
+    // Registered first on purpose: any spec-specific intercept below overrides
+    // it, and the widgets this spec does not care about stop 401-ing the app
+    // into a login/dashboard redirect loop.
+    cy.stubAppointmentDetailWidgets()
+
+    // A aba Prontuário só aparece para o profissional DA consulta, e isso é
+    // decidido pela ficha própria — não pelo cargo. O stub genérico devolve
+    // `null` aqui, o que contradiz o usuário deste spec: um PROFESSIONAL vendo
+    // a própria consulta. `/professionals*` não cobre esta rota, porque no
+    // minimatch o `*` não atravessa `/`.
+    cy.intercept('GET', `${Cypress.env('API_URL')}/professionals/me`, {
+      statusCode: 200,
+      body: {
+        id: PROFESSIONAL_UUID,
+        user: { id: 'professional-user-uuid', fullName: mockAppointment.professionalName, email: 'professional@pulso.center', isActive: true },
+        registrations: [{ id: 'reg-1', councilType: 'crm', number: '12345/SP', state: 'SP', isPrimary: true }],
+        specialties: [{ id: SPEC_UUID, name: 'Mastologia', registryNumber: null }],
+        bio: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    }).as('getMyProfessional')
 
     cy.intercept('GET', `${Cypress.env('API_URL')}/professionals*`, {
       statusCode: 200,

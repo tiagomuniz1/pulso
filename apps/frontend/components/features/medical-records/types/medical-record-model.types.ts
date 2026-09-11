@@ -21,6 +21,15 @@ export interface IMedicalRecordModel {
   professionalName: string
   specialtyId: string | null
   specialtyName: string | null
+  /** Data e horário do atendimento. Consulta excluída não aparece no histórico. */
+  appointmentDate: string
+  appointmentStartTime: string
+  /**
+   * O modelo de que este prontuário nasceu. Os campos estão congelados em
+   * `schema`, mas as seções não entram no snapshot — é por este id que se busca
+   * o modelo certo para agrupá-los, agora que a especialidade pode ter vários.
+   */
+  templateId: string
   schema: IRecordFieldModel[]
   data: Record<string, unknown>
   notes: string | null

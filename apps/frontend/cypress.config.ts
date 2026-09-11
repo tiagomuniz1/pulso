@@ -6,8 +6,24 @@ export default defineConfig({
     baseUrl: 'http://localhost:3000',
     supportFile: 'cypress/support/e2e.ts',
     specPattern: 'cypress/e2e/**/*.cy.{ts,tsx}',
+    // A suíte de subdomínio exige a stack completa (docker-compose.full.yml) e
+    // falha por construção em modo path: as URLs, o domínio do cookie e as
+    // asserções de caminho são outros. Roda por cypress.subdomain.config.ts.
+    excludeSpecPattern: 'cypress/e2e/subdomain/**/*.cy.{ts,tsx}',
     video: false,
     screenshotOnRunFailure: true,
+    // O padrão do Cypress é 4s, e há asserções da suíte que encostam nele numa
+    // máquina ociosa — "disables submit button while request is in flight"
+    // fechou em 3978ms. Qualquer carga concorrente (Docker, build, outro
+    // navegador) empurra um conjunto diferente de specs para fora do limite a
+    // cada execução, o que aparecia como falha aleatória e não como regressão.
+    //
+    // Um orçamento maior não esconde defeito: asserção errada continua falhando,
+    // só demora mais para desistir.
+    defaultCommandTimeout: 10000,
+    requestTimeout: 10000,
+    responseTimeout: 15000,
+    pageLoadTimeout: 60000,
     env: {
       API_URL: 'http://localhost:3001',
       DB_HOST: 'localhost',

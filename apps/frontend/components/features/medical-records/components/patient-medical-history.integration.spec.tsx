@@ -1,5 +1,6 @@
 jest.mock('../hooks/use-patient-medical-history.hook')
 jest.mock('../hooks/use-medical-record.hook')
+jest.mock('../use-cases/download-medical-record-pdf.use-case')
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -7,11 +8,13 @@ import { MedicalRecordFieldType } from '@app/shared'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { usePatientMedicalHistory } from '../hooks/use-patient-medical-history.hook'
 import { useMedicalRecord } from '../hooks/use-medical-record.hook'
+import { downloadMedicalRecordPdfUseCase } from '../use-cases/download-medical-record-pdf.use-case'
 import { PatientMedicalHistory } from './patient-medical-history'
 import type { IMedicalRecordModel } from '../types/medical-record-model.types'
 
 const mockUseHistory = usePatientMedicalHistory as jest.Mock
 const mockUseRecord = useMedicalRecord as jest.Mock
+const mockDownload = downloadMedicalRecordPdfUseCase as jest.Mock
 
 function makeRecord(id: string, overrides: Partial<IMedicalRecordModel> = {}): IMedicalRecordModel {
   return {
@@ -23,7 +26,10 @@ function makeRecord(id: string, overrides: Partial<IMedicalRecordModel> = {}): I
     professionalName: 'Dr. João',
     specialtyId: 'spec-uuid',
     specialtyName: 'Cardiologia',
-    schema: [{ key: 'symptom', label: 'Sintoma', type: MedicalRecordFieldType.TEXT, required: false, order: 0, options: null, placeholder: null, helpText: null }],
+    appointmentDate: '2026-09-03',
+    appointmentStartTime: '09:00',
+    templateId: 'template-uuid',
+    schema: [{ key: 'symptom', label: 'Sintoma', type: MedicalRecordFieldType.TEXT, required: false, order: 0, options: null, placeholder: null, helpText: null, sectionKey: null }],
     data: { symptom: 'Febre' },
     notes: null,
     createdAt: new Date('2024-03-15T10:00:00Z'),
@@ -183,6 +189,38 @@ describe('PatientMedicalHistory', () => {
 
     await waitFor(() => {
       expect(screen.queryByTestId('medical-record-view')).not.toBeInTheDocument()
+    })
+  })
+
+  // O diálogo do histórico não tinha ação nenhuma até aqui — abria só para ler.
+  describe('baixar em PDF', () => {
+    beforeEach(() => {
+      mockUseHistory.mockReturnValue({
+        data: { data: [makeRecord('rec-1')], total: 1, page: 1, limit: 10 },
+        isLoading: false,
+        isError: false,
+      })
+      mockUseRecord.mockReturnValue({ data: makeRecord('rec-1'), isLoading: false })
+    })
+
+    it('pede o PDF do prontuário aberto no diálogo', async () => {
+      mockDownload.mockResolvedValue(undefined)
+      renderWithProviders(<PatientMedicalHistory patientId="patient-uuid" />)
+
+      await userEvent.click(screen.getAllByTestId('history-card')[0])
+      await userEvent.click(await screen.findByTestId('medical-record-download-button-rec-1'))
+
+      await waitFor(() => expect(mockDownload).toHaveBeenCalledWith('rec-1', undefined))
+    })
+
+    it('avisa quando o download falha', async () => {
+      mockDownload.mockRejectedValue({ status: 404 })
+      renderWithProviders(<PatientMedicalHistory patientId="patient-uuid" />)
+
+      await userEvent.click(screen.getAllByTestId('history-card')[0])
+      await userEvent.click(await screen.findByTestId('medical-record-download-button-rec-1'))
+
+      expect(await screen.findByTestId('record-detail-download-error')).toBeInTheDocument()
     })
   })
 })

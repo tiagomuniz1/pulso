@@ -15,7 +15,7 @@ jest.mock('@/lib/slug-context', () => ({
 }))
 
 function setRole(role: UserRole) {
-  useAuthStore.setState({ user: { id: 'u1', fullName: 'Test', email: 't@t.com', role } })
+  useAuthStore.setState({ user: { id: 'u1', fullName: 'Test', email: 't@t.com', role, clinicId: 'clinic-uuid' } })
 }
 
 describe('useSidebarNavigation', () => {
@@ -81,12 +81,12 @@ describe('useSidebarNavigation', () => {
     })
   })
 
-  it('ADMIN sees 8 items: dashboard, users, patients, professionals, medical-record-templates, prescription-templates, appointments, schedules', () => {
+  it('ADMIN sees 9 items: dashboard, users, patients, professionals, medical-record-templates, prescription-templates, appointments, appointment-labels, schedules', () => {
     setRole(UserRole.ADMIN)
     const { result } = renderHook(() => useSidebarNavigation())
     const ids = result.current.items.map((i) => i.id)
     expect(ids).toEqual(expect.arrayContaining(['dashboard', 'users', 'patients', 'professionals', 'medical-record-templates', 'prescription-templates', 'appointments', 'schedules']))
-    expect(ids).toHaveLength(8)
+    expect(ids).toHaveLength(9)
     expect(ids).not.toContain('specialties')
   })
 

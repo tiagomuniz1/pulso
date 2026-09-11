@@ -1,3 +1,4 @@
+import { CouncilType } from '@app/shared'
 jest.mock('@/components/features/professionals/hooks/use-professional.hook')
 
 import { screen, waitFor } from '@testing-library/react'
@@ -27,6 +28,11 @@ describe('ExameForm (integration)', () => {
     expect(screen.getByTestId('exame-form-item-0')).toBeInTheDocument()
     expect(screen.queryByTestId('exame-form-item-1')).not.toBeInTheDocument()
     expect(screen.getByTestId('exame-form-submit')).toBeInTheDocument()
+    // Dentro da barra fixa: solto no corpo do modal, o botão cai abaixo da
+    // dobra assim que o formulário cresce.
+    expect(screen.getByTestId('modal-form-actions')).toContainElement(
+      screen.getByTestId('exame-form-submit'),
+    )
   })
 
   it('adds a new item when clicking "+ Adicionar exame"', async () => {
@@ -82,8 +88,8 @@ describe('ExameForm (integration)', () => {
         id: 'doctor-uuid',
         user: { id: 'user-uuid', fullName: 'Dr. Test', email: 'dr@example.com', isActive: true },
         registrations: [
-          { id: 'crm-1', councilType: 'crm', number: '12345', state: 'SP', isPrimary: true },
-          { id: 'crm-2', councilType: 'crm', number: '67890', state: 'RJ', isPrimary: false },
+          { id: 'crm-1', councilType: CouncilType.CRM, number: '12345', state: 'SP', isPrimary: true },
+          { id: 'crm-2', councilType: CouncilType.CRM, number: '67890', state: 'RJ', isPrimary: false },
         ],
         specialties: [
           { id: 'spec-1', name: 'Cardiologia', registryNumber: '111' },

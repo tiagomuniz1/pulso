@@ -14,11 +14,12 @@ import { DeleteMedicalCertificateUseCase } from './use-cases/delete-medical-cert
 import { GenerateMedicalCertificatePdfUseCase } from './use-cases/generate-medical-certificate-pdf.use-case'
 import { IMedicalCertificatesRepository } from './repositories/medical-certificates.repository.interface'
 import { MedicalCertificatesRepository } from './repositories/medical-certificates.repository'
-import { LogoFetcherService } from './services/logo-fetcher.service'
+import { PdfModule } from '../../common/pdf/pdf.module'
 import { MedicalCertificatePdfBuilderService } from './services/medical-certificate-pdf-builder.service'
 
 @Module({
   imports: [
+    PdfModule,
     TypeOrmModule.forFeature([MedicalCertificate]),
     CacheModule,
     AppointmentsModule,
@@ -33,7 +34,6 @@ import { MedicalCertificatePdfBuilderService } from './services/medical-certific
     FindMedicalCertificateByIdUseCase,
     DeleteMedicalCertificateUseCase,
     GenerateMedicalCertificatePdfUseCase,
-    LogoFetcherService,
     MedicalCertificatePdfBuilderService,
     { provide: IMedicalCertificatesRepository, useClass: MedicalCertificatesRepository },
   ],

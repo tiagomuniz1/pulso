@@ -42,9 +42,15 @@ describe('Appointments — agenda views', () => {
   beforeEach(() => {
     cy.clearCookies()
     cy.clearLocalStorage()
+    // A ficha do próprio usuário: neste spec ele é o profissional.
+    // O glob `/professionals*` não cobre esta rota — `*` não atravessa a barra.
+    cy.intercept('GET', `${Cypress.env('API_URL')}/professionals/me`, { statusCode: 200, body: mockProfessionalsList.data[0] })
     cy.intercept('GET', `${Cypress.env('API_URL')}/professionals*`, { statusCode: 200, body: mockProfessionalsList })
     cy.intercept('GET', `${Cypress.env('API_URL')}/appointments/availability*`, { statusCode: 200, body: emptyAvailability })
     cy.intercept('GET', `${Cypress.env('API_URL')}/appointments*`, { statusCode: 200, body: emptyAppointments })
+    // A agenda lê o catálogo de rótulos: sem stub a chamada bate no backend
+    // com token mock, dá 401 e o app redireciona para o login.
+    cy.intercept('GET', `${Cypress.env('API_URL')}/appointment-labels*`, { statusCode: 200, body: { data: [], total: 0, page: 1, limit: 100 } })
     cy.intercept('GET', `${Cypress.env('API_URL')}/patients*`, { statusCode: 200, body: { data: [], total: 0, page: 1, limit: 200 } })
     cy.intercept('GET', `${Cypress.env('API_URL')}/schedule-exceptions*`, { statusCode: 200, body: { data: [], total: 0, page: 1, limit: 20 } })
   })

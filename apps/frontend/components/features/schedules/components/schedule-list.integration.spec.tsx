@@ -7,7 +7,7 @@ jest.mock('@/components/features/professionals/services/professionals.service')
 import { screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useRouter } from 'next/navigation'
-import { UserRole, DayOfWeek } from '@app/shared'
+import { UserRole, DayOfWeek, CouncilType } from '@app/shared'
 import { useAuthStore } from '@/stores/auth.store'
 import { schedulesService } from '../services/schedules.service'
 import { deleteScheduleUseCase } from '../use-cases/delete-schedule.use-case'
@@ -49,7 +49,7 @@ const makePaginatedResponse = (items = [makeScheduleDto()]) => ({
 const makeDoctorDto = (overrides = {}) => ({
   id: 'doc-uuid-1',
   user: { id: 'user-uuid-1', fullName: 'Dr. João Silva', email: 'joao@example.com', isActive: true },
-  registrations: [{ id: 'crm-1', councilType: 'crm', number: '12345', state: 'SP', isPrimary: true }],
+  registrations: [{ id: 'crm-1', councilType: CouncilType.CRM, number: '12345', state: 'SP', isPrimary: true }],
   specialties: [],
   bio: null,
   createdAt: '2025-01-01T10:00:00.000Z',
@@ -169,7 +169,7 @@ describe('ScheduleList (integration)', () => {
 
       await waitFor(() => expect(screen.getByTestId('schedule-validity-uuid-1')).toBeInTheDocument())
 
-      expect(screen.getByTestId('schedule-validity-uuid-1')).toHaveTextContent('2025-01-01 → ∞')
+      expect(screen.getByTestId('schedule-validity-uuid-1')).toHaveTextContent('01/01/2025 → ∞')
     })
 
     it('shows "∞" for validFrom when validFrom is null but validUntil is set', async () => {
@@ -181,7 +181,7 @@ describe('ScheduleList (integration)', () => {
 
       await waitFor(() => expect(screen.getByTestId('schedule-validity-uuid-1')).toBeInTheDocument())
 
-      expect(screen.getByTestId('schedule-validity-uuid-1')).toHaveTextContent('∞ → 2025-12-31')
+      expect(screen.getByTestId('schedule-validity-uuid-1')).toHaveTextContent('∞ → 31/12/2025')
     })
 
     it('filters by dayOfWeek when day filter is changed', async () => {

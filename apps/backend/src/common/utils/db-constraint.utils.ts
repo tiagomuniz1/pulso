@@ -7,6 +7,9 @@ export const DB_UNIQUE_CONSTRAINTS = {
   PROFESSIONALS_USER_ID: 'professionals_user_id_clinic_active_unique',
   PATIENTS_DOCUMENT: 'patients_document_number_clinic_active_unique',
   CLINICS_SLUG: 'clinics_slug_unique',
+  TEMPLATE_CLINIC_SPECIALTY_NAME: 'UQ_template_clinic_specialty_name',
+  TEMPLATE_CLINIC_COUNCIL_TYPE_NAME: 'UQ_template_clinic_council_type_name',
+  APPOINTMENT_LABELS_CLINIC_NAME: 'UQ_appointment_labels_clinic_name',
 } as const
 
 export function isUniqueConstraintViolation(error: unknown, constraint: string): boolean {

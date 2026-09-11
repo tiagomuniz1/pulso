@@ -4,11 +4,12 @@ import { Test } from '@nestjs/testing'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import { faker } from '@faker-js/faker'
 import * as bcrypt from 'bcrypt'
-import * as cookieParser from 'cookie-parser'
-import * as request from 'supertest'
+import cookieParser from 'cookie-parser'
+import request from 'supertest'
 import { Repository } from 'typeorm'
 import { UserRole } from '@app/shared'
 import { AppModule } from '../../../app.module'
+import { CacheService } from '../../../cache/cache.service'
 import { Clinic } from '../../clinics/entities/clinic.entity'
 import { User } from '../../users/entities/user.entity'
 import { RefreshToken } from '../entities/refresh-token.entity'
@@ -50,6 +51,7 @@ describe('AuthController (integration)', () => {
   let userRepository: Repository<User>
   let clinicRepository: Repository<Clinic>
   let refreshTokenRepository: Repository<RefreshToken>
+  let cacheService: CacheService
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
@@ -71,6 +73,7 @@ describe('AuthController (integration)', () => {
     userRepository = module.get(getRepositoryToken(User))
     clinicRepository = module.get(getRepositoryToken(Clinic))
     refreshTokenRepository = module.get(getRepositoryToken(RefreshToken))
+    cacheService = module.get(CacheService)
   })
 
   beforeEach(async () => {
@@ -80,6 +83,12 @@ describe('AuthController (integration)', () => {
   })
 
   afterEach(async () => {
+    // As tabelas somem, mas o contador de tentativas de login vive no Redis, que
+    // é compartilhado e não tem schema `test`. Sem limpar, a execução seguinte
+    // herda a conta bloqueada e o login responde "credenciais inválidas" antes
+    // de chegar na checagem que o teste quer exercer.
+    await cacheService.delByPattern('login-attempts:*')
+
     await refreshTokenRepository.query('DELETE FROM test.schedules')
     await refreshTokenRepository.query('DELETE FROM test.professional_specialties')
     await refreshTokenRepository.query('DELETE FROM test.professionals')
@@ -457,6 +466,43 @@ describe('AuthController (integration)', () => {
         .post('/auth/refresh')
         .set('Cookie', 'refresh_token=not.a.valid.jwt')
         .expect(401)
+    })
+
+    // Um refresh que falha encerra a sessão, e os cookies vão junto. Deixá-los
+    // para trás produzia um loop: o cliente ia para /login, a página de login
+    // via o access_token ainda presente e devolvia para o dashboard, que
+    // chamava a API, tomava 401 e recomeçava. Os cookies são httpOnly — o
+    // cliente não consegue apagá-los sozinho.
+    it('clears both session cookies when the refresh token is rejected', async () => {
+      const user = await createTestUser()
+      const { refreshToken } = await loginAndExtractTokens(user.email)
+
+      await request(app.getHttpServer())
+        .post('/auth/refresh')
+        .set('Cookie', `refresh_token=${refreshToken}`)
+
+      const { headers } = await request(app.getHttpServer())
+        .post('/auth/refresh')
+        .set('Cookie', `refresh_token=${refreshToken}`)
+        .expect(401)
+
+      const cookies = Array.isArray(headers['set-cookie']) ? headers['set-cookie'] : [headers['set-cookie']]
+      const cleared = cookies.filter((c: string) => c?.includes('Expires=Thu, 01 Jan 1970'))
+
+      expect(cleared.some((c: string) => c.startsWith('access_token='))).toBe(true)
+      expect(cleared.some((c: string) => c.startsWith('refresh_token='))).toBe(true)
+    })
+
+    it('clears both session cookies when no refresh_token cookie is present', async () => {
+      const { headers } = await request(app.getHttpServer())
+        .post('/auth/refresh')
+        .expect(401)
+
+      const cookies = Array.isArray(headers['set-cookie']) ? headers['set-cookie'] : [headers['set-cookie']]
+      const cleared = cookies.filter((c: string) => c?.includes('Expires=Thu, 01 Jan 1970'))
+
+      expect(cleared.some((c: string) => c.startsWith('access_token='))).toBe(true)
+      expect(cleared.some((c: string) => c.startsWith('refresh_token='))).toBe(true)
     })
 
     it('returns 401 when no refresh_token cookie is present', async () => {

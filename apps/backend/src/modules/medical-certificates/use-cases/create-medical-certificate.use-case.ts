@@ -68,12 +68,15 @@ export class CreateMedicalCertificateUseCase extends BaseUseCase {
     const appointment = await this.appointmentsRepository.findById(dto.appointmentId, clinicId)
     if (!appointment) throw new NotFoundException('Appointment not found')
 
-    let professionalForRbac = null
-    if (currentUser.role === UserRole.PROFESSIONAL) {
-      professionalForRbac = await this.professionalsRepository.findByUserId(currentUser.id, clinicId)
-      if (!professionalForRbac || professionalForRbac.id !== appointment.professionalId) {
-        throw new ForbiddenException('Insufficient permissions')
-      }
+    // Exercer vem da ficha de profissional, não do cargo: um ADMIN que também
+    // atende emite normalmente, um ADMIN sem ficha não emite nada. E emitir
+    // exige ser o profissional DA CONSULTA para todo mundo — o documento sai com
+    // nome, conselho e registro de quem assina, então emitir sobre consulta
+    // alheia poria o registro de uma pessoa num documento que ela não redigiu.
+    // (A receita acrescenta o QR verificável; aqui não há, e a regra vale igual.)
+    const professional = await this.professionalsRepository.findByUserId(currentUser.id, clinicId)
+    if (!professional || professional.id !== appointment.professionalId) {
+      throw new ForbiddenException('Insufficient permissions')
     }
 
     if (appointment.status === AppointmentStatus.CANCELLED) {
@@ -81,9 +84,6 @@ export class CreateMedicalCertificateUseCase extends BaseUseCase {
     }
 
     const clinic = await this.findClinicByIdUseCase.execute(clinicId)
-
-    const professional = professionalForRbac ?? (await this.professionalsRepository.findById(appointment.professionalId, clinicId))
-    if (!professional) throw new NotFoundException('Professional not found')
 
     const { councilType, registrationNumber, registryNumber, specialtyName } = resolveProfessionalSigningIdentity(
       professional,

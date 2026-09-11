@@ -1,5 +1,5 @@
-import { ConflictException, ForbiddenException, NotFoundException, UnprocessableEntityException } from '@nestjs/common'
-import { DataSource } from 'typeorm'
+import { ConflictException, UnprocessableEntityException } from '@nestjs/common'
+import { DataSource, QueryFailedError } from 'typeorm'
 import { faker } from '@faker-js/faker'
 import {
   CouncilType,
@@ -7,19 +7,25 @@ import {
   MedicalRecordFieldType,
   UserRole,
 } from '@app/shared'
+import { DB_UNIQUE_CONSTRAINTS } from '../../../common/utils/db-constraint.utils'
 import { CacheService } from '../../../cache/cache.service'
 import { ICurrentUser } from '../../auth/types/current-user.type'
 import { IClinicSpecialtiesRepository } from '../../clinic-specialties/repositories/clinic-specialties.repository.interface'
 import { ISpecialtiesRepository } from '../../specialties/repositories/specialties.repository.interface'
 import { IMedicalRecordCanonicalFieldsRepository } from '../../medical-record-canonical-fields/repositories/medical-record-canonical-fields.repository.interface'
-import { IProfessionalsRepository } from '../../professionals/repositories/professionals.repository.interface'
 import { IMedicalRecordTemplatesRepository } from '../repositories/medical-record-templates.repository.interface'
 import { CreateMedicalRecordTemplateUseCase } from '../use-cases/create-medical-record-template.use-case'
+
+function makeUniqueViolation(constraint: string): QueryFailedError {
+  const error = new QueryFailedError('INSERT', [], new Error())
+  ;(error as any).code = '23505'
+  ;(error as any).constraint = constraint
+  return error
+}
 
 const mockTemplatesRepository: jest.Mocked<IMedicalRecordTemplatesRepository> = {
   findAll: jest.fn(),
   findById: jest.fn(),
-  findByClinicAndSpecialty: jest.fn(),
   create: jest.fn(),
   update: jest.fn(),
   delete: jest.fn(),
@@ -36,10 +42,6 @@ const mockSpecialtiesRepository = {
 const mockCanonicalFieldsRepository = {
   findByCanonicalKey: jest.fn(),
 } as unknown as jest.Mocked<IMedicalRecordCanonicalFieldsRepository>
-
-const mockProfessionalsRepository = {
-  findByUserId: jest.fn(),
-} as unknown as jest.Mocked<IProfessionalsRepository>
 
 const mockCacheService = {
   delByPattern: jest.fn(),
@@ -91,11 +93,9 @@ describe('CreateMedicalRecordTemplateUseCase', () => {
       mockClinicSpecialtiesRepository,
       mockSpecialtiesRepository,
       mockCanonicalFieldsRepository,
-      mockProfessionalsRepository,
       mockCacheService,
     )
     mockClinicSpecialtiesRepository.findByClinicAndSpecialty.mockResolvedValue({ id: 'cs-1' } as any)
-    mockTemplatesRepository.findByClinicAndSpecialty.mockResolvedValue(null)
     mockSpecialtiesRepository.findById.mockResolvedValue({ id: 'spec-1', name: 'Cardiologia' } as any)
     mockCacheService.delByPattern.mockResolvedValue(undefined)
   })
@@ -115,11 +115,32 @@ describe('CreateMedicalRecordTemplateUseCase', () => {
     expect(mockTemplatesRepository.create).not.toHaveBeenCalled()
   })
 
-  it('throws when a template already exists for the specialty', async () => {
-    mockTemplatesRepository.findByClinicAndSpecialty.mockResolvedValue(makeTemplate() as any)
+  // A clínica passou a poder ter "Primeira consulta", "Retorno" e "Pré-natal" na
+  // mesma especialidade — antes o segundo caía em 409.
+  it('creates a second template for a specialty that already has one', async () => {
+    mockTemplatesRepository.create.mockImplementation((data: any) =>
+      Promise.resolve(makeTemplate({ ...data }) as any),
+    )
+
+    const result = await useCase.execute({ ...baseDto, name: 'Retorno' }, currentUser)
+
+    expect(mockTemplatesRepository.create).toHaveBeenCalledTimes(1)
+    expect(result.name).toBe('Retorno')
+  })
+
+  it('throws Conflict when the name is already taken within the specialty', async () => {
+    mockTemplatesRepository.create.mockRejectedValue(
+      makeUniqueViolation(DB_UNIQUE_CONSTRAINTS.TEMPLATE_CLINIC_SPECIALTY_NAME),
+    )
 
     await expect(useCase.execute(baseDto, currentUser)).rejects.toThrow(ConflictException)
-    expect(mockTemplatesRepository.create).not.toHaveBeenCalled()
+  })
+
+  it('rethrows an unrelated database error untouched', async () => {
+    const boom = new Error('connection reset')
+    mockTemplatesRepository.create.mockRejectedValue(boom)
+
+    await expect(useCase.execute(baseDto, currentUser)).rejects.toThrow(boom)
   })
 
   it('creates a generalist template without checking a clinic-specialty link', async () => {
@@ -133,11 +154,6 @@ describe('CreateMedicalRecordTemplateUseCase', () => {
     )
 
     expect(mockClinicSpecialtiesRepository.findByClinicAndSpecialty).not.toHaveBeenCalled()
-    expect(mockTemplatesRepository.findByClinicAndSpecialty).toHaveBeenCalledWith(
-      clinicId,
-      null,
-      CouncilType.CRM,
-    )
     const createArg = mockTemplatesRepository.create.mock.calls[0][0] as any
     expect(createArg.specialtyId).toBeNull()
     expect(createArg.councilType).toBe(CouncilType.CRM)
@@ -155,25 +171,33 @@ describe('CreateMedicalRecordTemplateUseCase', () => {
       currentUser,
     )
 
-    expect(mockTemplatesRepository.findByClinicAndSpecialty).toHaveBeenCalledWith(
-      clinicId,
-      null,
-      CouncilType.CRN,
-    )
     const createArg = mockTemplatesRepository.create.mock.calls[0][0] as any
     expect(createArg.councilType).toBe(CouncilType.CRN)
     expect(result.councilType).toBe(CouncilType.CRN)
   })
 
-  it('throws Conflict when a generalist template already exists for the clinic', async () => {
-    mockTemplatesRepository.findByClinicAndSpecialty.mockResolvedValue(
-      makeTemplate({ specialtyId: null }) as any,
+  it('creates a second generalist template for the same profession', async () => {
+    mockTemplatesRepository.create.mockImplementation((data: any) =>
+      Promise.resolve(makeTemplate({ ...data }) as any),
+    )
+
+    const result = await useCase.execute(
+      { name: 'Outro clínico geral', fields: [freeField] },
+      currentUser,
+    )
+
+    expect(result.specialtyId).toBeNull()
+    expect(result.councilType).toBe(CouncilType.CRM)
+  })
+
+  it('throws Conflict when the name is already taken within the profession', async () => {
+    mockTemplatesRepository.create.mockRejectedValue(
+      makeUniqueViolation(DB_UNIQUE_CONSTRAINTS.TEMPLATE_CLINIC_COUNCIL_TYPE_NAME),
     )
 
     await expect(
-      useCase.execute({ name: 'Outro clínico geral', fields: [freeField] }, currentUser),
+      useCase.execute({ name: 'Clínico geral', fields: [freeField] }, currentUser),
     ).rejects.toThrow(ConflictException)
-    expect(mockTemplatesRepository.create).not.toHaveBeenCalled()
   })
 
   it('generates field keys and ignores any client-provided key', async () => {
@@ -419,99 +443,8 @@ describe('CreateMedicalRecordTemplateUseCase', () => {
     })
   })
 
-  describe('PROFESSIONAL', () => {
-    beforeEach(() => {
-      mockTemplatesRepository.create.mockImplementation((data: any) =>
-        Promise.resolve(makeTemplate({ ...data }) as any),
-      )
-    })
-
-    it('throws when the professional record is not found', async () => {
-      mockProfessionalsRepository.findByUserId.mockResolvedValue(null)
-
-      await expect(useCase.execute(baseDto, professionalCurrentUser)).rejects.toThrow(
-        NotFoundException,
-      )
-      expect(mockTemplatesRepository.create).not.toHaveBeenCalled()
-    })
-
-    it('CRM professional creates a template for their own specialty', async () => {
-      mockProfessionalsRepository.findByUserId.mockResolvedValue(makeProfessional() as any)
-
-      const result = await useCase.execute(baseDto, professionalCurrentUser)
-
-      expect(mockTemplatesRepository.findByClinicAndSpecialty).toHaveBeenCalledWith(
-        clinicId,
-        'spec-1',
-        null,
-      )
-      expect(result.specialtyId).toBe('spec-1')
-    })
-
-    it('CRM professional is rejected when the specialty is not their own', async () => {
-      mockProfessionalsRepository.findByUserId.mockResolvedValue(
-        makeProfessional({ professionalSpecialties: [{ specialtyId: 'other-spec' }] }) as any,
-      )
-
-      await expect(useCase.execute(baseDto, professionalCurrentUser)).rejects.toThrow(
-        ForbiddenException,
-      )
-      expect(mockTemplatesRepository.create).not.toHaveBeenCalled()
-    })
-
-    it('CRM professional without a specialtyId targets the clinic CRM-generalist template', async () => {
-      mockProfessionalsRepository.findByUserId.mockResolvedValue(makeProfessional() as any)
-
-      const result = await useCase.execute(
-        { name: 'Prontuário geral', fields: [freeField] },
-        professionalCurrentUser,
-      )
-
-      expect(mockTemplatesRepository.findByClinicAndSpecialty).toHaveBeenCalledWith(
-        clinicId,
-        null,
-        CouncilType.CRM,
-      )
-      const createArg = mockTemplatesRepository.create.mock.calls[0][0] as any
-      expect(createArg.councilType).toBe(CouncilType.CRM)
-      expect(result.councilType).toBe(CouncilType.CRM)
-    })
-
-    it('non-CRM professional creates a template scoped to their own profession', async () => {
-      mockProfessionalsRepository.findByUserId.mockResolvedValue(
-        makeProfessional({
-          registrations: [{ id: 'reg-1', councilType: CouncilType.CRN, isPrimary: true }],
-          professionalSpecialties: [],
-        }) as any,
-      )
-
-      const result = await useCase.execute(
-        { name: 'Prontuário de Nutrição', fields: [freeField] },
-        professionalCurrentUser,
-      )
-
-      expect(mockTemplatesRepository.findByClinicAndSpecialty).toHaveBeenCalledWith(
-        clinicId,
-        null,
-        CouncilType.CRN,
-      )
-      const createArg = mockTemplatesRepository.create.mock.calls[0][0] as any
-      expect(createArg.specialtyId).toBeNull()
-      expect(createArg.councilType).toBe(CouncilType.CRN)
-      expect(result.councilType).toBe(CouncilType.CRN)
-    })
-
-    it('non-CRM professional is rejected when a specialtyId is provided', async () => {
-      mockProfessionalsRepository.findByUserId.mockResolvedValue(
-        makeProfessional({
-          registrations: [{ id: 'reg-1', councilType: CouncilType.CRN, isPrimary: true }],
-        }) as any,
-      )
-
-      await expect(useCase.execute(baseDto, professionalCurrentUser)).rejects.toThrow(
-        UnprocessableEntityException,
-      )
-      expect(mockTemplatesRepository.create).not.toHaveBeenCalled()
-    })
-  })
+  // O bloco 'PROFESSIONAL' saiu junto com o comportamento: modelo de prontuário
+  // é da clínica (a tabela não tem `professional_id`), então criar é gestão do
+  // ADMIN. A rota rejeita PROFESSIONAL — coberto em
+  // medical-record-templates.controller.spec.ts e na integração.
 })
