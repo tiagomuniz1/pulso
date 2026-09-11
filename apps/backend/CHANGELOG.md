@@ -1,5 +1,18 @@
 # Changelog — Backend
 
+## [1.17.0] - 2026-09-11
+
+### Changed
+- **O canal dos lembretes de consulta passa de SMS para WhatsApp (Twilio).** A AWS negou SMS nesta conta. O pipeline não muda — cron a cada 10 min, janela de 24h e 3h antes, dedup à prova de corrida, lock distribuído e tabela de tracking continuam iguais; troca o adapter de envio e a configuração
+- `AwsSmsAdapter`/`ISmsAdapter` dão lugar a `TwilioWhatsAppAdapter`/`IWhatsAppReminderAdapter`, que envia um **template aprovado** (`contentSid` + variáveis posicionais) para `whatsapp:+E164`, com circuit breaker
+- Config: saem as `AWS_SMS_*`, entram `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` (SecureString), `TWILIO_WHATSAPP_FROM` e `TWILIO_REMINDER_CONTENT_SID`
+- Infra: removidos a policy IAM `sms-send` e os recursos Pinpoint da tentativa anterior — um `terraform apply` vai destruí-los
+- Dependências: sai `@aws-sdk/client-pinpoint-sms-voice-v2`, entra `twilio`
+
+### Notes
+- **Sobe desligado.** `REMINDERS_ENABLED` é `false` por padrão e não existe no SSM de produção; o tick sai na primeira linha. Enquanto as credenciais da Twilio não existirem, o adapter **libera o claim** em vez de marcá-lo como falho, então o lembrete se auto-cura num tick posterior assim que a config aparecer — nenhuma dívida se acumula
+- Runbook de ativação em `docs/REMINDERS_WHATSAPP_ACTIVATION.md`
+
 ## [1.16.0] - 2026-09-11
 
 ### Added
