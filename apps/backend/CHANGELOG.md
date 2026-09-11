@@ -1,5 +1,19 @@
 # Changelog — Backend
 
+## [1.16.0] - 2026-09-11
+
+### Added
+- **`GET /appointments/:id` diz se é a primeira vez da paciente com aquele profissional** (`isFirstVisitWithProfessional`). É primeira vez quando não há consulta anterior dos dois que não tenha sido cancelada nem faltada — **sem exigir que alguém tenha marcado "concluída"**, porque concluir é ação manual e clínica corrida esquece; exigir a marcação anunciaria "primeira vez" para quem foi atendida na semana passada
+
+### Fixed
+- **A suíte de integração usa um banco Redis só dela.** Dev e teste apontavam para a mesma instância, no mesmo banco, sem prefixo — e o id da clínica-semente é o mesmo nos dois, então `clinic:10000000-…` colidia e o teste lia a clínica de desenvolvimento. É a metade que a correção anterior de estabilidade não alcançou: lá foi tratada a poluição do banco de dados, e a do cache continuava derrubando um spec diferente a cada execução
+
+### Notes
+- O campo é **calculado na leitura, não gravado**: reatribuir ou cancelar muda quem foi a primeira vez, e uma coluna precisaria de recálculo em cascata. Custa uma consulta indexada num endpoint que não é cacheado
+- A comparação é com a própria consulta, não com "hoje" — por isso a tupla `(date, start_time)`. Assim a própria consulta nunca se conta, e abrir uma consulta antiga continua dizendo a verdade sobre aquele dia
+- Vive só no DTO de detalhe. No DTO base obrigaria os dez produtores do `appointment.mapper`, e a listagem é cacheada por 30s
+- **O rótulo manual "Primeira consulta" saiu do seed de desenvolvimento** — duas coisas quase iguais na tela, e a marcada à mão erraria em silêncio
+
 ## [1.15.2] - 2026-09-10
 
 ### Fixed

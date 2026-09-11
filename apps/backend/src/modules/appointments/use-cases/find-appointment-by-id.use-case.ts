@@ -36,12 +36,14 @@ export class FindAppointmentByIdUseCase extends BaseUseCase {
       }
     }
 
-    const [professionalName, patientDetails, specialtyName, seriesFutureCount] = await Promise.all([
-      this.fetchProfessionalName(appointment.professionalId),
-      this.fetchPatientDetails(appointment.patientId),
-      this.fetchSpecialtyName(appointment.specialtyId),
-      this.countStillCancellableFutureOccurrences(appointment.seriesId, appointment.date, clinicId),
-    ])
+    const [professionalName, patientDetails, specialtyName, seriesFutureCount, hasEarlierVisit] =
+      await Promise.all([
+        this.fetchProfessionalName(appointment.professionalId),
+        this.fetchPatientDetails(appointment.patientId),
+        this.fetchSpecialtyName(appointment.specialtyId),
+        this.countStillCancellableFutureOccurrences(appointment.seriesId, appointment.date, clinicId),
+        this.appointmentsRepository.hasEarlierVisitWithProfessional(appointment, clinicId),
+      ])
 
     return this.toResponse(
       appointment,
@@ -50,6 +52,7 @@ export class FindAppointmentByIdUseCase extends BaseUseCase {
       specialtyName,
       appointment.series?.createdOccurrenceCount ?? null,
       seriesFutureCount,
+      !hasEarlierVisit,
     )
   }
 
@@ -136,6 +139,7 @@ export class FindAppointmentByIdUseCase extends BaseUseCase {
     specialtyName: string | null,
     seriesTotalOccurrences: number | null,
     seriesFutureCount: number | null,
+    isFirstVisitWithProfessional: boolean,
   ): AppointmentDetailResponseDto {
     const patient: AppointmentPatientDto = patientDetails ?? {
       fullName: '',
@@ -155,6 +159,7 @@ export class FindAppointmentByIdUseCase extends BaseUseCase {
       }),
       patient,
       seriesFutureCount,
+      isFirstVisitWithProfessional,
     }
   }
 }

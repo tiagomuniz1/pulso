@@ -10,4 +10,15 @@ export class AppointmentDetailResponseDto extends AppointmentResponseDto {
    * would be wrong, as it ignores already cancelled/completed occurrences.
    */
   seriesFutureCount: number | null
+  /**
+   * Primeira vez que esta paciente é atendida por este profissional — ou seja,
+   * não há consulta anterior dos dois que não tenha sido cancelada nem faltada.
+   *
+   * Calculado na leitura, não gravado: reatribuir ou cancelar uma consulta muda
+   * quem foi a primeira vez, e uma coluna precisaria ser recalculada em cascata.
+   *
+   * Vive só no DTO de detalhe. No DTO base obrigaria os dez produtores do
+   * `appointment.mapper` a resolvê-lo, e a listagem é cacheada por 30s.
+   */
+  isFirstVisitWithProfessional: boolean
 }

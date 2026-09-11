@@ -569,6 +569,123 @@ describe('AppointmentsController (integration)', () => {
     })
   })
 
+  // A regra de "primeira vez" mora na query do repository; é aqui, contra o
+  // banco, que ela se prova. O use-case só inverte o resultado.
+  describe('GET /appointments/:id — primeira vez com o profissional', () => {
+    /** Consulta gravada direto no repo: o endpoint recusa datas passadas. */
+    const gravar = async (overrides: Record<string, unknown> = {}) =>
+      appointmentRepository.save(
+        appointmentRepository.create({
+          clinicId: SEED_CLINIC_ID,
+          professionalId,
+          patientId,
+          scheduleId,
+          date: futureDate,
+          startTime: '08:00',
+          endTime: '08:30',
+          status: AppointmentStatus.SCHEDULED,
+          reason: null,
+          cancellationReason: null,
+          ...overrides,
+        }),
+      )
+
+    const ehPrimeiraVez = async (id: string): Promise<boolean> => {
+      const { body } = await request(app.getHttpServer())
+        .get(`/appointments/${id}`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(200)
+      return body.isFirstVisitWithProfessional
+    }
+
+    it('marca a única consulta da paciente como primeira vez', async () => {
+      const consulta = await gravar()
+      expect(await ehPrimeiraVez(consulta.id)).toBe(true)
+    })
+
+    // A própria consulta não pode se contar: sem isso, concluir a primeira
+    // apagaria o selo dela — e ela foi a primeira.
+    it('continua marcando a primeira depois de concluída', async () => {
+      const consulta = await gravar({ status: AppointmentStatus.COMPLETED })
+      expect(await ehPrimeiraVez(consulta.id)).toBe(true)
+    })
+
+    it('não marca a segunda consulta com o mesmo profissional', async () => {
+      await gravar({ startTime: '08:00', endTime: '08:30' })
+      const segunda = await gravar({ startTime: '09:00', endTime: '09:30' })
+
+      expect(await ehPrimeiraVez(segunda.id)).toBe(false)
+    })
+
+    // O caso que motivou a regra: concluir é ação manual e clínica corrida
+    // esquece. Exigir a marcação anunciaria "primeira vez" para quem já foi
+    // atendida.
+    it('conta a anterior mesmo sem ninguém tê-la marcado como concluída', async () => {
+      await gravar({ startTime: '08:00', endTime: '08:30', status: AppointmentStatus.SCHEDULED })
+      const segunda = await gravar({ startTime: '09:00', endTime: '09:30' })
+
+      expect(await ehPrimeiraVez(segunda.id)).toBe(false)
+    })
+
+    it.each([
+      ['cancelada', AppointmentStatus.CANCELLED],
+      ['faltada', AppointmentStatus.NO_SHOW],
+    ])('não conta a anterior %s — ali a paciente não foi vista', async (_rotulo, status) => {
+      await gravar({ startTime: '08:00', endTime: '08:30', status })
+      const segunda = await gravar({ startTime: '09:00', endTime: '09:30' })
+
+      expect(await ehPrimeiraVez(segunda.id)).toBe(true)
+    })
+
+    // O coração da regra: é por profissional, não por clínica.
+    it('a mesma paciente é primeira vez para o outro profissional', async () => {
+      await gravar({ startTime: '08:00', endTime: '08:30' })
+      const comOutro = await gravar({
+        professionalId: otherDoctorId,
+        startTime: '09:00',
+        endTime: '09:30',
+      })
+
+      expect(await ehPrimeiraVez(comOutro.id)).toBe(true)
+    })
+
+    it('não conta consulta de outra paciente com o mesmo profissional', async () => {
+      const outraPaciente = await patientRepository.save(
+        patientRepository.create({
+          clinicId: SEED_CLINIC_ID,
+          userId: (
+            await userRepository.save(
+              userRepository.create({
+                fullName: 'Outra Paciente',
+                email: `outra.${faker.string.alphanumeric(6)}@appt.test`,
+                password: 'x',
+                role: UserRole.PATIENT,
+                clinicId: SEED_CLINIC_ID,
+              }),
+            )
+          ).id,
+          phoneNumber: '11999990000',
+          birthDate: '1990-01-01',
+          gender: PatientGender.FEMALE,
+        }),
+      )
+      await gravar({ patientId: outraPaciente.id, startTime: '08:00', endTime: '08:30' })
+      const consulta = await gravar({ startTime: '09:00', endTime: '09:30' })
+
+      expect(await ehPrimeiraVez(consulta.id)).toBe(true)
+    })
+
+    // Duas no mesmo dia se ordenam pela hora — é o que a comparação por tupla
+    // `(date, start_time)` resolve, e o que uma comparação só por data erraria.
+    it('ordena pela hora quando as duas são no mesmo dia', async () => {
+      const cedo = await gravar({ startTime: '08:00', endTime: '08:30' })
+      const tarde = await gravar({ startTime: '09:00', endTime: '09:30' })
+
+      expect(await ehPrimeiraVez(cedo.id)).toBe(true)
+      expect(await ehPrimeiraVez(tarde.id)).toBe(false)
+    })
+  })
+
   describe('GET /appointments/:id', () => {
     it('returns 200 for ADMIN viewing any appointment', async () => {
       const { body: created } = await request(app.getHttpServer())

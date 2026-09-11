@@ -27,10 +27,14 @@ import {
 import { MedicalRecord } from '../../../modules/medical-records/entities/medical-record.entity'
 import { generateFieldKey } from '../../../modules/medical-record-templates/utils/generate-field-key.util'
 
-// Ponto de partida realista de consultório, não demonstração da paleta: oito
+// Ponto de partida realista de consultório, não demonstração da paleta: sete
 // rótulos com cores distintas, para a agenda de dev abrir distinguível.
+//
+// "Primeira consulta" saiu daqui: o sistema agora deduz sozinho a primeira vez
+// da paciente com o profissional e mostra no detalhe da consulta. Um rótulo
+// manual homônimo ofereceria duas coisas quase iguais na tela — e a manual
+// erraria em silêncio quando alguém esquecesse de marcar.
 const APPOINTMENT_LABELS = [
-  { name: 'Primeira consulta', color: AppointmentLabelColor.BLUE },
   { name: 'Retorno', color: AppointmentLabelColor.GREEN },
   { name: 'Pré-natal', color: AppointmentLabelColor.ROSE },
   { name: 'Encaixe', color: AppointmentLabelColor.BRONZE },

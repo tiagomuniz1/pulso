@@ -8,6 +8,7 @@ import { APPOINTMENT_STATUS_BADGE_CLASS } from '@/lib/appointment-status'
 import { calculateAge } from '@/lib/calculate-age'
 import { formatDateToBR } from '@/lib/format-date'
 import { RecurrenceBadge } from './recurrence-badge'
+import { FirstVisitBadge } from './first-visit-badge'
 import {
   APPOINTMENT_STATUS_LABELS,
   type IAppointmentDetailModel,
@@ -142,9 +143,18 @@ export function AppointmentHeaderCard({
             {getInitials(appointment.patient.fullName)}
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-text truncate" data-testid="appointment-detail-patient-name">
-              {appointment.patient.fullName}
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-semibold text-text truncate" data-testid="appointment-detail-patient-name">
+                {appointment.patient.fullName}
+              </p>
+              {appointment.isFirstVisitWithProfessional && (
+                <FirstVisitBadge
+                  patientName={appointment.patient.fullName}
+                  professionalName={appointment.professionalName}
+                  data-testid="appointment-detail-first-visit-badge"
+                />
+              )}
+            </div>
             <p className="text-sm text-text-mute truncate">
               {genderLabel[appointment.patient.gender] ?? appointment.patient.gender}
               {' · '}
@@ -169,6 +179,16 @@ export function AppointmentHeaderCard({
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold text-text">Consulta</h1>
           {renderStatusBadge('appointment-detail-status')}
+          {/* No desktop o cabeçalho não traz bloco da paciente — o nome dela
+              vive na aba Resumo. O selo entra aqui, ao lado do status, para não
+              depender de qual aba está aberta; o `title` diz de quem é. */}
+          {appointment.isFirstVisitWithProfessional && (
+            <FirstVisitBadge
+              patientName={appointment.patient.fullName}
+              professionalName={appointment.professionalName}
+              data-testid="appointment-detail-first-visit-badge-desktop"
+            />
+          )}
         </div>
 
         <div className="flex items-center gap-2">

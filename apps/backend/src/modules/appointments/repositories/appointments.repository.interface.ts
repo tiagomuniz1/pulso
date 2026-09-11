@@ -37,6 +37,15 @@ export abstract class IAppointmentsRepository {
   abstract findBySeriesId(seriesId: string, clinicId: string): Promise<Appointment[]>
   abstract findBySeriesIdFromDate(seriesId: string, clinicId: string, fromDate: string, statuses: AppointmentStatus[], queryRunner?: QueryRunner): Promise<Appointment[]>
   abstract countBySeriesIdAfterDate(seriesId: string, clinicId: string, afterDate: string, statuses: AppointmentStatus[]): Promise<number>
+  /**
+   * Houve atendimento anterior desta paciente com este profissional?
+   *
+   * "Anterior" é em relação à própria consulta (`date`, `startTime`), não a
+   * hoje: assim o resultado é uma propriedade da consulta e não do instante em
+   * que se olha — abrir uma consulta antiga continua dizendo a verdade sobre
+   * aquele dia, e o teste não precisa congelar relógio.
+   */
+  abstract hasEarlierVisitWithProfessional(appointment: Appointment, clinicId: string): Promise<boolean>
   abstract hasFutureByScheduleId(scheduleId: string, clinicId: string): Promise<boolean>
   abstract hasFutureByProfessionalId(professionalId: string, clinicId: string): Promise<boolean>
   abstract create(data: CreateAppointmentData, queryRunner?: QueryRunner): Promise<Appointment>

@@ -19,6 +19,8 @@ export interface IAppointmentDetailModel extends IAppointmentModel {
   patient: IAppointmentPatientModel
   /** Still-cancellable occurrences after this one; null outside a series. */
   seriesFutureCount: number | null
+  /** Primeira vez que esta paciente é atendida por este profissional. */
+  isFirstVisitWithProfessional: boolean
 }
 
 export interface IAppointmentLabelRefModel {

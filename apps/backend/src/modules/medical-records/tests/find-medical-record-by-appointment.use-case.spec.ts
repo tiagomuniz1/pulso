@@ -58,6 +58,7 @@ const mockAppointmentsRepository: jest.Mocked<IAppointmentsRepository> = {
   findBySeriesId: jest.fn(),
   findBySeriesIdFromDate: jest.fn(),
   countBySeriesIdAfterDate: jest.fn(),
+  hasEarlierVisitWithProfessional: jest.fn(),
   hasFutureByScheduleId: jest.fn(),
   hasFutureByProfessionalId: jest.fn(),
   create: jest.fn(),
