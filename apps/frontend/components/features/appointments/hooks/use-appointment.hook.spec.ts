@@ -32,6 +32,7 @@ const makeModel = (): IAppointmentDetailModel => ({
   cancellationReason: null,
   label: null,
   seriesFutureCount: null,
+  isFirstVisitWithProfessional: false,
   seriesId: null,
   seriesSequence: null,
   seriesTotalOccurrences: null,

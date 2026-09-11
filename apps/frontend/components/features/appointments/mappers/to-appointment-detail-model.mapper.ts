@@ -14,5 +14,6 @@ export function toAppointmentDetailModel(dto: AppointmentDetailResponseDto): IAp
       gender: dto.patient.gender,
     },
     seriesFutureCount: dto.seriesFutureCount,
+    isFirstVisitWithProfessional: dto.isFirstVisitWithProfessional,
   }
 }

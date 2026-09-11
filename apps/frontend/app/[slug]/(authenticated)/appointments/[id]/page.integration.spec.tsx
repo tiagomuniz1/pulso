@@ -98,6 +98,7 @@ const makeAppointmentDto = (overrides: object = {}) => ({
   label: null,
   // Campos de série: null porque a consulta não pertence a nenhuma.
   seriesFutureCount: null,
+  isFirstVisitWithProfessional: false,
   seriesId: null,
   seriesSequence: null,
   seriesTotalOccurrences: null,

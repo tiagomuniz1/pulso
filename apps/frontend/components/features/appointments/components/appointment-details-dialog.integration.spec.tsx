@@ -32,6 +32,7 @@ const makeAppointmentDto = (overrides: object = {}) => ({
   reason: null,
   cancellationReason: null,
   seriesFutureCount: null,
+  isFirstVisitWithProfessional: false,
   seriesId: null,
   seriesSequence: null,
   seriesTotalOccurrences: null,
@@ -281,6 +282,47 @@ describe('AppointmentDetailsDialog (integration)', () => {
       await waitFor(() =>
         expect(mockAppointmentsService.setLabel).toHaveBeenCalledWith('appt-uuid', null),
       )
+    })
+  })
+
+  // É o modal que abre ao clicar na consulta da agenda — o ponto em que o
+  // profissional efetivamente pergunta "já atendi essa paciente?". A agenda em
+  // si não leva o selo, de propósito: a faixa do rótulo já ocupa a borda do
+  // bloco e na visão semana o nome já vem truncado.
+  describe('primeira vez com o profissional', () => {
+    it('mostra o selo colado ao nome da paciente', async () => {
+      mockAppointmentsService.getById.mockResolvedValue(
+        makeAppointmentDto({ isFirstVisitWithProfessional: true }) as never,
+      )
+      renderWithProviders(
+        <AppointmentDetailsDialog
+          appointmentId="appt-uuid"
+          isOpen
+          onClose={jest.fn()}
+          role={UserRole.ADMIN}
+        />,
+      )
+
+      const selo = await screen.findByTestId('first-visit-badge')
+      expect(selo).toHaveTextContent('Primeira vez')
+      expect(screen.getByTestId('details-patient')).toContainElement(selo)
+    })
+
+    it('não mostra o selo para paciente já atendida antes', async () => {
+      mockAppointmentsService.getById.mockResolvedValue(
+        makeAppointmentDto({ isFirstVisitWithProfessional: false }) as never,
+      )
+      renderWithProviders(
+        <AppointmentDetailsDialog
+          appointmentId="appt-uuid"
+          isOpen
+          onClose={jest.fn()}
+          role={UserRole.ADMIN}
+        />,
+      )
+
+      await screen.findByTestId('details-patient')
+      expect(screen.queryByTestId('first-visit-badge')).not.toBeInTheDocument()
     })
   })
 })

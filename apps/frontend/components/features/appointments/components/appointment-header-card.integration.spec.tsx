@@ -23,6 +23,7 @@ function makeAppointment(overrides: Partial<IAppointmentDetailModel> = {}): IApp
     cancellationReason: null,
     label: null,
     seriesFutureCount: null,
+    isFirstVisitWithProfessional: false,
   seriesId: null,
     seriesSequence: null,
     seriesTotalOccurrences: null,
@@ -191,6 +192,28 @@ describe('AppointmentHeaderCard', () => {
       renderWithProviders(<AppointmentHeaderCard {...defaultProps} />)
 
       expect(screen.queryByTestId('appointment-detail-series')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('primeira vez com o profissional', () => {
+    // Duas posições: o bloco da paciente no mobile e, no desktop, ao lado do
+    // status — porque ali o cabeçalho não traz nada sobre ela.
+    it('mostra o selo nas duas posições do cabeçalho', () => {
+      renderWithProviders(
+        <AppointmentHeaderCard {...defaultProps} appointment={makeAppointment({ isFirstVisitWithProfessional: true })} />,
+      )
+
+      expect(screen.getByTestId('appointment-detail-first-visit-badge')).toHaveTextContent('Primeira vez')
+      expect(screen.getByTestId('appointment-detail-first-visit-badge-desktop')).toBeInTheDocument()
+    })
+
+    it('não mostra nada para paciente já atendida antes', () => {
+      renderWithProviders(
+        <AppointmentHeaderCard {...defaultProps} appointment={makeAppointment({ isFirstVisitWithProfessional: false })} />,
+      )
+
+      expect(screen.queryByTestId('appointment-detail-first-visit-badge')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('appointment-detail-first-visit-badge-desktop')).not.toBeInTheDocument()
     })
   })
 })

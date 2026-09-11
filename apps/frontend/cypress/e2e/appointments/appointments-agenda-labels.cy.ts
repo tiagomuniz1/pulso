@@ -308,7 +308,7 @@ describe('Agenda — rótulos', () => {
     it('a rolagem fica na legenda e não na página', () => {
       const catalogoCheio = [
         ...labels,
-        { id: 'x1', name: 'Primeira consulta', color: 'blue', isActive: true, createdAt: '2026-01-01T10:00:00.000Z', updatedAt: '2026-01-01T10:00:00.000Z' },
+        { id: 'x1', name: 'Retorno anual', color: 'blue', isActive: true, createdAt: '2026-01-01T10:00:00.000Z', updatedAt: '2026-01-01T10:00:00.000Z' },
         { id: 'x2', name: 'Encaixe', color: 'bronze', isActive: true, createdAt: '2026-01-01T10:00:00.000Z', updatedAt: '2026-01-01T10:00:00.000Z' },
         { id: 'x3', name: 'Urgência', color: 'red', isActive: true, createdAt: '2026-01-01T10:00:00.000Z', updatedAt: '2026-01-01T10:00:00.000Z' },
         { id: 'x4', name: 'Teleconsulta', color: 'petrol', isActive: true, createdAt: '2026-01-01T10:00:00.000Z', updatedAt: '2026-01-01T10:00:00.000Z' },

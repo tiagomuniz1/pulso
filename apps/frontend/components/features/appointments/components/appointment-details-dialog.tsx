@@ -8,6 +8,7 @@ import { Alert } from '@/components/ui/molecules/alert/alert'
 import { useBasePath } from '@/lib/slug-context'
 import { cn } from '@/lib/cn'
 import { useAppointment } from '../hooks/use-appointment.hook'
+import { FirstVisitBadge } from './first-visit-badge'
 import { APPOINTMENT_STATUS_LABELS } from '../types/appointment-model.types'
 import { APPOINTMENT_STATUS_BADGE_CLASS } from '@/lib/appointment-status'
 import { formatDateToBR } from '@/lib/format-date'
@@ -82,7 +83,15 @@ export function AppointmentDetailsDialog({
 
           <dl className="grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
             <dt className="text-text/50">Paciente</dt>
-            <dd data-testid="details-patient">{appointment.patientName}</dd>
+            <dd data-testid="details-patient" className="flex flex-wrap items-center gap-2">
+              {appointment.patientName}
+              {appointment.isFirstVisitWithProfessional && (
+                <FirstVisitBadge
+                  patientName={appointment.patientName}
+                  professionalName={appointment.professionalName}
+                />
+              )}
+            </dd>
 
             <dt className="text-text/50">Profissional</dt>
             <dd data-testid="details-professional">{appointment.professionalName}</dd>

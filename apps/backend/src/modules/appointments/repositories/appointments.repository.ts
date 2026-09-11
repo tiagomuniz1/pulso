@@ -150,6 +150,49 @@ export class AppointmentsRepository implements IAppointmentsRepository {
       .getCount()
   }
 
+  /**
+   * Houve atendimento anterior desta paciente com este profissional?
+   *
+   * Duas escolhas que a assinatura não conta:
+   *
+   * **Cancelada e falta não contam.** Nas duas a paciente não foi vista, que é
+   * exatamente o que a pergunta quer saber. O resto conta — inclusive consulta
+   * passada que ninguém marcou como concluída, porque concluir é ação manual e
+   * clínica corrida esquece; exigir a marcação anunciaria "primeira vez" para
+   * quem foi atendida na semana passada.
+   *
+   * **A comparação é com a própria consulta, não com hoje.** Por isso a tupla
+   * `(date, start_time)`: duas consultas no mesmo dia se ordenam pela hora.
+   *
+   * O `id <>` é redundante com a comparação estrita — nada é anterior a si
+   * mesmo —, e fica como rede contra duas consultas gravadas no mesmo instante.
+   *
+   * Sem índice próprio: `IDX_appointments_clinic_patient_status_date` já reduz
+   * isto às consultas daquela paciente, e o resto é filtro sobre um punhado de
+   * linhas.
+   */
+  async hasEarlierVisitWithProfessional(appointment: Appointment, clinicId: string): Promise<boolean> {
+    const count = await this.repository
+      .createQueryBuilder('appointment')
+      .where('appointment.clinic_id = :clinicId', { clinicId })
+      .andWhere('appointment.patient_id = :patientId', { patientId: appointment.patientId })
+      .andWhere('appointment.professional_id = :professionalId', {
+        professionalId: appointment.professionalId,
+      })
+      .andWhere('appointment.id <> :id', { id: appointment.id })
+      .andWhere('appointment.status NOT IN (:...ignoredStatuses)', {
+        ignoredStatuses: [AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW],
+      })
+      .andWhere('(appointment.date, appointment.start_time) < (:date, :startTime)', {
+        date: appointment.date,
+        startTime: appointment.startTime,
+      })
+      .andWhere('appointment.deleted_at IS NULL')
+      .getCount()
+
+    return count > 0
+  }
+
   async hasFutureByScheduleId(scheduleId: string, clinicId: string): Promise<boolean> {
     const today = new Date().toISOString().split('T')[0]
     const count = await this.repository.count({
