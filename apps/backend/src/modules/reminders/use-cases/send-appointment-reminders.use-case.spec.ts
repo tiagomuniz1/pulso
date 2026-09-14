@@ -86,13 +86,8 @@ describe('SendAppointmentRemindersUseCase', () => {
     expect(mockWhatsAppAdapter.sendReminder).toHaveBeenCalledTimes(1)
     const arg = mockWhatsAppAdapter.sendReminder.mock.calls[0][0]
     expect(arg.toE164).toBe('+5511998877665')
-    expect(arg.variables).toEqual({
-      '1': 'Maria',
-      '2': 'Dr. Ana',
-      '3': 'Clínica X',
-      '4': '20/08',
-      '5': '14:00',
-    })
+    // Ordered: the template is positional, so position is the assertion.
+    expect(arg.variables).toEqual(['Maria', 'Dr. Ana', 'Clínica X', '20/08', '14:00'])
     expect(mockRepo.markSent).toHaveBeenCalledWith('reminder-1', 'provider-msg-1')
   })
 
@@ -127,9 +122,9 @@ describe('SendAppointmentRemindersUseCase', () => {
   })
 
   it('marks failed (and does not crash) when the WhatsApp adapter throws', async () => {
-    mockWhatsAppAdapter.sendReminder.mockRejectedValue(new Error('twilio 500'))
+    mockWhatsAppAdapter.sendReminder.mockRejectedValue(new Error('infobip 500'))
     await expect(useCase.execute(dueNow(24))).resolves.toBeUndefined()
-    expect(mockRepo.markFailed).toHaveBeenCalledWith('reminder-1', 'twilio 500')
+    expect(mockRepo.markFailed).toHaveBeenCalledWith('reminder-1', 'infobip 500')
   })
 
   it('marks failed with a stringified non-Error rejection', async () => {

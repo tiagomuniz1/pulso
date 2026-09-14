@@ -1,5 +1,23 @@
 # Changelog — Backend
 
+## [1.18.0] - 2026-09-14
+
+### Changed
+- **O provedor de WhatsApp dos lembretes passa de Twilio para Infobip.** O pipeline não muda — cron a cada 10 min, janela de 24h e 3h antes, dedup à prova de corrida, lock distribuído e tabela de tracking continuam iguais. A migração mexeu em **um arquivo de produção e uma linha de DI**, que era a aposta feita quando o adapter foi isolado
+- `TwilioWhatsAppAdapter` dá lugar a `InfobipWhatsAppAdapter`, que faz `POST /whatsapp/1/message/template` com nome do template + placeholders ordenados, em axios puro (sem SDK), com timeout e circuit breaker
+- `ISendWhatsAppReminderParams.variables` deixa de ser `Record<string, string>` com chaves `'1'`..`'5'` e passa a ser `string[]` ordenado. As chaves numeradas eram um Twilio-ism vazando para a interface neutra; o template é posicional na origem
+- Config: saem as `TWILIO_*`, entram `INFOBIP_BASE_URL`, `INFOBIP_API_KEY` (SecureString), `INFOBIP_WHATSAPP_FROM`, `INFOBIP_REMINDER_TEMPLATE_NAME` e a opcional `INFOBIP_REMINDER_TEMPLATE_LANGUAGE` (default `pt_BR` no código, para corrigir divergência de código de idioma sem deploy)
+- Dependências: sai `twilio`, e com ela sete dependências transitivas. Nada entra — `axios` e `opossum` já estavam no projeto
+
+### Fixed
+- O erro gravado na coluna `error` passa a carregar o motivo que a Infobip devolve (`requestError.serviceException.text`), em vez de só `Request failed with status code 400`. Antes a linha registrava a falha sem dizer o que havia para corrigir
+
+### Notes
+- **O adapter não faz retry, de propósito.** Envio não é idempotente: um timeout que na verdade entregou mandaria o lembrete duas vezes à paciente. A unique `(appointment_id, offset_label)` protege contra tick duplicado, não contra retry de HTTP dentro do mesmo tick. Há teste garantindo que uma falha resulta em exatamente uma chamada
+- **Continua subindo desligado.** `REMINDERS_ENABLED` é `false` por padrão; e enquanto as credenciais da Infobip não existirem o adapter **libera o claim** em vez de marcá-lo como falho, então o lembrete se auto-cura num tick posterior assim que a config aparecer
+- **Trocar de provedor não dispensa o cadastro na Meta** — conta Meta Business, número fora do WhatsApp para verificar e template aprovado são exigência da Meta, não do intermediário. O que sai de cena é o inventário de números e o A2P 10DLC, regime de SMS americano que gerou cobrança inesperada na Twilio e nada tem a ver com WhatsApp
+- Runbook de ativação atualizado em `docs/REMINDERS_WHATSAPP_ACTIVATION.md`
+
 ## [1.17.0] - 2026-09-11
 
 ### Changed
