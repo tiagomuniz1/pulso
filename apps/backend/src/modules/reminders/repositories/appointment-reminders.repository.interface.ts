@@ -8,7 +8,6 @@ import { AppointmentReminder, ReminderChannel, ReminderStatus } from '../entitie
 export interface ReminderCandidate {
   appointmentId: string
   clinicId: string
-  clinicName: string
   date: string // 'YYYY-MM-DD'
   startTime: string // 'HH:MM'
   patientName: string

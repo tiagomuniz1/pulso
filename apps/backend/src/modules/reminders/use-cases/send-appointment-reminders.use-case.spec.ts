@@ -16,7 +16,6 @@ const appointmentAt = new Date('2026-08-20T14:00:00-03:00')
 const makeCandidate = (overrides = {}) => ({
   appointmentId: 'appt-1',
   clinicId: 'clinic-1',
-  clinicName: 'Clínica X',
   date: '2026-08-20',
   startTime: '14:00',
   patientName: 'Maria Silva Souza',
@@ -87,7 +86,7 @@ describe('SendAppointmentRemindersUseCase', () => {
     const arg = mockWhatsAppAdapter.sendReminder.mock.calls[0][0]
     expect(arg.toE164).toBe('+5511998877665')
     // Ordered: the template is positional, so position is the assertion.
-    expect(arg.variables).toEqual(['Maria', 'Dr. Ana', 'Clínica X', '20/08', '14:00'])
+    expect(arg.variables).toEqual(['Maria', 'Dr. Ana', '20/08', '14:00'])
     expect(mockRepo.markSent).toHaveBeenCalledWith('reminder-1', 'provider-msg-1')
   })
 

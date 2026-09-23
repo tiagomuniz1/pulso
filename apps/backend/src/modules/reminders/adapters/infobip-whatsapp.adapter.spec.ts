@@ -21,7 +21,7 @@ const fullConfig = {
 
 const params: ISendWhatsAppReminderParams = {
   toE164: '+5511998877665',
-  variables: ['Maria', 'Dra. Ana', 'Clínica Pulso', '14/09', '09:00'],
+  variables: ['Maria', 'Dra. Ana', '14/09', '09:00'],
 }
 
 const TEMPLATE_PATH = 'https://xyz123.api.infobip.com/whatsapp/1/message/template'
@@ -76,7 +76,7 @@ describe('InfobipWhatsAppAdapter', () => {
             content: {
               templateName: 'pulso_appointment_reminder',
               templateData: {
-                body: { placeholders: ['Maria', 'Dra. Ana', 'Clínica Pulso', '14/09', '09:00'] },
+                body: { placeholders: ['Maria', 'Dra. Ana', '14/09', '09:00'] },
               },
               language: 'pt_BR',
             },

@@ -37,11 +37,19 @@ depende dele — dá para implantar dormente e ligar depois.
 
    O remetente fica em E.164 simples: `55XXXXXXXXXXX`, **sem** prefixo `whatsapp:`.
 3. **Template aprovado** (obrigatório para mensagem iniciada pela empresa): crie um
-   template **utilitário** com **5 placeholders posicionais**, na ordem exata que o
+   template **utilitário** (categoria *Utility* — *Marketing* custa várias vezes
+   mais por conversa) com **4 placeholders posicionais**, na ordem exata que o
    backend envia:
-   `{{1}}` nome do paciente · `{{2}}` profissional · `{{3}}` clínica · `{{4}}` data (DD/MM) · `{{5}}` hora (HH:MM).
-   Exemplo de corpo:
-   > `Olá, {{1}}! Lembrete da sua consulta com {{2}} na {{3}} em {{4}} às {{5}}. Dúvidas? Fale com a clínica.`
+   `{{1}}` primeiro nome do paciente · `{{2}}` profissional · `{{3}}` data (DD/MM) · `{{4}}` hora (HH:MM).
+   Corpo em produção:
+   > `Olá, {{1}}! Lembrete da sua consulta com {{2}} em {{3}} às {{4}}. Se precisar remarcar, fale com a clínica.`
+
+   **A clínica não é placeholder**: ela já é o *display name* do remetente no celular
+   da paciente. Se um dia várias clínicas dividirem o mesmo remetente, ela precisa
+   voltar — ao template e ao `buildTemplateVariables`.
+
+   Sem header, footer nem botões: cada elemento a mais é superfície de reprovação na
+   revisão da Meta, e nenhum carrega informação que o lembrete precise.
 
    Anote o **nome** do template e o **código de idioma** (`pt_BR`). Mudar a ordem ou
    a quantidade de placeholders exige mexer em `buildTemplateVariables`.
@@ -164,9 +172,13 @@ aws ssm put-parameter --profile pulso-workload --region us-east-1 --overwrite \
   agnóstico; só a implementação de `IWhatsAppReminderAdapter` (hoje
   `InfobipWhatsAppAdapter`) conhece o provedor. Um SMS de fallback no futuro seria
   outro adapter + um branch de canal.
-- O template é **posicional** (`{{1}}`..`{{5}}`) e o contrato do adapter carrega um
+- O template é **posicional** (`{{1}}`..`{{4}}`) e o contrato do adapter carrega um
   **array ordenado**: se mudar a ordem/qtde das variáveis no template, ajuste
-  `buildTemplateVariables` no `send-appointment-reminders.use-case.ts`.
+  `buildTemplateVariables` no `send-appointment-reminders.use-case.ts`. Não há
+  validação de quantidade em lugar nenhum — sobra ou falta de valor só aparece como
+  erro da Infobip no envio.
+- A consulta de candidatos **mantém o JOIN com `clinics` sem selecionar coluna dele**:
+  é ele que aplica `is_active = true` e o soft delete da clínica.
 - O adapter **não faz retry**, de propósito: envio não é idempotente, e um timeout
   que na verdade entregou mandaria o lembrete duas vezes à paciente. A unique
   `(appointment_id, offset_label)` protege contra tick duplicado, não contra retry

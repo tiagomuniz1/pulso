@@ -40,7 +40,6 @@ describe('AppointmentRemindersRepository', () => {
         {
           appointmentId: 'a1',
           clinicId: 'c1',
-          clinicName: 'Clínica',
           date: '2026-08-20',
           startTime: '14:00',
           patientName: 'Maria',
