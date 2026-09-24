@@ -1,15 +1,5 @@
 import { SubscriptionPlan } from '../enums/subscription-plan.enum'
-
-export class AddressResponseDto {
-  street!: string
-  number!: string
-  complement!: string | null
-  neighborhood!: string
-  city!: string
-  state!: string
-  zipCode!: string
-  country!: string
-}
+import { AddressResponseDto } from './address.dto'
 
 export class ClinicResponseDto {
   id!: string

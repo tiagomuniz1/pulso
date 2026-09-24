@@ -23,6 +23,7 @@ const patient: IPatientModel = {
   kinshipType: null,
   responsiblePatient: null,
   dependents: [],
+  address: null,
   createdAt: new Date('2024-01-15'),
   updatedAt: new Date('2024-01-16'),
 }
@@ -31,6 +32,59 @@ describe('PatientDetails (integration)', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     ;(useRouter as jest.Mock).mockReturnValue({ push: mockPush })
+  })
+
+  it('shows the "no address" notice when the patient has none', () => {
+    renderWithProviders(<PatientDetails patient={patient} canManage onDeleteClick={jest.fn()} />)
+
+    expect(screen.getByTestId('patient-details-no-address')).toHaveTextContent('Endereço não cadastrado.')
+    expect(screen.queryByTestId('patient-details-address')).not.toBeInTheDocument()
+  })
+
+  it('renders the address when the patient has one', () => {
+    const withAddress = {
+      ...patient,
+      address: {
+        street: 'Rua São José',
+        number: '340',
+        complement: 'Apto 42',
+        neighborhood: 'Centro',
+        city: 'Patos',
+        state: 'PB',
+        zipCode: '58700-000',
+        country: 'BR',
+      },
+    }
+
+    renderWithProviders(<PatientDetails patient={withAddress} canManage onDeleteClick={jest.fn()} />)
+
+    expect(screen.getByTestId('patient-details-address')).toBeInTheDocument()
+    expect(screen.getByTestId('patient-details-address-street')).toHaveTextContent('Rua São José, 340')
+    expect(screen.getByTestId('patient-details-address-complement')).toHaveTextContent('Apto 42')
+    expect(screen.getByTestId('patient-details-address-neighborhood')).toHaveTextContent('Centro')
+    expect(screen.getByTestId('patient-details-address-city')).toHaveTextContent('Patos — PB')
+    expect(screen.getByTestId('patient-details-address-zipcode')).toHaveTextContent('58700-000')
+    expect(screen.queryByTestId('patient-details-no-address')).not.toBeInTheDocument()
+  })
+
+  it('omits the complement row when there is none', () => {
+    const withAddress = {
+      ...patient,
+      address: {
+        street: 'Rua São José',
+        number: '340',
+        complement: null,
+        neighborhood: 'Centro',
+        city: 'Patos',
+        state: 'PB',
+        zipCode: '58700-000',
+        country: 'BR',
+      },
+    }
+
+    renderWithProviders(<PatientDetails patient={withAddress} canManage onDeleteClick={jest.fn()} />)
+
+    expect(screen.queryByTestId('patient-details-address-complement')).not.toBeInTheDocument()
   })
 
   it('renders all patient fields', () => {

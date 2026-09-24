@@ -12,11 +12,31 @@ const makeDto = () => ({
   kinshipType: null,
   responsiblePatient: null,
   dependents: [],
+  address: null,
   createdAt: '2024-01-15T10:00:00.000Z' as unknown as Date,
   updatedAt: '2024-01-16T10:00:00.000Z' as unknown as Date,
 })
 
 describe('toPatientModel', () => {
+  it('keeps address null when the DTO has none', () => {
+    expect(toPatientModel(makeDto()).address).toBeNull()
+  })
+
+  it('carries the address through untouched', () => {
+    const address = {
+      street: 'Rua São José',
+      number: '340',
+      complement: null,
+      neighborhood: 'Centro',
+      city: 'Patos',
+      state: 'PB',
+      zipCode: '58700-000',
+      country: 'BR',
+    }
+
+    expect(toPatientModel({ ...makeDto(), address }).address).toEqual(address)
+  })
+
   it('maps all fields correctly', () => {
     const model = toPatientModel(makeDto())
 

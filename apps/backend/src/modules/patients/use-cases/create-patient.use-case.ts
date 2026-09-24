@@ -10,6 +10,7 @@ import { ICurrentUser } from '../../auth/types/current-user.type'
 import { IUsersRepository } from '../../users/repositories/users.repository.interface'
 import { IPatientsRepository } from '../repositories/patients.repository.interface'
 import { Patient } from '../entities/patient.entity'
+import { PatientResponseMapper } from '../mappers/patient-response.mapper'
 
 @Injectable()
 export class CreatePatientUseCase extends BaseUseCase {
@@ -20,6 +21,7 @@ export class CreatePatientUseCase extends BaseUseCase {
     private readonly patientsRepository: IPatientsRepository,
     private readonly usersRepository: IUsersRepository,
     private readonly cacheService: CacheService,
+    private readonly patientResponseMapper: PatientResponseMapper,
   ) {
     super(dataSource)
   }
@@ -54,6 +56,7 @@ export class CreatePatientUseCase extends BaseUseCase {
       gender: dto.gender,
       responsiblePatientId: dto.responsiblePatientId ?? null,
       kinshipType: dto.kinshipType ?? null,
+      address: dto.address,
     }
 
     let patient: Patient
@@ -106,34 +109,6 @@ export class CreatePatientUseCase extends BaseUseCase {
       this.logger.warn('Cache invalidation failed', { context: CreatePatientUseCase.name })
     }
 
-    return this.toResponse(patient, responsiblePatient)
-  }
-
-  private toResponse(patient: Patient, responsiblePatient: Patient | null): PatientResponseDto {
-    return {
-      id: patient.id,
-      user: {
-        id: patient.user.id,
-        fullName: patient.user.fullName,
-        email: patient.user.email,
-        isActive: patient.user.isActive,
-      },
-      documentNumber: patient.documentNumber,
-      phoneNumber: patient.phoneNumber,
-      birthDate: patient.birthDate,
-      gender: patient.gender,
-      responsiblePatientId: patient.responsiblePatientId,
-      kinshipType: patient.kinshipType,
-      responsiblePatient: responsiblePatient
-        ? {
-            id: responsiblePatient.id,
-            fullName: responsiblePatient.user.fullName,
-            documentNumber: responsiblePatient.documentNumber,
-          }
-        : null,
-      dependents: [],
-      createdAt: patient.createdAt,
-      updatedAt: patient.updatedAt,
-    }
+    return this.patientResponseMapper.toResponse(patient, responsiblePatient)
   }
 }

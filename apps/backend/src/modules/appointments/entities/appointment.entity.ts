@@ -108,6 +108,14 @@ export class Appointment {
   @Column({ name: 'series_sequence', type: 'int', nullable: true })
   seriesSequence: number | null
 
+  // Origem externa: preenchido só por importação (ver
+  // `database/seeds/iclinic/`). Nulo em tudo que nasce pela tela.
+  @Column({ name: 'external_source', type: 'varchar', length: 20, nullable: true })
+  externalSource: string | null
+
+  @Column({ name: 'external_id', type: 'varchar', length: 64, nullable: true })
+  externalId: string | null
+
   @VersionColumn()
   version: number
 

@@ -16,6 +16,7 @@ export function toPatientModel(dto: PatientResponseDto): IPatientModel {
     kinshipType: dto.kinshipType,
     responsiblePatient: dto.responsiblePatient,
     dependents: dto.dependents,
+    address: dto.address,
     createdAt: new Date(dto.createdAt),
     updatedAt: new Date(dto.updatedAt),
   }

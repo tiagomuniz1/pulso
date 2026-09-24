@@ -1,26 +1,7 @@
 import type { SubscriptionPlan } from '@app/shared'
+import type { IAddressInput, IAddressModel } from '@/types/address.types'
 
-export interface IAddressModel {
-  street: string
-  number: string
-  complement: string | null
-  neighborhood: string
-  city: string
-  state: string
-  zipCode: string
-  country: string
-}
-
-export interface IAddressInput {
-  street: string
-  number: string
-  complement?: string | null
-  neighborhood: string
-  city: string
-  state: string
-  zipCode: string
-  country?: string
-}
+export type { IAddressInput, IAddressModel }
 
 export interface IClinicModel {
   id: string
