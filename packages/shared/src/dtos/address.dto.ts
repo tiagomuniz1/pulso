@@ -42,3 +42,19 @@ export class AddressDto {
   @Transform(({ value }) => (typeof value === 'string' ? value.toUpperCase() : 'BR'))
   country: string = 'BR'
 }
+
+/**
+ * Endereço como sai da API. Espelho de `AddressDto` sem os validators, com
+ * `complement` explicitamente anulável — as demais colunas só existem juntas
+ * (ver o sentinela `addressStreet != null` nos mappers).
+ */
+export class AddressResponseDto {
+  street!: string
+  number!: string
+  complement!: string | null
+  neighborhood!: string
+  city!: string
+  state!: string
+  zipCode!: string
+  country!: string
+}

@@ -1,4 +1,6 @@
-import { IsDateString, IsEmail, IsEnum, IsOptional, IsString, IsUUID, Matches, MaxLength, MinLength } from 'class-validator'
+import { IsDateString, IsEmail, IsEnum, IsOptional, IsString, IsUUID, Matches, MaxLength, MinLength, ValidateNested } from 'class-validator'
+import { Type } from 'class-transformer'
+import { AddressDto } from './address.dto'
 import { PatientGender } from '../enums/patient-gender.enum'
 import { KinshipType } from '../enums/kinship-type.enum'
 import { IsPastOrPresentDate } from './create-patient.dto'
@@ -40,4 +42,9 @@ export class UpdatePatientDto {
   @IsOptional()
   @IsEnum(KinshipType)
   kinshipType?: KinshipType | null
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AddressDto)
+  address?: AddressDto
 }

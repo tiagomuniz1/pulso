@@ -6,12 +6,14 @@ import { CacheService } from '../../../cache/cache.service'
 import { ICurrentUser } from '../../auth/types/current-user.type'
 import { IPatientsRepository } from '../repositories/patients.repository.interface'
 import { FindPatientByIdUseCase } from '../use-cases/find-patient-by-id.use-case'
+import { PatientResponseMapper } from '../mappers/patient-response.mapper'
 
 const mockPatientsRepository: jest.Mocked<IPatientsRepository> = {
   findAll: jest.fn(),
   findById: jest.fn(),
   findByUserId: jest.fn(),
   findByDocumentNumber: jest.fn(),
+  findByFullNameAndBirthDate: jest.fn(),
   findActiveDependents: jest.fn().mockResolvedValue([]),
   findResponsiblePatientsByIds: jest.fn().mockResolvedValue([]),
   findDependentsByResponsibleIds: jest.fn().mockResolvedValue([]),
@@ -74,6 +76,7 @@ describe('FindPatientByIdUseCase', () => {
       {} as DataSource,
       mockPatientsRepository,
       mockCacheService,
+      new PatientResponseMapper(),
     )
   })
 

@@ -2,6 +2,38 @@ import { KinshipType, PatientGender } from '@app/shared'
 import { toUpdatePatientDto } from './to-update-patient-dto.mapper'
 
 describe('toUpdatePatientDto', () => {
+  it('leaves address undefined when the input has none', () => {
+    expect(toUpdatePatientDto({ address: undefined } as never).address).toBeUndefined()
+  })
+
+  it('passes the address through and defaults the country to BR', () => {
+    const address = {
+      street: 'Rua São José',
+      number: '340',
+      complement: null,
+      neighborhood: 'Centro',
+      city: 'Patos',
+      state: 'PB',
+      zipCode: '58700-000',
+    }
+
+    expect(toUpdatePatientDto({ address } as never).address).toEqual({ ...address, country: 'BR' })
+  })
+
+  it('keeps an explicit country', () => {
+    const address = {
+      street: 'Rua São José',
+      number: '340',
+      neighborhood: 'Centro',
+      city: 'Patos',
+      state: 'PB',
+      zipCode: '58700-000',
+      country: 'PT',
+    }
+
+    expect(toUpdatePatientDto({ address } as never).address!.country).toBe('PT')
+  })
+
   it('maps all defined fields to DTO correctly', () => {
     const input = {
       fullName: 'João Atualizado',

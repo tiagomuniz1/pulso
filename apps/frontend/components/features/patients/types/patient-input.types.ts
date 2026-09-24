@@ -1,4 +1,5 @@
 import { KinshipType, PatientGender } from '@app/shared'
+import type { IAddressInput } from '@/types/address.types'
 
 export interface ICreatePatientInput {
   userId?: string
@@ -10,6 +11,7 @@ export interface ICreatePatientInput {
   gender: PatientGender
   responsiblePatientId?: string
   kinshipType?: KinshipType
+  address?: IAddressInput
 }
 
 export interface IUpdatePatientInput {
@@ -21,6 +23,7 @@ export interface IUpdatePatientInput {
   documentNumber?: string
   responsiblePatientId?: string | null
   kinshipType?: KinshipType | null
+  address?: IAddressInput
 }
 
 export interface IPatientListParams {

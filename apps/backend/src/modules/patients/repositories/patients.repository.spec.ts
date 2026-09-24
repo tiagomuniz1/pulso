@@ -417,9 +417,150 @@ describe('PatientsRepository', () => {
       expect(qrRepo.findOneOrFail).toHaveBeenCalled()
       expect(repo.save).not.toHaveBeenCalled()
     })
+
+    it('flattens the nested address into the address_* columns', async () => {
+      const saved = makePatient()
+      repo.create.mockReturnValue(saved)
+      repo.save.mockResolvedValue(saved)
+      repo.findOneOrFail.mockResolvedValue(saved)
+
+      await repository.create({
+        userId: 'user-uuid-1',
+        clinicId: 'clinic-uuid-1',
+        documentNumber: '12345678901',
+        phoneNumber: '(11) 99999-9999',
+        birthDate: '1990-05-15',
+        gender: PatientGender.FEMALE,
+        address: {
+          street: 'Rua São José',
+          number: '340',
+          complement: 'Apto 42',
+          neighborhood: 'Centro',
+          city: 'Patos',
+          state: 'PB',
+          zipCode: '58700-000',
+          country: 'BR',
+        },
+      } as any)
+
+      expect(repo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          addressStreet: 'Rua São José',
+          addressNumber: '340',
+          addressComplement: 'Apto 42',
+          addressNeighborhood: 'Centro',
+          addressCity: 'Patos',
+          addressState: 'PB',
+          addressZipCode: '58700-000',
+          addressCountry: 'BR',
+        }),
+      )
+      expect(repo.create).toHaveBeenCalledWith(expect.not.objectContaining({ address: expect.anything() }))
+    })
+
+    it('defaults country to BR and complement to null when omitted', async () => {
+      const saved = makePatient()
+      repo.create.mockReturnValue(saved)
+      repo.save.mockResolvedValue(saved)
+      repo.findOneOrFail.mockResolvedValue(saved)
+
+      await repository.create({
+        userId: 'user-uuid-1',
+        address: {
+          street: 'Rua São José',
+          number: '340',
+          neighborhood: 'Centro',
+          city: 'Patos',
+          state: 'PB',
+          zipCode: '58700-000',
+        },
+      } as any)
+
+      expect(repo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ addressComplement: null, addressCountry: 'BR' }),
+      )
+    })
+
+    it('writes no address column when no address is given', async () => {
+      const saved = makePatient()
+      repo.create.mockReturnValue(saved)
+      repo.save.mockResolvedValue(saved)
+      repo.findOneOrFail.mockResolvedValue(saved)
+
+      await repository.create({ userId: 'user-uuid-1' } as any)
+
+      expect(repo.create).toHaveBeenCalledWith(expect.not.objectContaining({ addressStreet: expect.anything() }))
+    })
+  })
+
+  describe('findByFullNameAndBirthDate', () => {
+    it('matches on clinic, birth date and case-insensitive trimmed name', async () => {
+      const patient = makePatient()
+      const qb = makeQueryBuilderMock({ getOne: patient })
+      repo.createQueryBuilder.mockReturnValue(qb as any)
+
+      const result = await repository.findByFullNameAndBirthDate('  Maria Aurea Borba ', '1991-06-05', CLINIC_ID)
+
+      expect(qb.andWhere).toHaveBeenCalledWith('patient.birth_date = :birthDate', { birthDate: '1991-06-05' })
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'LOWER(TRIM(user.full_name)) = LOWER(TRIM(:fullName))',
+        { fullName: '  Maria Aurea Borba ' },
+      )
+      expect(result).toBe(patient)
+    })
+
+    it('returns null when nobody matches', async () => {
+      repo.createQueryBuilder.mockReturnValue(makeQueryBuilderMock({ getOne: null }) as any)
+
+      expect(await repository.findByFullNameAndBirthDate('Ninguém', '1980-01-01', CLINIC_ID)).toBeNull()
+    })
   })
 
   describe('update', () => {
+    it('flattens a given address and never assigns the nested key', async () => {
+      const patient = makePatient()
+      repo.findOneOrFail.mockResolvedValue(patient)
+      repo.save.mockResolvedValue(patient)
+
+      await repository.update('uuid-1', {
+        address: {
+          street: 'Rua Manoel Torres',
+          number: '147',
+          complement: null,
+          neighborhood: 'Centro',
+          city: 'São Mamede',
+          state: 'PB',
+          zipCode: '58625-000',
+          country: 'BR',
+        },
+      } as any)
+
+      expect(patient.addressStreet).toBe('Rua Manoel Torres')
+      expect(patient.addressComplement).toBeNull()
+      expect(patient).not.toHaveProperty('address')
+    })
+
+    it('clears every address column when address is explicitly null', async () => {
+      const patient = makePatient({ addressStreet: 'Rua São José', addressCity: 'Patos' })
+      repo.findOneOrFail.mockResolvedValue(patient)
+      repo.save.mockResolvedValue(patient)
+
+      await repository.update('uuid-1', { address: null } as any)
+
+      expect(patient.addressStreet).toBeNull()
+      expect(patient.addressCity).toBeNull()
+    })
+
+    it('leaves the address untouched when the payload omits it', async () => {
+      const patient = makePatient({ addressStreet: 'Rua São José' })
+      repo.findOneOrFail.mockResolvedValue(patient)
+      repo.save.mockResolvedValue(patient)
+
+      await repository.update('uuid-1', { phoneNumber: '(83) 98640-4309' })
+
+      expect(patient.addressStreet).toBe('Rua São José')
+    })
+
     it('loads patient with user relation, merges data, and saves', async () => {
       const patient = makePatient()
       const updated = makePatient({ phoneNumber: '(11) 88888-8888' })

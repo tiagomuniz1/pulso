@@ -54,6 +54,41 @@ export class Patient {
   @Column({ name: 'kinship_type', type: 'varchar', length: 20, nullable: true })
   kinshipType: KinshipType | null
 
+  // Endereço: 8 colunas achatadas, espelhando `clinics`. O contrato da API é um
+  // objeto `address` aninhado — o achatamento vive no repositório e a remontagem
+  // no mapper de resposta. `type` explícito em todas porque são `string | null`.
+  @Column({ name: 'address_street', type: 'varchar', length: 255, nullable: true })
+  addressStreet: string | null
+
+  @Column({ name: 'address_number', type: 'varchar', length: 20, nullable: true })
+  addressNumber: string | null
+
+  @Column({ name: 'address_complement', type: 'varchar', length: 100, nullable: true })
+  addressComplement: string | null
+
+  @Column({ name: 'address_neighborhood', type: 'varchar', length: 100, nullable: true })
+  addressNeighborhood: string | null
+
+  @Column({ name: 'address_city', type: 'varchar', length: 100, nullable: true })
+  addressCity: string | null
+
+  @Column({ name: 'address_state', type: 'varchar', length: 2, nullable: true })
+  addressState: string | null
+
+  @Column({ name: 'address_zip_code', type: 'varchar', length: 9, nullable: true })
+  addressZipCode: string | null
+
+  @Column({ name: 'address_country', type: 'varchar', length: 2, nullable: true })
+  addressCountry: string | null
+
+  // Origem externa: preenchido só por importação (ver
+  // `database/seeds/iclinic/`). Nulo em tudo que nasce pela tela.
+  @Column({ name: 'external_source', type: 'varchar', length: 20, nullable: true })
+  externalSource: string | null
+
+  @Column({ name: 'external_id', type: 'varchar', length: 64, nullable: true })
+  externalId: string | null
+
   @VersionColumn()
   version: number
 

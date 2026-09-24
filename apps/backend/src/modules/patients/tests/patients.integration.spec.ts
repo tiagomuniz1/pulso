@@ -126,6 +126,18 @@ describe('PatientsController (integration)', () => {
       .send(makePayload(overrides))
   }
 
+  const validAddress = (overrides: Record<string, unknown> = {}) => ({
+    street: 'Rua Pedro Melquiades de Medeiros',
+    number: '05',
+    complement: 'Loteamento Campestre',
+    neighborhood: 'Centro',
+    city: 'São Mamede',
+    state: 'PB',
+    zipCode: '58625-000',
+    country: 'BR',
+    ...overrides,
+  })
+
   describe('POST /patients', () => {
     it('returns 201 with PatientResponseDto on success', async () => {
       const payload = makePayload()
@@ -142,6 +154,53 @@ describe('PatientsController (integration)', () => {
       expect(body.gender).toBe(PatientGender.MALE)
       expect(body.createdAt).toBeDefined()
       expect(body.updatedAt).toBeDefined()
+    })
+
+    it('returns 201 with address null when none is sent', async () => {
+      const { body } = await createPatient().expect(201)
+      expect(body.address).toBeNull()
+    })
+
+    it('persists and returns the nested address', async () => {
+      const { body } = await createPatient({ address: validAddress() }).expect(201)
+
+      expect(body.address).toEqual(validAddress())
+
+      const { body: reloaded } = await request(app.getHttpServer())
+        .get(`/patients/${body.id}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200)
+      expect(reloaded.address).toEqual(validAddress())
+    })
+
+    it('defaults country to BR and complement to null when omitted', async () => {
+      const { complement, country, ...partial } = validAddress()
+      const { body } = await createPatient({ address: partial }).expect(201)
+
+      expect(body.address.country).toBe('BR')
+      expect(body.address.complement).toBeNull()
+    })
+
+    it('uppercases the state', async () => {
+      const { body } = await createPatient({ address: validAddress({ state: 'pb' }) }).expect(201)
+      expect(body.address.state).toBe('PB')
+    })
+
+    it('returns 400 when zipCode has no mask', async () => {
+      await createPatient({ address: validAddress({ zipCode: '58625000' }) }).expect(400)
+    })
+
+    it('returns 400 when zipCode is too long', async () => {
+      await createPatient({ address: validAddress({ zipCode: '58625-0001' }) }).expect(400)
+    })
+
+    it('returns 400 when state has more than 2 characters', async () => {
+      await createPatient({ address: validAddress({ state: 'PBA' }) }).expect(400)
+    })
+
+    it('returns 400 when a required address field is missing', async () => {
+      const { city, ...incomplete } = validAddress()
+      await createPatient({ address: incomplete }).expect(400)
     })
 
     it('response never contains version or deletedAt', async () => {
@@ -340,6 +399,41 @@ describe('PatientsController (integration)', () => {
   })
 
   describe('PATCH /patients/:id', () => {
+    it('adds an address to a patient created without one', async () => {
+      const { body: created } = await createPatient().expect(201)
+
+      const { body } = await request(app.getHttpServer())
+        .patch(`/patients/${created.id}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ address: validAddress() })
+        .expect(200)
+
+      expect(body.address).toEqual(validAddress())
+    })
+
+    it('keeps the address when the payload does not mention it', async () => {
+      const { body: created } = await createPatient({ address: validAddress() }).expect(201)
+
+      const { body } = await request(app.getHttpServer())
+        .patch(`/patients/${created.id}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ phoneNumber: '(83) 98640-4309' })
+        .expect(200)
+
+      expect(body.address).toEqual(validAddress())
+    })
+
+    it('returns 400 when updating with an invalid zipCode', async () => {
+      const { body: created } = await createPatient().expect(201)
+
+      await request(app.getHttpServer())
+        .patch(`/patients/${created.id}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ address: validAddress({ zipCode: '58625000' }) })
+        .expect(400)
+    })
+
+
     it('returns 200 with updated PatientResponseDto', async () => {
       const { body: created } = await createPatient().expect(201)
       const newName = faker.person.fullName()

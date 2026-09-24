@@ -9,6 +9,13 @@ import { KinshipType, KINSHIP_TYPE_LABELS, PatientGender } from '@app/shared'
 import { Input } from '@/components/ui/atoms/input/input'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Alert } from '@/components/ui/molecules/alert/alert'
+import {
+  AddressFields,
+  EMPTY_ADDRESS,
+  partialAddressSchema,
+  toAddressInput,
+  validateOptionalAddress,
+} from '@/components/ui/molecules/address-fields/address-fields'
 import { cn } from '@/lib/cn'
 import { applyPhoneMask, formatPhone } from '@/lib/format-phone'
 import { applyCpfMask, formatCpf } from '@/lib/format-cpf'
@@ -63,6 +70,7 @@ const patientRequiredFields = {
     { message: 'Selecione um gênero válido' },
   ),
   ...dependentFields,
+  address: partialAddressSchema,
 }
 
 const baseFields = {
@@ -89,6 +97,7 @@ const createSchema = z
     }),
   ])
   .superRefine(validateDependentFields)
+  .superRefine((data, ctx) => validateOptionalAddress(data.address, ctx))
 
 const updateSchema = z
   .object({
@@ -99,8 +108,10 @@ const updateSchema = z
     documentNumber: z.string().optional(),
     gender: baseFields.gender.optional(),
     ...dependentFields,
+    address: partialAddressSchema,
   })
   .superRefine(validateDependentFields)
+  .superRefine((data, ctx) => validateOptionalAddress(data.address, ctx))
 
 type CreateFormValues = {
   userMode: 'existing' | 'new'
@@ -114,6 +125,7 @@ type CreateFormValues = {
   isDependent: boolean
   responsiblePatientId?: string
   kinshipType?: string
+  address?: z.infer<typeof partialAddressSchema>
 }
 type UpdateFormValues = z.infer<typeof updateSchema>
 
@@ -166,6 +178,7 @@ function PatientFormCreate({ isPending, globalError, onSubmit }: PatientFormCrea
       birthDate: '',
       gender: '',
       isDependent: false,
+      address: { ...EMPTY_ADDRESS },
     },
   })
 
@@ -182,6 +195,7 @@ function PatientFormCreate({ isPending, globalError, onSubmit }: PatientFormCrea
       gender: data.gender as PatientGender,
       responsiblePatientId: data.isDependent ? data.responsiblePatientId : undefined,
       kinshipType: data.isDependent ? (data.kinshipType as KinshipType) : undefined,
+      address: toAddressInput(data.address),
     }
     const input: ICreatePatientInput =
       data.userMode === 'existing'
@@ -306,6 +320,14 @@ function PatientFormCreate({ isPending, globalError, onSubmit }: PatientFormCrea
         )}
 
         <GenderSelect registerProps={register('gender')} error={errors.gender?.message} />
+
+        <AddressFields
+          register={register}
+          errors={errors.address}
+          prefix="address"
+          testIdPrefix="patient-form-address"
+        />
+
         <Button
           type="submit"
           isLoading={isPending}
@@ -448,6 +470,9 @@ function PatientFormEdit({ defaultValues, isPending, globalError, onSubmit }: Pa
       isDependent: !!defaultValues.responsiblePatientId,
       responsiblePatientId: defaultValues.responsiblePatientId ?? undefined,
       kinshipType: defaultValues.kinshipType ?? undefined,
+      address: defaultValues.address
+        ? { ...defaultValues.address, complement: defaultValues.address.complement ?? '' }
+        : { ...EMPTY_ADDRESS },
     })
   }, [defaultValues, reset])
 
@@ -459,6 +484,7 @@ function PatientFormEdit({ defaultValues, isPending, globalError, onSubmit }: Pa
       birthDate: data.birthDate || undefined,
       gender: data.gender,
       documentNumber: data.documentNumber ? data.documentNumber.replace(/\D/g, '') : undefined,
+      address: toAddressInput(data.address),
     }
 
     if (data.isDependent) {
@@ -564,6 +590,14 @@ function PatientFormEdit({ defaultValues, isPending, globalError, onSubmit }: Pa
           )}
         />
         <GenderSelect registerProps={register('gender')} error={errors.gender?.message} />
+
+        <AddressFields
+          register={register}
+          errors={errors.address}
+          prefix="address"
+          testIdPrefix="patient-form-address"
+        />
+
         <Button
           type="submit"
           isLoading={isPending}

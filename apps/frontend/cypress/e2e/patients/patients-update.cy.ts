@@ -20,6 +20,7 @@ const mockPatient = {
   kinshipType: null,
   responsiblePatient: null,
   dependents: [],
+  address: null,
   createdAt: '2024-01-15T10:00:00.000Z',
   updatedAt: '2024-01-15T10:00:00.000Z',
 }
@@ -61,6 +62,95 @@ describe('Patients Update', () => {
     cy.get('[data-testid="patient-form-phone"]').should('have.value', '(11) 99999-9999')
     cy.get('[data-testid="patient-form-document"]').should('have.value', '123.456.789-01')
     cy.get('[data-testid="patient-form-gender"]').should('have.value', mockPatient.gender)
+  })
+
+  it('pre-fills the address of a patient that has one', () => {
+    cy.intercept('GET', `${Cypress.env('API_URL')}/patients/${MOCK_PATIENT_ID}`, {
+      statusCode: 200,
+      body: {
+        ...mockPatient,
+        address: {
+          street: 'Rua Pedro Melquiades de Medeiros',
+          number: '05',
+          complement: 'Loteamento Campestre',
+          neighborhood: 'Centro',
+          city: 'São Mamede',
+          state: 'PB',
+          zipCode: '58625-000',
+          country: 'BR',
+        },
+      },
+    }).as('getPatient')
+
+    visitClinic(`/patients/${MOCK_PATIENT_ID}/edit`, mockAuthUser)
+    cy.wait('@getPatient')
+
+    cy.get('[data-testid="patient-form-address-street"]').should('have.value', 'Rua Pedro Melquiades de Medeiros')
+    cy.get('[data-testid="patient-form-address-number"]').should('have.value', '05')
+    cy.get('[data-testid="patient-form-address-complement"]').should('have.value', 'Loteamento Campestre')
+    cy.get('[data-testid="patient-form-address-city"]').should('have.value', 'São Mamede')
+    cy.get('[data-testid="patient-form-address-state"]').should('have.value', 'PB')
+    cy.get('[data-testid="patient-form-address-zipcode"]').should('have.value', '58625-000')
+  })
+
+  it('leaves the address fields empty for a patient without one', () => {
+    cy.intercept('GET', `${Cypress.env('API_URL')}/patients/${MOCK_PATIENT_ID}`, {
+      statusCode: 200,
+      body: mockPatient,
+    }).as('getPatient')
+
+    visitClinic(`/patients/${MOCK_PATIENT_ID}/edit`, mockAuthUser)
+    cy.wait('@getPatient')
+
+    cy.get('[data-testid="patient-form-address-street"]').should('have.value', '')
+    cy.get('[data-testid="patient-form-address-zipcode"]').should('have.value', '')
+  })
+
+  it('sends the address when it is added on edit', () => {
+    cy.intercept('GET', `${Cypress.env('API_URL')}/patients/${MOCK_PATIENT_ID}`, {
+      statusCode: 200,
+      body: mockPatient,
+    }).as('getPatient')
+    cy.intercept('PATCH', `${Cypress.env('API_URL')}/patients/${MOCK_PATIENT_ID}`, {
+      statusCode: 200,
+      body: mockPatient,
+    }).as('updatePatient')
+
+    visitClinic(`/patients/${MOCK_PATIENT_ID}/edit`, mockAuthUser)
+    cy.wait('@getPatient')
+
+    cy.fixture('patients').then((fixture) => {
+      cy.get('[data-testid="patient-form-address-street"]').type(fixture.newPatient.address.street)
+      cy.get('[data-testid="patient-form-address-number"]').type(fixture.newPatient.address.number)
+      cy.get('[data-testid="patient-form-address-neighborhood"]').type(fixture.newPatient.address.neighborhood)
+      cy.get('[data-testid="patient-form-address-city"]').type(fixture.newPatient.address.city)
+      cy.get('[data-testid="patient-form-address-state"]').type(fixture.newPatient.address.state)
+      cy.get('[data-testid="patient-form-address-zipcode"]').type(fixture.newPatient.address.zipCode)
+    })
+    cy.get('[data-testid="patient-form-submit"]').click()
+
+    cy.wait('@updatePatient').its('request.body.address').should('deep.include', {
+      street: 'Rua Pedro Melquiades de Medeiros',
+      number: '05',
+      city: 'São Mamede',
+      state: 'PB',
+      zipCode: '58625-000',
+      country: 'BR',
+    })
+  })
+
+  it('refuses a half-filled address on edit', () => {
+    cy.intercept('GET', `${Cypress.env('API_URL')}/patients/${MOCK_PATIENT_ID}`, {
+      statusCode: 200,
+      body: mockPatient,
+    }).as('getPatient')
+
+    visitClinic(`/patients/${MOCK_PATIENT_ID}/edit`, mockAuthUser)
+    cy.wait('@getPatient')
+
+    cy.get('[data-testid="patient-form-address-city"]').type('Patos')
+    cy.get('[data-testid="patient-form-submit"]').click()
+    cy.contains('Logradouro obrigatório').should('be.visible')
   })
 
   it('shows load error when patient does not exist', () => {

@@ -7,6 +7,7 @@ import { ICurrentUser } from '../../auth/types/current-user.type'
 import { IPatientsRepository } from '../repositories/patients.repository.interface'
 import { ListPatientsQueryDto } from '../dto/list-patients-query.dto'
 import { Patient } from '../entities/patient.entity'
+import { PatientResponseMapper } from '../mappers/patient-response.mapper'
 
 @Injectable()
 export class ListPatientsUseCase extends BaseUseCase {
@@ -16,6 +17,7 @@ export class ListPatientsUseCase extends BaseUseCase {
     dataSource: DataSource,
     private readonly patientsRepository: IPatientsRepository,
     private readonly cacheService: CacheService,
+    private readonly patientResponseMapper: PatientResponseMapper,
   ) {
     super(dataSource)
   }
@@ -59,7 +61,7 @@ export class ListPatientsUseCase extends BaseUseCase {
 
     const result: PaginatedPatientsResponseDto = {
       data: patients.map((p) =>
-        this.toResponse(
+        this.patientResponseMapper.toResponse(
           p,
           p.responsiblePatientId ? (responsibleById.get(p.responsiblePatientId) ?? null) : null,
           dependentsByResponsibleId.get(p.id) ?? [],
@@ -79,31 +81,4 @@ export class ListPatientsUseCase extends BaseUseCase {
     return result
   }
 
-  private toResponse(patient: Patient, responsiblePatient: Patient | null, dependents: Patient[]): PatientResponseDto {
-    return {
-      id: patient.id,
-      user: {
-        id: patient.user.id,
-        fullName: patient.user.fullName,
-        email: patient.user.email,
-        isActive: patient.user.isActive,
-      },
-      documentNumber: patient.documentNumber,
-      phoneNumber: patient.phoneNumber,
-      birthDate: patient.birthDate,
-      gender: patient.gender,
-      responsiblePatientId: patient.responsiblePatientId,
-      kinshipType: patient.kinshipType,
-      responsiblePatient: responsiblePatient
-        ? {
-            id: responsiblePatient.id,
-            fullName: responsiblePatient.user.fullName,
-            documentNumber: responsiblePatient.documentNumber,
-          }
-        : null,
-      dependents: dependents.map((d) => ({ id: d.id, fullName: d.user.fullName, kinshipType: d.kinshipType! })),
-      createdAt: patient.createdAt,
-      updatedAt: patient.updatedAt,
-    }
-  }
 }

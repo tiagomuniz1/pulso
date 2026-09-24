@@ -11,6 +11,7 @@ import { UpdatePatientUseCase } from './use-cases/update-patient.use-case'
 import { DeletePatientUseCase } from './use-cases/delete-patient.use-case'
 import { IPatientsRepository } from './repositories/patients.repository.interface'
 import { PatientsRepository } from './repositories/patients.repository'
+import { PatientResponseMapper } from './mappers/patient-response.mapper'
 
 @Module({
   imports: [TypeOrmModule.forFeature([Patient]), CacheModule, forwardRef(() => UsersModule)],
@@ -21,6 +22,7 @@ import { PatientsRepository } from './repositories/patients.repository'
     FindPatientByIdUseCase,
     UpdatePatientUseCase,
     DeletePatientUseCase,
+    PatientResponseMapper,
     { provide: IPatientsRepository, useClass: PatientsRepository },
   ],
   exports: [IPatientsRepository, DeletePatientUseCase],

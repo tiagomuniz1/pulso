@@ -1,9 +1,11 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common'
-import { CreatePatientDto, PaginatedPatientsResponseDto, PatientResponseDto, UpdatePatientDto, UserRole } from '@app/shared'
+import { PaginatedPatientsResponseDto, PatientResponseDto, UserRole } from '@app/shared'
 import { CurrentUser } from '../../auth/decorators/current-user.decorator'
 import { Roles } from '../../auth/decorators/roles.decorator'
 import { ICurrentUser } from '../../auth/types/current-user.type'
+import { CreatePatientRequestDto } from '../dto/create-patient-request.dto'
 import { ListPatientsQueryDto } from '../dto/list-patients-query.dto'
+import { UpdatePatientRequestDto } from '../dto/update-patient-request.dto'
 import { CreatePatientUseCase } from '../use-cases/create-patient.use-case'
 import { DeletePatientUseCase } from '../use-cases/delete-patient.use-case'
 import { FindPatientByIdUseCase } from '../use-cases/find-patient-by-id.use-case'
@@ -24,7 +26,7 @@ export class PatientsController {
   @Roles(UserRole.ADMIN)
   @HttpCode(201)
   create(
-    @Body() dto: CreatePatientDto,
+    @Body() dto: CreatePatientRequestDto,
     @CurrentUser() currentUser: ICurrentUser,
   ): Promise<PatientResponseDto> {
     return this.createPatientUseCase.execute(dto, currentUser)
@@ -52,7 +54,7 @@ export class PatientsController {
   @Roles(UserRole.ADMIN)
   update(
     @Param('id') id: string,
-    @Body() dto: UpdatePatientDto,
+    @Body() dto: UpdatePatientRequestDto,
     @CurrentUser() currentUser: ICurrentUser,
   ): Promise<PatientResponseDto> {
     return this.updatePatientUseCase.execute(id, dto, currentUser)

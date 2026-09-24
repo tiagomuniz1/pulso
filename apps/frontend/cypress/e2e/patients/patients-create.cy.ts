@@ -23,6 +23,7 @@ const mockCreatedPatient = {
   kinshipType: null,
   responsiblePatient: null,
   dependents: [],
+  address: null,
   createdAt: '2024-01-15T10:00:00.000Z',
   updatedAt: '2024-01-15T10:00:00.000Z',
 }
@@ -75,6 +76,93 @@ describe('Patients Create', () => {
     cy.wait('@createPatient')
     cy.get('[data-testid="patient-form-error"]').should('be.visible')
     cy.get('[data-testid="patient-form-error"]').should('contain', 'E-mail ou documento já cadastrado')
+  })
+
+  it('renders every address field', () => {
+    visitClinic('/patients/new', mockAuthUser)
+
+    const fields = ['street', 'number', 'complement', 'neighborhood', 'city', 'state', 'zipcode']
+    fields.forEach((field) => {
+      cy.get(`[data-testid="patient-form-address-${field}"]`).should('exist')
+    })
+  })
+
+  it('refuses a half-filled address', () => {
+    visitClinic('/patients/new', mockAuthUser)
+    cy.get('[data-testid="patient-form-address-street"]').type('Rua São José')
+    cy.get('[data-testid="patient-form-submit"]').click()
+    cy.contains('Número obrigatório').should('be.visible')
+  })
+
+  it('shows validation error when the zip code has no mask', () => {
+    visitClinic('/patients/new', mockAuthUser)
+    cy.fixture('patients').then((fixture) => {
+      cy.get('[data-testid="patient-form-address-street"]').type(fixture.newPatient.address.street)
+      cy.get('[data-testid="patient-form-address-number"]').type(fixture.newPatient.address.number)
+      cy.get('[data-testid="patient-form-address-neighborhood"]').type(fixture.newPatient.address.neighborhood)
+      cy.get('[data-testid="patient-form-address-city"]').type(fixture.newPatient.address.city)
+      cy.get('[data-testid="patient-form-address-state"]').type(fixture.newPatient.address.state)
+      cy.get('[data-testid="patient-form-address-zipcode"]').type('58625000')
+    })
+    cy.get('[data-testid="patient-form-submit"]').click()
+    cy.contains('CEP inválido. Use o formato 00000-000').should('be.visible')
+  })
+
+  it('sends the address in the create request', () => {
+    cy.intercept('POST', `${Cypress.env('API_URL')}/patients`, {
+      statusCode: 201,
+      body: mockCreatedPatient,
+    }).as('createPatient')
+
+    visitClinic('/patients/new', mockAuthUser)
+    cy.fixture('patients').then((fixture) => {
+      cy.get('[data-testid="patient-form-fullname"]').type(fixture.newPatient.fullName)
+      cy.get('[data-testid="patient-form-email"]').type(fixture.newPatient.email)
+      cy.get('[data-testid="patient-form-phone"]').type(fixture.newPatient.phone)
+      cy.get('[data-testid="patient-form-document"]').type(fixture.newPatient.documentNumber)
+      cy.get('[data-testid="patient-form-birthdate"]').type(fixture.newPatient.birthDate)
+      cy.get('[data-testid="patient-form-gender"]').select(fixture.newPatient.gender)
+
+      cy.get('[data-testid="patient-form-address-street"]').type(fixture.newPatient.address.street)
+      cy.get('[data-testid="patient-form-address-number"]').type(fixture.newPatient.address.number)
+      cy.get('[data-testid="patient-form-address-complement"]').type(fixture.newPatient.address.complement)
+      cy.get('[data-testid="patient-form-address-neighborhood"]').type(fixture.newPatient.address.neighborhood)
+      cy.get('[data-testid="patient-form-address-city"]').type(fixture.newPatient.address.city)
+      cy.get('[data-testid="patient-form-address-state"]').type(fixture.newPatient.address.state)
+      cy.get('[data-testid="patient-form-address-zipcode"]').type(fixture.newPatient.address.zipCode)
+    })
+    cy.get('[data-testid="patient-form-submit"]').click()
+
+    cy.wait('@createPatient').its('request.body.address').should('deep.equal', {
+      street: 'Rua Pedro Melquiades de Medeiros',
+      number: '05',
+      complement: 'Loteamento Campestre',
+      neighborhood: 'Centro',
+      city: 'São Mamede',
+      state: 'PB',
+      zipCode: '58625-000',
+      country: 'BR',
+    })
+  })
+
+  it('omits the address when the block is left blank', () => {
+    cy.intercept('POST', `${Cypress.env('API_URL')}/patients`, {
+      statusCode: 201,
+      body: mockCreatedPatient,
+    }).as('createPatient')
+
+    visitClinic('/patients/new', mockAuthUser)
+    cy.fixture('patients').then((fixture) => {
+      cy.get('[data-testid="patient-form-fullname"]').type(fixture.newPatient.fullName)
+      cy.get('[data-testid="patient-form-email"]').type(fixture.newPatient.email)
+      cy.get('[data-testid="patient-form-phone"]').type(fixture.newPatient.phone)
+      cy.get('[data-testid="patient-form-document"]').type(fixture.newPatient.documentNumber)
+      cy.get('[data-testid="patient-form-birthdate"]').type(fixture.newPatient.birthDate)
+      cy.get('[data-testid="patient-form-gender"]').select(fixture.newPatient.gender)
+    })
+    cy.get('[data-testid="patient-form-submit"]').click()
+
+    cy.wait('@createPatient').its('request.body').should('not.have.property', 'address')
   })
 
   it('disables submit button while request is in flight', () => {

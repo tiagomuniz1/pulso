@@ -8,6 +8,7 @@ import { ICurrentUser } from '../../auth/types/current-user.type'
 import { IUsersRepository } from '../../users/repositories/users.repository.interface'
 import { IPatientsRepository } from '../repositories/patients.repository.interface'
 import { CreatePatientUseCase } from '../use-cases/create-patient.use-case'
+import { PatientResponseMapper } from '../mappers/patient-response.mapper'
 
 function makeUniqueViolation(constraint: string): QueryFailedError {
   const error = new QueryFailedError('INSERT', [], new Error())
@@ -21,6 +22,7 @@ const mockPatientsRepository: jest.Mocked<IPatientsRepository> = {
   findById: jest.fn(),
   findByUserId: jest.fn(),
   findByDocumentNumber: jest.fn(),
+  findByFullNameAndBirthDate: jest.fn(),
   findActiveDependents: jest.fn(),
   findResponsiblePatientsByIds: jest.fn(),
   findDependentsByResponsibleIds: jest.fn(),
@@ -119,6 +121,7 @@ describe('CreatePatientUseCase', () => {
       mockPatientsRepository,
       mockUsersRepository,
       mockCacheService,
+      new PatientResponseMapper(),
     )
   })
 
