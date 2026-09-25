@@ -8,6 +8,7 @@ import { useTheme } from '@/components/features/themes/hooks/use-theme.hook'
 import { useBasePath } from '@/lib/slug-context'
 import { ClinicUploadSection } from './clinic-upload-section'
 import { ClinicSpecialtySection } from '@/components/features/clinic-specialties/components/clinic-specialty-section'
+import { ClinicNotificationChannelSection } from '@/components/features/clinic-notification-channels/components/clinic-notification-channel-section'
 import type { IClinicModel } from '../types/clinic.types'
 
 interface ClinicDetailsProps {
@@ -226,6 +227,8 @@ export function ClinicDetails({ clinic }: ClinicDetailsProps) {
       </div>
 
       <ClinicSpecialtySection clinicId={clinic.id} />
+
+      <ClinicNotificationChannelSection clinicId={clinic.id} />
     </div>
   )
 }

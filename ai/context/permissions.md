@@ -315,6 +315,26 @@ Catálogo por clínica de rótulos coloridos. Cada consulta carrega **um** rótu
 
 ---
 
+## Canais de Notificação da Clínica (`/clinics/:clinicId/notification-channels`)
+
+Quais canais a clínica pode usar para enviar notificação às pacientes. Hoje o único tipo de notificação é o **lembrete de consulta**, e o único canal é o **WhatsApp** — mas o conceito é guarda-chuva por desenho.
+
+| Ação | PLATFORM_ADMIN | ADMIN | PROFESSIONAL | USER | PATIENT |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Ver os canais habilitados | ✓ | ✓ (leitura) | ✗ | ✗ | ✗ |
+| Habilitar canal | ✓ | ✗ | ✗ | ✗ | ✗ |
+| Desabilitar canal | ✓ | ✗ | ✗ | ✗ | ✗ |
+
+> **É opt-in, e a ausência de linha é o desligado.** Uma clínica sem nenhum canal habilitado não produz candidato a lembrete — a consulta do cron faz `INNER JOIN` com esta tabela. Antes disso o envio era *cross-clinic*: ligar a flag global teria feito **toda clínica ativa** começar a mandar WhatsApp para as pacientes dela, inclusive clínicas que entrassem na plataforma depois.
+
+> **Habilitar é decisão da plataforma, não da clínica.** O ADMIN lê para saber o que está ativo para ele, mas não se autoriza — é custo e é comunicação em nome da marca. Mesma divisão de `clinic_specialties`.
+
+> **Canal fora do enum morre na borda** (`400`), antes de virar uma linha no banco que nenhum adapter sabe despachar. E canal habilitado sem adapter registrado neste build **libera o claim** em vez de falhar: uma linha ruim não derruba o tick das outras clínicas.
+
+> A flag global `REMINDERS_ENABLED` continua existindo, como freio de emergência da plataforma inteira. Ela e o opt-in por clínica são **ambos** necessários para um lembrete sair.
+
+---
+
 ## Prontuários (`/medical-records`)
 
 | Ação | ADMIN | PROFESSIONAL | USER | PATIENT |

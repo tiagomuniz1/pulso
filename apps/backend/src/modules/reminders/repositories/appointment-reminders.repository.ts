@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { AppointmentReminder, ReminderChannel, ReminderStatus } from '../entities/appointment-reminder.entity'
+import { NotificationChannel } from '@app/shared'
+import { AppointmentReminder, ReminderStatus } from '../entities/appointment-reminder.entity'
 import { IAppointmentRemindersRepository, ReminderCandidate } from './appointment-reminders.repository.interface'
 
 @Injectable()
@@ -12,11 +13,14 @@ export class AppointmentRemindersRepository implements IAppointmentRemindersRepo
   ) {}
 
   async findDueCandidates(dateFrom: string, dateTo: string): Promise<ReminderCandidate[]> {
-    // Cross-table read projection (appointments + patient/professional names).
-    // Cross-clinic (no clinic filter), only active clinics / non-deleted rows.
-    // The clinics JOIN selects no column: it exists purely to enforce is_active
-    // and the soft delete, so it stays even though the reminder text no longer
-    // names the clinic (the WhatsApp sender's display name does that).
+    // Cross-table read projection (appointments + patient/professional/clinic
+    // names), fanned out across each clinic's enabled notification channels.
+    //
+    // The JOIN with clinic_notification_channels IS the opt-in: a clinic with no
+    // enabled channel simply produces no row, and one with two produces two. No
+    // extra WHERE clause, no filtering in JS — the same shape the is_active
+    // filter already uses.
+    //
     // Raw parameterized SQL so table names are qualified with the configured
     // schema (entity-based query builders auto-qualify, raw table names do not).
     const rawSchema = (this.repository.manager.connection?.options as { schema?: string })?.schema ?? 'public'
@@ -26,6 +30,8 @@ export class AppointmentRemindersRepository implements IAppointmentRemindersRepo
     const rows: ReminderCandidate[] = await this.repository.manager.query(
       `SELECT a.id                            AS "appointmentId",
               a.clinic_id                     AS "clinicId",
+              c.name                          AS "clinicName",
+              cnc.channel                     AS "channel",
               to_char(a.date, 'YYYY-MM-DD')   AS "date",
               a.start_time                    AS "startTime",
               pu.full_name                    AS "patientName",
@@ -37,6 +43,7 @@ export class AppointmentRemindersRepository implements IAppointmentRemindersRepo
        INNER JOIN ${schema}.professionals d ON d.id = a.professional_id  AND d.deleted_at IS NULL
        INNER JOIN ${schema}.users du        ON du.id = d.user_id         AND du.deleted_at IS NULL
        INNER JOIN ${schema}.clinics c       ON c.id = a.clinic_id        AND c.deleted_at IS NULL AND c.is_active = true
+       INNER JOIN ${schema}.clinic_notification_channels cnc ON cnc.clinic_id = a.clinic_id
        WHERE a.deleted_at IS NULL
          AND a.status IN ('scheduled', 'confirmed')
          AND a.date BETWEEN $1 AND $2`,
@@ -50,7 +57,7 @@ export class AppointmentRemindersRepository implements IAppointmentRemindersRepo
     appointmentId: string,
     clinicId: string,
     offsetLabel: string,
-    channel: ReminderChannel,
+    channel: NotificationChannel,
     status: ReminderStatus,
   ): Promise<AppointmentReminder | null> {
     const result = await this.repository

@@ -1,5 +1,24 @@
 # Changelog — Backend
 
+## [1.19.0] - 2026-09-25
+
+### Added
+- **Opt-in de notificações por clínica, habilitado no backoffice.** Nova tabela `clinic_notification_channels` e endpoints `GET/POST/DELETE /clinics/:clinicId/notification-channels/:channel`. A presença da linha **é** a habilitação — sem coluna `is_enabled` e sem soft delete, no molde de `clinic_specialties`. Habilitar e desabilitar são exclusivos do PLATFORM_ADMIN; o ADMIN da clínica lê para saber o que está ativo, mas não se autoriza
+- `NotificationChannel` entra no `@app/shared` como enum, com `NOTIFICATION_CHANNELS` pareado para rótulos — o backoffice monta a lista a partir do enum, então um canal novo aparece na tela sem tocar em componente
+
+### Changed
+- **O cron de lembretes deixa de ser cross-plataforma.** A projeção de candidatos passa a fazer `INNER JOIN` com `clinic_notification_channels`, e esse JOIN **é** o opt-in: clínica sem canal habilitado não produz candidato; com dois, produz dois. Até aqui o envio varria toda clínica ativa, e ligar `REMINDERS_ENABLED` teria feito todas elas começarem a mandar WhatsApp — inclusive clínicas que entrassem depois
+- O canal deixa de ser a constante `CHANNEL = 'whatsapp'` no use-case e passa a vir do candidato. Um `NotificationChannelResolver` mapeia canal → adapter; canal sem adapter neste build **libera o claim** em vez de lançar, para uma linha ruim não derrubar o tick das outras clínicas
+- **O nome da clínica volta ao template** (`{{1}}`..`{{5}}`, template `pulso_appointment_reminder_clinic`). Ele saíra por ser redundante com o *display name* do remetente — verdade enquanto uma só clínica enviava. Com várias dividindo o mesmo número, a paciente leria "consulta com Dra. X" vinda de um negócio que não é o dela
+- `ReminderChannel = 'sms' | 'whatsapp'` sai; `'sms'` era resquício da tentativa com AWS e nenhum código de produção o usava
+
+### Fixed
+- **A unique de `appointment_reminders` passa a incluir o canal** (`appointment_id, offset_label, channel`). Sem isso o multi-canal não funciona e falha em silêncio: o envio por WhatsApp reivindicaria o slot e o segundo canal leria o claim nulo como "já processado por outra instância"
+
+### Notes
+- Uma migration, aditiva quanto à tabela nova; a troca da unique é gratuita agora porque `appointment_reminders` está vazia em produção — depois do primeiro envio deixa de ser
+- **São dois freios, e os dois precisam estar soltos** para um lembrete sair: `REMINDERS_ENABLED` (plataforma, emergência) e o canal habilitado por clínica (backoffice, decisão comercial)
+
 ## [1.18.0] - 2026-09-25
 
 ### Changed
