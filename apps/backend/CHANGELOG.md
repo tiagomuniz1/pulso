@@ -1,6 +1,6 @@
 # Changelog — Backend
 
-## [1.18.0] - 2026-09-14
+## [1.18.0] - 2026-09-25
 
 ### Changed
 - **O provedor de WhatsApp dos lembretes passa de Twilio para Infobip.** O pipeline não muda — cron a cada 10 min, janela de 24h e 3h antes, dedup à prova de corrida, lock distribuído e tabela de tracking continuam iguais. A migração mexeu em **um arquivo de produção e uma linha de DI**, que era a aposta feita quando o adapter foi isolado
@@ -10,13 +10,19 @@
 - Config: saem as `TWILIO_*`, entram `INFOBIP_BASE_URL`, `INFOBIP_API_KEY` (SecureString), `INFOBIP_WHATSAPP_FROM`, `INFOBIP_REMINDER_TEMPLATE_NAME` e a opcional `INFOBIP_REMINDER_TEMPLATE_LANGUAGE` (default `pt_BR` no código, para corrigir divergência de código de idioma sem deploy)
 - Dependências: sai `twilio`, e com ela sete dependências transitivas. Nada entra — `axios` e `opossum` já estavam no projeto
 
+### Added
+- **Endereço no cadastro de paciente.** Oito colunas `address_*` em `patients`, espelhando o desenho que `clinics` já usava: objeto `address` aninhado no contrato da API, achatado no repositório e remontado no mapper. O bloco é **tudo ou nada** — em branco passa, pela metade não. `PatientResponseMapper` foi extraído no caminho: os quatro use-cases carregavam cópias idênticas de um `toResponse` privado
+- **Importador do acervo do IClinic** (`yarn import:iclinic`). Script CLI no molde do importador da ANVISA, em transação única, com `--dry-run`. Rastreio de origem (`external_source` + `external_id`) em `patients`, `appointments` e `medical_records`, com índice único parcial — único só quando presente, para o que nasce pela tela nunca colidir, e com `clinic_id` na chave porque a mesma paciente existe legitimamente em duas clínicas
+
 ### Fixed
+- **Consulta marcada para o próprio dia da carga não é consulta passada.** `isFuture` comparava `date > today`, então o que estava agendado para hoje caía no ramo do passado e, sem prontuário casado, virava `cancelled`. Oito pacientes perderiam o horário
 - O erro gravado na coluna `error` passa a carregar o motivo que a Infobip devolve (`requestError.serviceException.text`), em vez de só `Request failed with status code 400`. Antes a linha registrava a falha sem dizer o que havia para corrigir
 
 ### Notes
 - **O adapter não faz retry, de propósito.** Envio não é idempotente: um timeout que na verdade entregou mandaria o lembrete duas vezes à paciente. A unique `(appointment_id, offset_label)` protege contra tick duplicado, não contra retry de HTTP dentro do mesmo tick. Há teste garantindo que uma falha resulta em exatamente uma chamada
 - **Continua subindo desligado.** `REMINDERS_ENABLED` é `false` por padrão; e enquanto as credenciais da Infobip não existirem o adapter **libera o claim** em vez de marcá-lo como falho, então o lembrete se auto-cura num tick posterior assim que a config aparecer
 - **Trocar de provedor não dispensa o cadastro na Meta** — conta Meta Business, número fora do WhatsApp para verificar e template aprovado são exigência da Meta, não do intermediário. O que sai de cena é o inventário de números e o A2P 10DLC, regime de SMS americano que gerou cobrança inesperada na Twilio e nada tem a ver com WhatsApp
+- **Duas migrations sobem neste release**: `add-address-to-patients` e `add-external-origin-to-imported-entities`. As duas são aditivas (colunas novas, nullable, e índices únicos parciais) — não reescrevem nem removem nada
 - Runbook de ativação atualizado em `docs/REMINDERS_WHATSAPP_ACTIVATION.md`
 
 ## [1.17.0] - 2026-09-11

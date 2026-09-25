@@ -151,6 +151,21 @@ aws ssm send-command --profile pulso-workload --region us-east-1 \
    (Infobip ainda não setado) e o lembrete sai sozinho no tick seguinte.
 3. Logs do backend (JSON): `Failed to send appointment reminder` / `Infobip WhatsApp
    not fully configured` — nunca deve aparecer telefone/CPF (só `appointmentId`).
+4. **Entrega de verdade, do lado da Infobip.** `status='sent'` na nossa tabela significa
+   só que o provedor aceitou; quem diz se chegou é o log dela:
+
+   ```bash
+   curl -s -H "Authorization: App $INFOBIP_API_KEY" \
+     "https://$INFOBIP_BASE_URL/whatsapp/2/logs" | jq '.results[0]'
+   ```
+
+   É **`/whatsapp/2/logs`** — o `/whatsapp/1/logs` da documentação devolve `404`.
+   Procure `status.name`: `DELIVERED_TO_HANDSET` é entrega confirmada no aparelho;
+   `UNDELIVERABLE_REJECTED_OPERATOR` com `error.name = EC_INVALID_TEMPLATE` é template
+   não aprovado.
+
+   > Não use `/sms/1/inbox/reports` para conferir nada: é **fila que esvazia ao ler**, e
+   > uma consulta consome a mensagem que você queria ver.
 
 ---
 
