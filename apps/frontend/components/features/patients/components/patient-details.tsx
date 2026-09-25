@@ -119,6 +119,59 @@ export function PatientDetails({ patient, canManage, onDeleteClick }: PatientDet
         </div>
       </div>
 
+      {patient.address ? (
+        <div
+          className="overflow-hidden rounded-xl border border-line bg-surface shadow-sm"
+          data-testid="patient-details-address"
+        >
+          <div className="border-b border-line px-6 py-3">
+            <span className="text-xs font-medium uppercase tracking-wider text-text-mute">Endereço</span>
+          </div>
+          <div className="grid grid-cols-1 gap-px bg-line sm:grid-cols-2">
+            <div className="bg-surface px-6 py-4">
+              <DetailRow
+                label="Logradouro"
+                value={`${patient.address.street}, ${patient.address.number}`}
+                testId="patient-details-address-street"
+              />
+            </div>
+            {patient.address.complement && (
+              <div className="bg-surface px-6 py-4">
+                <DetailRow
+                  label="Complemento"
+                  value={patient.address.complement}
+                  testId="patient-details-address-complement"
+                />
+              </div>
+            )}
+            <div className="bg-surface px-6 py-4">
+              <DetailRow
+                label="Bairro"
+                value={patient.address.neighborhood}
+                testId="patient-details-address-neighborhood"
+              />
+            </div>
+            <div className="bg-surface px-6 py-4">
+              <DetailRow
+                label="Cidade / UF"
+                value={`${patient.address.city} — ${patient.address.state}`}
+                testId="patient-details-address-city"
+              />
+            </div>
+            <div className="bg-surface px-6 py-4">
+              <DetailRow label="CEP" value={patient.address.zipCode} testId="patient-details-address-zipcode" />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          className="rounded-xl border border-line bg-surface px-6 py-4 text-sm text-text-mute"
+          data-testid="patient-details-no-address"
+        >
+          Endereço não cadastrado.
+        </div>
+      )}
+
       {patient.responsiblePatient && patient.kinshipType && (
         <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
           <div className="px-6 py-4">

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { QueryRunner, Repository, SelectQueryBuilder } from 'typeorm'
+import { AddressDto } from '@app/shared'
 import { Patient } from '../entities/patient.entity'
 import { CreatePatientData, IPatientsRepository, UpdatePatientData } from './patients.repository.interface'
 
@@ -126,6 +127,26 @@ export class PatientsRepository implements IPatientsRepository {
     return this.repository.findOneBy({ documentNumber, clinicId })
   }
 
+  /**
+   * Casamento de paciente quando o CPF não serve — é o caso de quem foi
+   * cadastrado sem documento (recém-nascido, ou ficha antiga incompleta) e
+   * reaparece numa importação. Compara o nome ignorando caixa e acentos já
+   * normalizados pelo chamador.
+   */
+  async findByFullNameAndBirthDate(
+    fullName: string,
+    birthDate: string,
+    clinicId: string,
+  ): Promise<Patient | null> {
+    return this.repository
+      .createQueryBuilder('patient')
+      .innerJoinAndSelect('patient.user', 'user')
+      .where('patient.clinic_id = :clinicId', { clinicId })
+      .andWhere('patient.birth_date = :birthDate', { birthDate })
+      .andWhere('LOWER(TRIM(user.full_name)) = LOWER(TRIM(:fullName))', { fullName })
+      .getOne()
+  }
+
   async findActiveDependents(responsiblePatientId: string, clinicId: string): Promise<Patient[]> {
     return this.findDependentsByResponsibleIds([responsiblePatientId], clinicId)
   }
@@ -152,19 +173,61 @@ export class PatientsRepository implements IPatientsRepository {
 
   async create(data: CreatePatientData, queryRunner?: QueryRunner): Promise<Patient> {
     const repo = queryRunner ? queryRunner.manager.getRepository(Patient) : this.repository
-    const saved = await repo.save(repo.create(data))
+    const { address, ...rest } = data
+    const entity = repo.create({ ...rest, ...flattenAddress(address) })
+    const saved = await repo.save(entity)
     return repo.findOneOrFail({ where: { id: saved.id }, relations: ['user'] })
   }
 
   async update(id: string, data: UpdatePatientData, queryRunner?: QueryRunner): Promise<Patient> {
     const repo = queryRunner ? queryRunner.manager.getRepository(Patient) : this.repository
     const patient = await repo.findOneOrFail({ where: { id }, relations: ['user'] })
-    Object.assign(patient, data)
+
+    // `address` é objeto aninhado no contrato e 8 colunas no banco: precisa sair
+    // do payload antes do Object.assign, senão o TypeORM tenta gravar uma coluna
+    // "address" que não existe.
+    const { address, ...rest } = data
+    Object.assign(patient, rest)
+    if (address !== undefined) Object.assign(patient, flattenAddress(address))
+
     return repo.save(patient)
   }
 
   async delete(id: string, queryRunner?: QueryRunner): Promise<void> {
     const repo = queryRunner ? queryRunner.manager.getRepository(Patient) : this.repository
     await repo.softDelete(id)
+  }
+}
+
+/**
+ * Objeto `address` do contrato → as 8 colunas `address_*`.
+ */
+function flattenAddress(address: AddressDto | null | undefined): Partial<Patient> {
+  // `undefined` é "não mexe"; `null` é "apaga o endereço". Distinguir os dois
+  // evita que um create sem endereço escreva oito nulls sem necessidade.
+  if (address === undefined) return {}
+
+  if (address === null) {
+    return {
+      addressStreet: null,
+      addressNumber: null,
+      addressComplement: null,
+      addressNeighborhood: null,
+      addressCity: null,
+      addressState: null,
+      addressZipCode: null,
+      addressCountry: null,
+    }
+  }
+
+  return {
+    addressStreet: address.street,
+    addressNumber: address.number,
+    addressComplement: address.complement ?? null,
+    addressNeighborhood: address.neighborhood,
+    addressCity: address.city,
+    addressState: address.state,
+    addressZipCode: address.zipCode,
+    addressCountry: address.country ?? 'BR',
   }
 }

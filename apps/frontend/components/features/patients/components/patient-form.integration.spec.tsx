@@ -30,6 +30,7 @@ const mockTitulares = [
     kinshipType: null,
     responsiblePatient: null,
     dependents: [],
+    address: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -47,6 +48,7 @@ const existingPatient: IPatientModel = {
   kinshipType: null,
   responsiblePatient: null,
   dependents: [],
+  address: null,
   createdAt: new Date('2024-01-15'),
   updatedAt: new Date('2024-01-16'),
 }
@@ -142,6 +144,117 @@ describe('PatientForm (integration) — create mode', () => {
         expect.any(Function),
       )
     })
+  })
+
+  it('renders the address fields', () => {
+    renderWithProviders(<PatientForm mode="create" isPending={false} onSubmit={jest.fn()} />)
+
+    for (const field of ['street', 'number', 'complement', 'neighborhood', 'city', 'state', 'zipcode']) {
+      expect(screen.getByTestId(`patient-form-address-${field}`)).toBeInTheDocument()
+    }
+  })
+
+  it('submits without an address when the block is left blank', async () => {
+    const onSubmit = jest.fn()
+
+    renderWithProviders(<PatientForm mode="create" isPending={false} onSubmit={onSubmit} />)
+
+    await userEvent.type(screen.getByTestId('patient-form-fullname'), 'Maria Oliveira')
+    await userEvent.type(screen.getByTestId('patient-form-email'), 'maria@example.com')
+    await userEvent.type(screen.getByTestId('patient-form-phone'), '(11) 98765-4321')
+    await userEvent.type(screen.getByTestId('patient-form-document'), '98765432100')
+    await userEvent.selectOptions(screen.getByTestId('patient-form-gender'), PatientGender.FEMALE)
+    await userEvent.type(screen.getByTestId('patient-form-birthdate'), '1992-08-20')
+    await userEvent.click(screen.getByTestId('patient-form-submit'))
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({ address: undefined }),
+        expect.any(Function),
+      )
+    })
+  })
+
+  it('submits the filled address', async () => {
+    const onSubmit = jest.fn()
+
+    renderWithProviders(<PatientForm mode="create" isPending={false} onSubmit={onSubmit} />)
+
+    await userEvent.type(screen.getByTestId('patient-form-fullname'), 'Maria Oliveira')
+    await userEvent.type(screen.getByTestId('patient-form-email'), 'maria@example.com')
+    await userEvent.type(screen.getByTestId('patient-form-phone'), '(11) 98765-4321')
+    await userEvent.type(screen.getByTestId('patient-form-document'), '98765432100')
+    await userEvent.selectOptions(screen.getByTestId('patient-form-gender'), PatientGender.FEMALE)
+    await userEvent.type(screen.getByTestId('patient-form-birthdate'), '1992-08-20')
+
+    await userEvent.type(screen.getByTestId('patient-form-address-street'), 'Rua São José')
+    await userEvent.type(screen.getByTestId('patient-form-address-number'), '340')
+    await userEvent.type(screen.getByTestId('patient-form-address-neighborhood'), 'Centro')
+    await userEvent.type(screen.getByTestId('patient-form-address-city'), 'Patos')
+    await userEvent.type(screen.getByTestId('patient-form-address-state'), 'pb')
+    await userEvent.type(screen.getByTestId('patient-form-address-zipcode'), '58700-000')
+    await userEvent.click(screen.getByTestId('patient-form-submit'))
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          address: {
+            street: 'Rua São José',
+            number: '340',
+            complement: null,
+            neighborhood: 'Centro',
+            city: 'Patos',
+            state: 'PB',
+            zipCode: '58700-000',
+            country: 'BR',
+          },
+        }),
+        expect.any(Function),
+      )
+    })
+  })
+
+  it('refuses a half-filled address', async () => {
+    const onSubmit = jest.fn()
+
+    renderWithProviders(<PatientForm mode="create" isPending={false} onSubmit={onSubmit} />)
+
+    await userEvent.type(screen.getByTestId('patient-form-fullname'), 'Maria Oliveira')
+    await userEvent.type(screen.getByTestId('patient-form-email'), 'maria@example.com')
+    await userEvent.type(screen.getByTestId('patient-form-phone'), '(11) 98765-4321')
+    await userEvent.type(screen.getByTestId('patient-form-document'), '98765432100')
+    await userEvent.selectOptions(screen.getByTestId('patient-form-gender'), PatientGender.FEMALE)
+    await userEvent.type(screen.getByTestId('patient-form-birthdate'), '1992-08-20')
+
+    await userEvent.type(screen.getByTestId('patient-form-address-street'), 'Rua São José')
+    await userEvent.click(screen.getByTestId('patient-form-submit'))
+
+    expect(await screen.findByText('Número obrigatório')).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('rejects an unmasked zip code', async () => {
+    const onSubmit = jest.fn()
+
+    renderWithProviders(<PatientForm mode="create" isPending={false} onSubmit={onSubmit} />)
+
+    await userEvent.type(screen.getByTestId('patient-form-fullname'), 'Maria Oliveira')
+    await userEvent.type(screen.getByTestId('patient-form-email'), 'maria@example.com')
+    await userEvent.type(screen.getByTestId('patient-form-phone'), '(11) 98765-4321')
+    await userEvent.type(screen.getByTestId('patient-form-document'), '98765432100')
+    await userEvent.selectOptions(screen.getByTestId('patient-form-gender'), PatientGender.FEMALE)
+    await userEvent.type(screen.getByTestId('patient-form-birthdate'), '1992-08-20')
+
+    await userEvent.type(screen.getByTestId('patient-form-address-street'), 'Rua São José')
+    await userEvent.type(screen.getByTestId('patient-form-address-number'), '340')
+    await userEvent.type(screen.getByTestId('patient-form-address-neighborhood'), 'Centro')
+    await userEvent.type(screen.getByTestId('patient-form-address-city'), 'Patos')
+    await userEvent.type(screen.getByTestId('patient-form-address-state'), 'PB')
+    await userEvent.type(screen.getByTestId('patient-form-address-zipcode'), '58700000')
+    await userEvent.click(screen.getByTestId('patient-form-submit'))
+
+    expect(await screen.findByText('CEP inválido. Use o formato 00000-000')).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 
   it('calls onSubmit with userId in existing user mode', async () => {
@@ -470,6 +583,78 @@ describe('PatientForm (integration) — edit mode', () => {
     expect(screen.getByTestId('patient-form-phone')).toHaveValue('(11) 99999-9999')
     expect(screen.getByTestId('patient-form-document')).toHaveValue('123.456.789-01')
     expect(screen.getByTestId('patient-form-gender')).toHaveValue(PatientGender.MALE)
+  })
+
+  it('pre-fills the address of a patient that has one', async () => {
+    const withAddress = {
+      ...existingPatient,
+      address: {
+        street: 'Rua São José',
+        number: '340',
+        complement: null,
+        neighborhood: 'Centro',
+        city: 'Patos',
+        state: 'PB',
+        zipCode: '58700-000',
+        country: 'BR',
+      },
+    }
+
+    renderWithProviders(
+      <PatientForm mode="edit" defaultValues={withAddress} isPending={false} onSubmit={jest.fn()} />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('patient-form-address-street')).toHaveValue('Rua São José')
+    })
+
+    expect(screen.getByTestId('patient-form-address-number')).toHaveValue('340')
+    expect(screen.getByTestId('patient-form-address-complement')).toHaveValue('')
+    expect(screen.getByTestId('patient-form-address-city')).toHaveValue('Patos')
+    expect(screen.getByTestId('patient-form-address-state')).toHaveValue('PB')
+    expect(screen.getByTestId('patient-form-address-zipcode')).toHaveValue('58700-000')
+  })
+
+  it('leaves the address fields empty for a patient without one', async () => {
+    renderWithProviders(
+      <PatientForm mode="edit" defaultValues={existingPatient} isPending={false} onSubmit={jest.fn()} />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('patient-form-fullname')).toHaveValue('João Silva')
+    })
+
+    expect(screen.getByTestId('patient-form-address-street')).toHaveValue('')
+    expect(screen.getByTestId('patient-form-address-zipcode')).toHaveValue('')
+  })
+
+  it('adds an address to a patient that had none', async () => {
+    const onSubmit = jest.fn()
+
+    renderWithProviders(
+      <PatientForm mode="edit" defaultValues={existingPatient} isPending={false} onSubmit={onSubmit} />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('patient-form-fullname')).toHaveValue('João Silva')
+    })
+
+    await userEvent.type(screen.getByTestId('patient-form-address-street'), 'Rua São José')
+    await userEvent.type(screen.getByTestId('patient-form-address-number'), '340')
+    await userEvent.type(screen.getByTestId('patient-form-address-neighborhood'), 'Centro')
+    await userEvent.type(screen.getByTestId('patient-form-address-city'), 'Patos')
+    await userEvent.type(screen.getByTestId('patient-form-address-state'), 'PB')
+    await userEvent.type(screen.getByTestId('patient-form-address-zipcode'), '58700-000')
+    await userEvent.click(screen.getByTestId('patient-form-submit'))
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          address: expect.objectContaining({ street: 'Rua São José', zipCode: '58700-000' }),
+        }),
+        expect.any(Function),
+      )
+    })
   })
 
   it('calls onSubmit with updated values', async () => {

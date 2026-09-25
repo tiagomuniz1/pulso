@@ -1,5 +1,6 @@
 import { PatientGender } from '../enums/patient-gender.enum'
 import { KinshipType } from '../enums/kinship-type.enum'
+import { AddressResponseDto } from './address.dto'
 
 export class PatientUserDto {
   id!: string
@@ -31,6 +32,7 @@ export class PatientResponseDto {
   kinshipType!: KinshipType | null
   responsiblePatient!: PatientResponsibleRefDto | null
   dependents!: PatientDependentRefDto[]
+  address!: AddressResponseDto | null
   createdAt!: Date
   updatedAt!: Date
 }

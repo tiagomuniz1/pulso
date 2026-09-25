@@ -14,8 +14,11 @@ import {
   ValidatorConstraint,
   ValidatorConstraintInterface,
 } from 'class-validator'
+import { Type } from 'class-transformer'
+import { ValidateNested } from 'class-validator'
 import { PatientGender } from '../enums/patient-gender.enum'
 import { KinshipType } from '../enums/kinship-type.enum'
+import { AddressDto } from './address.dto'
 
 @ValidatorConstraint({ name: 'isPastOrPresentDate', async: false })
 export class IsPastOrPresentDateConstraint implements ValidatorConstraintInterface {
@@ -79,4 +82,11 @@ export class CreatePatientDto {
   @ValidateIf(o => !!o.responsiblePatientId)
   @IsEnum(KinshipType)
   kinshipType?: KinshipType
+
+  // Opcional de propósito: a clínica cadastra muita paciente sem o endereço em
+  // mãos, e exigi-lo aqui recusaria um cadastro por falta de CEP.
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AddressDto)
+  address?: AddressDto
 }

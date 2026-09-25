@@ -2,6 +2,38 @@ import { KinshipType, PatientGender } from '@app/shared'
 import { toCreatePatientDto } from './to-create-patient-dto.mapper'
 
 describe('toCreatePatientDto', () => {
+  it('leaves address undefined when the input has none', () => {
+    expect(toCreatePatientDto({ ...input, address: undefined } as never).address).toBeUndefined()
+  })
+
+  it('passes the address through and defaults the country to BR', () => {
+    const address = {
+      street: 'Rua São José',
+      number: '340',
+      complement: null,
+      neighborhood: 'Centro',
+      city: 'Patos',
+      state: 'PB',
+      zipCode: '58700-000',
+    }
+
+    expect(toCreatePatientDto({ ...input, address } as never).address).toEqual({ ...address, country: 'BR' })
+  })
+
+  it('keeps an explicit country', () => {
+    const address = {
+      street: 'Rua São José',
+      number: '340',
+      neighborhood: 'Centro',
+      city: 'Patos',
+      state: 'PB',
+      zipCode: '58700-000',
+      country: 'PT',
+    }
+
+    expect(toCreatePatientDto({ ...input, address } as never).address!.country).toBe('PT')
+  })
+
   const input = {
     fullName: 'João Silva',
     email: 'joao@example.com',

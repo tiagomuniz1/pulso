@@ -13,6 +13,7 @@ const mockPatientsRepository: jest.Mocked<IPatientsRepository> = {
   findById: jest.fn(),
   findByUserId: jest.fn(),
   findByDocumentNumber: jest.fn(),
+  findByFullNameAndBirthDate: jest.fn(),
   findActiveDependents: jest.fn().mockResolvedValue([]),
   findResponsiblePatientsByIds: jest.fn().mockResolvedValue([]),
   findDependentsByResponsibleIds: jest.fn().mockResolvedValue([]),

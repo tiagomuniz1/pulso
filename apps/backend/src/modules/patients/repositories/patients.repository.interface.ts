@@ -1,5 +1,5 @@
 import { QueryRunner } from 'typeorm'
-import { KinshipType, PatientGender } from '@app/shared'
+import { AddressDto, KinshipType, PatientGender } from '@app/shared'
 import { Patient } from '../entities/patient.entity'
 
 export interface CreatePatientData {
@@ -11,6 +11,9 @@ export interface CreatePatientData {
   gender: PatientGender
   responsiblePatientId?: string | null
   kinshipType?: KinshipType | null
+  // Objeto aninhado como no contrato da API; o repositório é quem achata para
+  // as 8 colunas `address_*` (mesmo desenho de `clinics`).
+  address?: AddressDto | null
 }
 
 export interface UpdatePatientData {
@@ -20,6 +23,7 @@ export interface UpdatePatientData {
   documentNumber?: string | null
   responsiblePatientId?: string | null
   kinshipType?: KinshipType | null
+  address?: AddressDto | null
 }
 
 export abstract class IPatientsRepository {
@@ -34,6 +38,11 @@ export abstract class IPatientsRepository {
   abstract findById(id: string, clinicId: string): Promise<Patient | null>
   abstract findByUserId(userId: string): Promise<Patient | null>
   abstract findByDocumentNumber(documentNumber: string, clinicId: string): Promise<Patient | null>
+  abstract findByFullNameAndBirthDate(
+    fullName: string,
+    birthDate: string,
+    clinicId: string,
+  ): Promise<Patient | null>
   abstract findActiveDependents(responsiblePatientId: string, clinicId: string): Promise<Patient[]>
   abstract findResponsiblePatientsByIds(ids: string[], clinicId: string): Promise<Patient[]>
   abstract findDependentsByResponsibleIds(responsibleIds: string[], clinicId: string): Promise<Patient[]>

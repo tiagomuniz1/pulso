@@ -20,6 +20,7 @@ const mockPatient = {
   kinshipType: null,
   responsiblePatient: null,
   dependents: [],
+  address: null,
   createdAt: '2024-01-15T10:00:00.000Z',
   updatedAt: '2024-01-15T10:00:00.000Z',
 }
@@ -78,6 +79,73 @@ describe('Patients Detail', () => {
     cy.get('[data-testid="patient-details-gender"]').should('contain', 'Masculino')
     cy.get('[data-testid="patient-details-birthdate"]').should('be.visible')
     cy.get('[data-testid="patient-details-created-at"]').should('be.visible')
+  })
+
+  it('shows the "no address" notice when the patient has none', () => {
+    cy.intercept('GET', `${Cypress.env('API_URL')}/patients/${MOCK_PATIENT_ID}`, {
+      statusCode: 200,
+      body: mockPatient,
+    }).as('getPatient')
+
+    visitClinic(`/patients/${MOCK_PATIENT_ID}`, mockAuthUser)
+    cy.wait('@getPatient')
+
+    cy.get('[data-testid="patient-details-no-address"]').should('contain', 'Endereço não cadastrado.')
+    cy.get('[data-testid="patient-details-address"]').should('not.exist')
+  })
+
+  it('shows the address when the patient has one', () => {
+    cy.intercept('GET', `${Cypress.env('API_URL')}/patients/${MOCK_PATIENT_ID}`, {
+      statusCode: 200,
+      body: {
+        ...mockPatient,
+        address: {
+          street: 'Rua Pedro Melquiades de Medeiros',
+          number: '05',
+          complement: 'Loteamento Campestre',
+          neighborhood: 'Centro',
+          city: 'São Mamede',
+          state: 'PB',
+          zipCode: '58625-000',
+          country: 'BR',
+        },
+      },
+    }).as('getPatient')
+
+    visitClinic(`/patients/${MOCK_PATIENT_ID}`, mockAuthUser)
+    cy.wait('@getPatient')
+
+    cy.get('[data-testid="patient-details-address"]').should('be.visible')
+    cy.get('[data-testid="patient-details-address-street"]').should('contain', 'Rua Pedro Melquiades de Medeiros, 05')
+    cy.get('[data-testid="patient-details-address-complement"]').should('contain', 'Loteamento Campestre')
+    cy.get('[data-testid="patient-details-address-neighborhood"]').should('contain', 'Centro')
+    cy.get('[data-testid="patient-details-address-city"]').should('contain', 'São Mamede — PB')
+    cy.get('[data-testid="patient-details-address-zipcode"]').should('contain', '58625-000')
+    cy.get('[data-testid="patient-details-no-address"]').should('not.exist')
+  })
+
+  it('omits the complement row when the address has none', () => {
+    cy.intercept('GET', `${Cypress.env('API_URL')}/patients/${MOCK_PATIENT_ID}`, {
+      statusCode: 200,
+      body: {
+        ...mockPatient,
+        address: {
+          street: 'Rua São José',
+          number: '340',
+          complement: null,
+          neighborhood: 'Centro',
+          city: 'Patos',
+          state: 'PB',
+          zipCode: '58700-000',
+          country: 'BR',
+        },
+      },
+    }).as('getPatient')
+
+    visitClinic(`/patients/${MOCK_PATIENT_ID}`, mockAuthUser)
+    cy.wait('@getPatient')
+
+    cy.get('[data-testid="patient-details-address-complement"]').should('not.exist')
   })
 
   it('back button navigates to /patients', () => {

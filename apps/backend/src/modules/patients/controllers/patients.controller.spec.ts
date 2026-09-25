@@ -32,6 +32,7 @@ const makeResponse = (overrides = {}) => ({
   kinshipType: null,
   responsiblePatient: null,
   dependents: [],
+  address: null,
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,

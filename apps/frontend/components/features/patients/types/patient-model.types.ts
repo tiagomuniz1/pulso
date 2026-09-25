@@ -1,4 +1,5 @@
 import { KinshipType, PatientGender } from '@app/shared'
+import type { IAddressModel } from '@/types/address.types'
 
 export interface IPatientResponsibleRef {
   id: string
@@ -24,6 +25,7 @@ export interface IPatientModel {
   kinshipType: KinshipType | null
   responsiblePatient: IPatientResponsibleRef | null
   dependents: IPatientDependentRef[]
+  address: IAddressModel | null
   createdAt: Date
   updatedAt: Date
 }
