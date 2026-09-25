@@ -35,6 +35,7 @@ function nextTuesday(): string {
 }
 
 const FUTURE_DATE = nextTuesday()
+const TODAY = new Date().toISOString().slice(0, 10)
 
 describe('importIClinic (integration)', () => {
   let dataSource: DataSource
@@ -122,6 +123,18 @@ describe('importIClinic (integration)', () => {
     expect(future.start_time).toBe('08:00')
     // Caiu na agenda real (45 min), não na legado (5 min).
     expect(future.slot_duration_in_minutes).toBe(45)
+  })
+
+  it('does not cancel an appointment that is still today', async () => {
+    const [today] = await dataSource.query(
+      `SELECT status, cancellation_reason FROM test.appointments WHERE external_id = '1007'`,
+    )
+    // Só entra se hoje cair num dia com agenda; quando cai, o que importa é que
+    // não foi dada por encerrada.
+    if (today) {
+      expect(today.status).not.toBe(AppointmentStatus.CANCELLED)
+      expect(today.cancellation_reason).toBeNull()
+    }
   })
 
   it('reports a future appointment that does not fit instead of inventing a slot', async () => {
@@ -292,6 +305,8 @@ function writeFixtures(): string {
     `1005,9003,Beatriz,${FUTURE_DATE},13:37:00,14:00:00,sc,ENCAIXE,,,"json::[{""name"": ""Consulta Ginecológica""}]"`,
     // bloqueio de agenda
     '1006,,,2025-06-02,08:00:00,18:00:00,sc,Não agendar (plantão),Sim,1,',
+    // consulta de HOJE, sem prontuário — não pode virar cancelada
+    `1007,9001,Mykaelle,${TODAY},08:00:00,08:45:00,sc,CONSULTA HOJE,,,"json::[{""name"": ""Consulta Ginecológica""}]"`,
   ].join('\n')
   fs.writeFileSync(path.join(dir, 'x-event_scheduling.csv'), scheduling + '\n')
 
