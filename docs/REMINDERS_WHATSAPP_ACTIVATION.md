@@ -127,8 +127,26 @@ aws ssm send-command --profile pulso-workload --region us-east-1 \
   --instance-ids "$INSTANCE_ID" \
   --document-name "AWS-RunShellScript" \
   --comment "reload SSM env + recreate backend for reminders" \
-  --parameters 'commands=["cd /opt/pulso || cd /home/ec2-user/pulso","docker compose -f docker-compose.prod.yml up -d --force-recreate backend"]'
+  --parameters 'commands=["cd /opt/pulso","docker compose --env-file deploy.env -f app/docker-compose.prod.yml up -d --force-recreate backend"]'
 ```
+
+> **Os caminhos acima são os reais, verificados no deploy de 25/09.** O compose vive em
+> `/opt/pulso/app/docker-compose.prod.yml` — **não** em `/opt/pulso/` —, e o
+> `--env-file deploy.env` é obrigatório: sem ele o compose não resolve as variáveis e
+> falha com `no such file or directory`, que é uma mensagem enganosa para o que
+> realmente faltou.
+
+> **Não há `psql` na imagem do backend**, e as variáveis do SSM **não estão no ambiente
+> do shell** do container — o app as lê de `/app/.env.local` no boot. Para consultar o
+> banco de produção, copie um script Node para dentro e rode a partir de `/app` (é onde
+> o `pg` resolve), parseando esse arquivo:
+>
+> ```
+> docker compose --env-file deploy.env -f app/docker-compose.prod.yml cp /tmp/q.js backend:/app/q.js
+> docker compose --env-file deploy.env -f app/docker-compose.prod.yml exec -T -w /app backend node q.js
+> ```
+>
+> O código compilado fica em `/app/apps/backend/dist/`, não em `/app/dist/`.
 
 ---
 
