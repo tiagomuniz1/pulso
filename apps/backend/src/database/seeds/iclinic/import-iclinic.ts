@@ -605,7 +605,10 @@ async function importAppointments(
     }
 
     const startTime = toShortTime(row.start_time)
-    const isFuture = row.date > today
+    // `>=`, não `>`: consulta de hoje às 17:00 ainda não aconteceu. Com `>`,
+    // toda a agenda do dia da carga seria importada como cancelada "sem
+    // desfecho registrado" — oito pacientes perderiam o horário.
+    const isFuture = row.date >= today
     const { status, cancellationReason } = mapStatus({
       hasMedicalRecord: recordKeys.has(recordKeyByPatientAndDate(row)),
       isFuture,

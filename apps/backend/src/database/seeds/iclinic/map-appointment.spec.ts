@@ -112,3 +112,14 @@ describe('resolveLabelName', () => {
     expect(resolveLabelName([{ name: '   ' }])).toBeNull()
   })
 })
+
+describe('mapStatus — a consulta de hoje', () => {
+  it('keeps today scheduled instead of cancelling it', () => {
+    // `isFuture` recebe `date >= today`, então a consulta de hoje chega aqui
+    // como futura. O teste guarda o contrato de quem chama.
+    const result = mapStatus({ hasMedicalRecord: false, isFuture: true, iclinicStatus: 'sc' })
+
+    expect(result.status).toBe(AppointmentStatus.SCHEDULED)
+    expect(result.cancellationReason).toBeNull()
+  })
+})
