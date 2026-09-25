@@ -20,9 +20,9 @@ module "ses_email" {
   domain        = var.ses_domain
 }
 
-# Appointment reminders are sent via Twilio WhatsApp (external HTTPS), not AWS —
+# Appointment reminders are sent via Infobip WhatsApp (external HTTPS), not AWS —
 # AWS denied SMS on this account. No AWS messaging resources or IAM are needed;
-# Twilio credentials live in SSM (see infra/scripts/seed-ssm.sh).
+# Infobip credentials live in SSM (see infra/scripts/seed-ssm.sh).
 
 # EC2 and RDS share the default VPC of the Workload account.
 data "aws_vpc" "default" {

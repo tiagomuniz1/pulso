@@ -39,6 +39,8 @@ const makePatientsResponse = (patients: { id: string; fullName: string }[] = [])
     kinshipType: null,
     responsiblePatient: null,
     dependents: [],
+    // Endereço entrou no DTO como bloco inteiro e opcional: nulo quando não preenchido.
+    address: null,
     createdAt: new Date().toISOString() as unknown as Date,
     updatedAt: new Date().toISOString() as unknown as Date,
   })),

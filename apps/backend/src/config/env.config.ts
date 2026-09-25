@@ -27,10 +27,11 @@ export interface IEnvConfig {
   TURNSTILE_SECRET_KEY: string | undefined
   REMINDERS_ENABLED: boolean
   REMINDER_OFFSETS_HOURS: string | undefined
-  TWILIO_ACCOUNT_SID: string | undefined
-  TWILIO_AUTH_TOKEN: string | undefined
-  TWILIO_WHATSAPP_FROM: string | undefined
-  TWILIO_REMINDER_CONTENT_SID: string | undefined
+  INFOBIP_BASE_URL: string | undefined
+  INFOBIP_API_KEY: string | undefined
+  INFOBIP_WHATSAPP_FROM: string | undefined
+  INFOBIP_REMINDER_TEMPLATE_NAME: string | undefined
+  INFOBIP_REMINDER_TEMPLATE_LANGUAGE: string | undefined
 }
 
 export function getEnvConfig(): IEnvConfig {
@@ -87,16 +88,21 @@ export function getEnvConfig(): IEnvConfig {
     // Optional override for how many hours before the appointment reminders fire,
     // comma-separated (e.g. "24,3"). Falls back to the module default when unset.
     REMINDER_OFFSETS_HOURS: process.env.REMINDER_OFFSETS_HOURS,
-    // Twilio WhatsApp — appointment reminders are sent as WhatsApp template
-    // messages. When any of these is unset the adapter skips sending (lets us
-    // deploy before the Twilio/Meta onboarding + template approval is done).
-    TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
-    TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
-    // WhatsApp sender in Twilio format, e.g. "whatsapp:+5511999999999"
-    // (or the shared sandbox number "whatsapp:+14155238886").
-    TWILIO_WHATSAPP_FROM: process.env.TWILIO_WHATSAPP_FROM,
-    // Approved Twilio Content template SID (HX...) for the appointment reminder.
-    TWILIO_REMINDER_CONTENT_SID: process.env.TWILIO_REMINDER_CONTENT_SID,
+    // Infobip WhatsApp — appointment reminders are sent as WhatsApp template
+    // messages. When any of the first four is unset the adapter skips sending
+    // (lets us deploy before the Infobip/Meta onboarding + template approval is
+    // done), so none of them belongs in `required` above.
+    // Account-specific host handed out at signup, e.g. "xyz123.api.infobip.com".
+    INFOBIP_BASE_URL: process.env.INFOBIP_BASE_URL,
+    INFOBIP_API_KEY: process.env.INFOBIP_API_KEY,
+    // WhatsApp sender in plain E.164, e.g. "5511999999999" — no "whatsapp:" prefix.
+    INFOBIP_WHATSAPP_FROM: process.env.INFOBIP_WHATSAPP_FROM,
+    // Name of the Meta-approved template for the appointment reminder.
+    INFOBIP_REMINDER_TEMPLATE_NAME: process.env.INFOBIP_REMINDER_TEMPLATE_NAME,
+    // Template language code. Optional: the adapter defaults to pt_BR. It exists
+    // because Meta's codes are easy to get wrong (pt_BR vs pt-BR vs pt), and a
+    // mismatch is then fixable in Parameter Store without a deploy.
+    INFOBIP_REMINDER_TEMPLATE_LANGUAGE: process.env.INFOBIP_REMINDER_TEMPLATE_LANGUAGE,
   }
 }
 

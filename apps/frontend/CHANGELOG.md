@@ -1,5 +1,11 @@
 # Changelog — Frontend
 
+## [1.17.0] - 2026-09-25
+
+### Added
+- **Campos de endereço no formulário de paciente**, no mesmo desenho já usado pelo cadastro de clínica. O bloco é opcional por inteiro — muita paciente é cadastrada sem o CEP em mãos, e recusar o cadastro por isso seria pior do que guardar o endereço depois; preenchido pela metade, a validação barra
+- `AddressFields` deixa de ser função privada dentro de `clinic-form.tsx` e vira molécula em `components/ui/molecules/`, servindo às duas telas. O schema zod e o regex de CEP foram junto, porque precisam concordar com os campos que renderizam; `testIdPrefix` mantém os `data-testid` de cada formulário
+
 ## [1.16.0] - 2026-09-11
 
 ### Added

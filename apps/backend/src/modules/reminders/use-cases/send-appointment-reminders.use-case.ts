@@ -116,17 +116,20 @@ export class SendAppointmentRemindersUseCase extends BaseUseCase {
     }
   }
 
-  // Positional variables for the approved WhatsApp content template, e.g.:
-  // "Olá, {{1}}! Lembrete da sua consulta com {{2}} na {{3}} em {{4}} às {{5}}."
-  private buildTemplateVariables(candidate: ReminderCandidate, appointmentAt: Date): Record<string, string> {
+  // Positional variables for the approved WhatsApp template, e.g.:
+  // "Olá, {{1}}! Lembrete da sua consulta com {{2}} em {{3}} às {{4}}."
+  //
+  // The clinic is not among them: it is already the sender's display name on the
+  // patient's phone, so repeating it in the body was redundant. If clinics ever
+  // share one sender, it has to come back — and so does the template.
+  private buildTemplateVariables(candidate: ReminderCandidate, appointmentAt: Date): string[] {
     const firstName = candidate.patientName.trim().split(/\s+/)[0]
-    return {
-      '1': firstName,
-      '2': candidate.professionalName,
-      '3': candidate.clinicName,
-      '4': this.formatDayMonth(appointmentAt),
-      '5': candidate.startTime,
-    }
+    return [
+      firstName,
+      candidate.professionalName,
+      this.formatDayMonth(appointmentAt),
+      candidate.startTime,
+    ]
   }
 
   private formatDayMonth(date: Date): string {

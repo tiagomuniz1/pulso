@@ -12,9 +12,12 @@ export class AppointmentRemindersRepository implements IAppointmentRemindersRepo
   ) {}
 
   async findDueCandidates(dateFrom: string, dateTo: string): Promise<ReminderCandidate[]> {
-    // Cross-table read projection (appointments + patient/professional names +
-    // clinic). Cross-clinic (no clinic filter), only active clinics / non-deleted
-    // rows. Raw parameterized SQL so table names are qualified with the configured
+    // Cross-table read projection (appointments + patient/professional names).
+    // Cross-clinic (no clinic filter), only active clinics / non-deleted rows.
+    // The clinics JOIN selects no column: it exists purely to enforce is_active
+    // and the soft delete, so it stays even though the reminder text no longer
+    // names the clinic (the WhatsApp sender's display name does that).
+    // Raw parameterized SQL so table names are qualified with the configured
     // schema (entity-based query builders auto-qualify, raw table names do not).
     const rawSchema = (this.repository.manager.connection?.options as { schema?: string })?.schema ?? 'public'
     // Schema comes from our own config, never user input; still guard the identifier.
@@ -23,7 +26,6 @@ export class AppointmentRemindersRepository implements IAppointmentRemindersRepo
     const rows: ReminderCandidate[] = await this.repository.manager.query(
       `SELECT a.id                            AS "appointmentId",
               a.clinic_id                     AS "clinicId",
-              c.name                          AS "clinicName",
               to_char(a.date, 'YYYY-MM-DD')   AS "date",
               a.start_time                    AS "startTime",
               pu.full_name                    AS "patientName",

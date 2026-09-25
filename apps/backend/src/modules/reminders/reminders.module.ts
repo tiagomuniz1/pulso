@@ -4,7 +4,7 @@ import { CacheModule } from '../../cache/cache.module'
 import { AppointmentReminder } from './entities/appointment-reminder.entity'
 import { AppointmentRemindersRepository } from './repositories/appointment-reminders.repository'
 import { IAppointmentRemindersRepository } from './repositories/appointment-reminders.repository.interface'
-import { TwilioWhatsAppAdapter } from './adapters/twilio-whatsapp.adapter'
+import { InfobipWhatsAppAdapter } from './adapters/infobip-whatsapp.adapter'
 import { IWhatsAppReminderAdapter } from './adapters/whatsapp-reminder.adapter.interface'
 import { SendAppointmentRemindersUseCase } from './use-cases/send-appointment-reminders.use-case'
 import { RemindersScheduler } from './reminders.scheduler'
@@ -15,7 +15,7 @@ import { RemindersScheduler } from './reminders.scheduler'
     SendAppointmentRemindersUseCase,
     RemindersScheduler,
     { provide: IAppointmentRemindersRepository, useClass: AppointmentRemindersRepository },
-    { provide: IWhatsAppReminderAdapter, useClass: TwilioWhatsAppAdapter },
+    { provide: IWhatsAppReminderAdapter, useClass: InfobipWhatsAppAdapter },
   ],
 })
 export class RemindersModule {}

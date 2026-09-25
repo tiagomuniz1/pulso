@@ -64,18 +64,20 @@ AWS_S3_BUCKET="${AWS_S3_BUCKET:-}"
 SMTP_HOST="${SMTP_HOST:-}"
 SMTP_USER="${SMTP_USER:-}"
 
-# Appointment reminders (Twilio WhatsApp). REMINDERS_ENABLED gates the cron; the
-# Twilio values stay empty until the WhatsApp sender + content template are approved
-# (the adapter skips sending until then). TWILIO_AUTH_TOKEN is a secret (below).
+# Appointment reminders (Infobip WhatsApp). REMINDERS_ENABLED gates the cron; the
+# Infobip values stay empty until the WhatsApp sender + template are approved
+# (the adapter skips sending until then). INFOBIP_API_KEY is a secret (below).
+# INFOBIP_REMINDER_TEMPLATE_LANGUAGE is optional — the adapter defaults to pt_BR.
 REMINDERS_ENABLED="${REMINDERS_ENABLED:-false}"
-TWILIO_ACCOUNT_SID="${TWILIO_ACCOUNT_SID:-}"
-TWILIO_WHATSAPP_FROM="${TWILIO_WHATSAPP_FROM:-}"
-TWILIO_REMINDER_CONTENT_SID="${TWILIO_REMINDER_CONTENT_SID:-}"
+INFOBIP_BASE_URL="${INFOBIP_BASE_URL:-}"
+INFOBIP_WHATSAPP_FROM="${INFOBIP_WHATSAPP_FROM:-}"
+INFOBIP_REMINDER_TEMPLATE_NAME="${INFOBIP_REMINDER_TEMPLATE_NAME:-}"
+INFOBIP_REMINDER_TEMPLATE_LANGUAGE="${INFOBIP_REMINDER_TEMPLATE_LANGUAGE:-}"
 
 # ── Secrets (SecureString) — must come from the environment. ─────────────────
 JWT_SECRET="${JWT_SECRET:-}"
 SMTP_PASS="${SMTP_PASS:-}"
-TWILIO_AUTH_TOKEN="${TWILIO_AUTH_TOKEN:-}"
+INFOBIP_API_KEY="${INFOBIP_API_KEY:-}"
 
 if [[ -z "$JWT_SECRET" ]]; then
   echo "ERROR: JWT_SECRET is required (export it before running)." >&2
@@ -130,14 +132,15 @@ put AWS_S3_BUCKET          "$AWS_S3_BUCKET"          String
 put SMTP_HOST              "$SMTP_HOST"              String
 put SMTP_USER              "$SMTP_USER"              String
 put REMINDERS_ENABLED             "$REMINDERS_ENABLED"             String
-put TWILIO_ACCOUNT_SID            "$TWILIO_ACCOUNT_SID"            String
-put TWILIO_WHATSAPP_FROM          "$TWILIO_WHATSAPP_FROM"          String
-put TWILIO_REMINDER_CONTENT_SID   "$TWILIO_REMINDER_CONTENT_SID"   String
+put INFOBIP_BASE_URL                    "$INFOBIP_BASE_URL"                    String
+put INFOBIP_WHATSAPP_FROM               "$INFOBIP_WHATSAPP_FROM"               String
+put INFOBIP_REMINDER_TEMPLATE_NAME      "$INFOBIP_REMINDER_TEMPLATE_NAME"      String
+put INFOBIP_REMINDER_TEMPLATE_LANGUAGE  "$INFOBIP_REMINDER_TEMPLATE_LANGUAGE"  String
 
 # SecureString
 put JWT_SECRET             "$JWT_SECRET"             SecureString
 put SMTP_PASS              "$SMTP_PASS"              SecureString
-put TWILIO_AUTH_TOKEN      "$TWILIO_AUTH_TOKEN"      SecureString
+put INFOBIP_API_KEY        "$INFOBIP_API_KEY"        SecureString
 
 echo ""
 if [[ "$ACTION" == "apply" ]]; then
