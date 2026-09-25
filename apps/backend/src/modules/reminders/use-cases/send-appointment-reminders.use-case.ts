@@ -3,7 +3,7 @@ import { DataSource } from 'typeorm'
 import { BaseUseCase } from '../../../common/base.use-case'
 import { getEnvConfig } from '../../../config/env.config'
 import { DistributedLockService } from '../../../cache/distributed-lock.service'
-import { IWhatsAppReminderAdapter } from '../adapters/whatsapp-reminder.adapter.interface'
+import { NotificationChannelResolver } from '../adapters/notification-channel.resolver'
 import { ReminderCandidate } from '../repositories/appointment-reminders.repository.interface'
 import { IAppointmentRemindersRepository } from '../repositories/appointment-reminders.repository.interface'
 import { toE164BrazilPhone } from '../utils/to-e164.util'
@@ -22,7 +22,6 @@ const DEFAULT_OFFSETS: ReminderOffset[] = [
 // that to just after the target so each offset fires once and the 24h reminder
 // never overlaps the 3h one. Must be >= the cron interval so a tick always lands.
 const WINDOW_MS = 15 * 60 * 1000
-const CHANNEL = 'whatsapp' as const
 // Brazil is UTC-3 (DST abolished in 2019); appointment date/time are clinic-local
 // strings, matching how create-appointment parses them.
 const BRAZIL_UTC_OFFSET = '-03:00'
@@ -34,7 +33,7 @@ export class SendAppointmentRemindersUseCase extends BaseUseCase {
   constructor(
     dataSource: DataSource,
     private readonly remindersRepository: IAppointmentRemindersRepository,
-    private readonly whatsAppAdapter: IWhatsAppReminderAdapter,
+    private readonly channelResolver: NotificationChannelResolver,
     private readonly distributedLockService: DistributedLockService,
   ) {
     super(dataSource)
@@ -77,7 +76,13 @@ export class SendAppointmentRemindersUseCase extends BaseUseCase {
   private async sendReminder(candidate: ReminderCandidate, appointmentAt: Date, offsetLabel: string): Promise<void> {
     const toE164 = toE164BrazilPhone(candidate.patientPhone)
     if (!toE164) {
-      await this.remindersRepository.claim(candidate.appointmentId, candidate.clinicId, offsetLabel, CHANNEL, 'skipped')
+      await this.remindersRepository.claim(
+        candidate.appointmentId,
+        candidate.clinicId,
+        offsetLabel,
+        candidate.channel,
+        'skipped',
+      )
       this.logger.warn('Skipping reminder — invalid patient phone', {
         context: SendAppointmentRemindersUseCase.name,
         appointmentId: candidate.appointmentId,
@@ -89,14 +94,22 @@ export class SendAppointmentRemindersUseCase extends BaseUseCase {
       candidate.appointmentId,
       candidate.clinicId,
       offsetLabel,
-      CHANNEL,
+      candidate.channel,
       'pending',
     )
     if (!claimed) return // already sent/attempted for this (appointment, offset)
 
+    const adapter = this.channelResolver.resolve(candidate.channel)
+    if (!adapter) {
+      // Channel with no adapter in this build: release the claim so it retries
+      // once the adapter ships, exactly like a missing-credentials skip.
+      await this.remindersRepository.release(claimed.id)
+      return
+    }
+
     const variables = this.buildTemplateVariables(candidate, appointmentAt)
     try {
-      const result = await this.whatsAppAdapter.sendReminder({ toE164, variables })
+      const result = await adapter.sendReminder({ toE164, variables })
       if (result.status === 'skipped') {
         // Transient/config skip (e.g. SMS origination not configured yet) — release
         // the claim so it retries on a later tick once sending is possible, instead
@@ -116,17 +129,19 @@ export class SendAppointmentRemindersUseCase extends BaseUseCase {
     }
   }
 
-  // Positional variables for the approved WhatsApp template, e.g.:
-  // "Olá, {{1}}! Lembrete da sua consulta com {{2}} em {{3}} às {{4}}."
+  // Positional variables for the approved WhatsApp template:
+  // "Olá, {{1}}! Lembrete da sua consulta com {{2}} na {{3}} em {{4}} às {{5}}."
   //
-  // The clinic is not among them: it is already the sender's display name on the
-  // patient's phone, so repeating it in the body was redundant. If clinics ever
-  // share one sender, it has to come back — and so does the template.
+  // The clinic is back among them. It had been dropped as redundant with the
+  // sender's display name — true while one clinic sent. Now that several clinics
+  // share one sender, the patient would otherwise read "consulta com Dra. X"
+  // from a business that is not hers.
   private buildTemplateVariables(candidate: ReminderCandidate, appointmentAt: Date): string[] {
     const firstName = candidate.patientName.trim().split(/\s+/)[0]
     return [
       firstName,
       candidate.professionalName,
+      candidate.clinicName,
       this.formatDayMonth(appointmentAt),
       candidate.startTime,
     ]

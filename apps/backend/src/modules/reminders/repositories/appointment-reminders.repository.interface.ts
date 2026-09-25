@@ -1,4 +1,5 @@
-import { AppointmentReminder, ReminderChannel, ReminderStatus } from '../entities/appointment-reminder.entity'
+import { NotificationChannel } from '@app/shared'
+import { AppointmentReminder, ReminderStatus } from '../entities/appointment-reminder.entity'
 
 /**
  * A scheduled/confirmed appointment joined with the data needed to build and
@@ -8,6 +9,13 @@ import { AppointmentReminder, ReminderChannel, ReminderStatus } from '../entitie
 export interface ReminderCandidate {
   appointmentId: string
   clinicId: string
+  clinicName: string
+  /**
+   * One of the clinic's enabled channels. A clinic with two enabled yields two
+   * candidates for the same appointment — the projection fans out, so the
+   * caller never has to know which channels a clinic opted into.
+   */
+  channel: NotificationChannel
   date: string // 'YYYY-MM-DD'
   startTime: string // 'HH:MM'
   patientName: string
@@ -17,9 +25,10 @@ export interface ReminderCandidate {
 
 export abstract class IAppointmentRemindersRepository {
   /**
-   * Upcoming scheduled/confirmed appointments (of active clinics) whose date is
-   * within [dateFrom, dateTo]. Cross-clinic (no clinic filter) — the reminder
-   * cron runs for the whole platform.
+   * Upcoming scheduled/confirmed appointments whose date is within
+   * [dateFrom, dateTo], fanned out across each clinic's enabled notification
+   * channels. Cross-clinic, but no longer cross-platform: a clinic with no
+   * channel enabled in the backoffice produces no candidate at all.
    */
   abstract findDueCandidates(dateFrom: string, dateTo: string): Promise<ReminderCandidate[]>
 
@@ -32,7 +41,7 @@ export abstract class IAppointmentRemindersRepository {
     appointmentId: string,
     clinicId: string,
     offsetLabel: string,
-    channel: ReminderChannel,
+    channel: NotificationChannel,
     status: ReminderStatus,
   ): Promise<AppointmentReminder | null>
 
