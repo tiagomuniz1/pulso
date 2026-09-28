@@ -158,7 +158,7 @@ describe('ListSchedulesUseCase', () => {
     await useCase.execute({ page: 1, limit: 20, dayOfWeek: DayOfWeek.MONDAY }, doctorUser)
 
     expect(mockCacheService.get).toHaveBeenCalledWith(
-      `schedules:list:${CLINIC_ID}:${professionalId}:MONDAY:all:1:20`,
+      `schedules:list:${CLINIC_ID}:${professionalId}:MONDAY:all:false:1:20`,
     )
   })
 
@@ -168,7 +168,7 @@ describe('ListSchedulesUseCase', () => {
     await useCase.execute({ page: 1, limit: 20 }, doctorUser)
 
     expect(mockCacheService.get).toHaveBeenCalledWith(
-      `schedules:list:${CLINIC_ID}:${professionalId}:all:all:1:20`,
+      `schedules:list:${CLINIC_ID}:${professionalId}:all:all:false:1:20`,
     )
   })
 
@@ -178,7 +178,7 @@ describe('ListSchedulesUseCase', () => {
     await useCase.execute({ page: 1, limit: 20 }, adminUser)
 
     expect(mockCacheService.get).toHaveBeenCalledWith(
-      `schedules:list:${CLINIC_ID}:all:all:all:1:20`,
+      `schedules:list:${CLINIC_ID}:all:all:all:false:1:20`,
     )
   })
 
@@ -188,7 +188,41 @@ describe('ListSchedulesUseCase', () => {
     await useCase.execute({ page: 1, limit: 20, activeOn: '2024-06-15' }, doctorUser)
 
     expect(mockCacheService.get).toHaveBeenCalledWith(
-      `schedules:list:${CLINIC_ID}:${professionalId}:all:2024-06-15:1:20`,
+      `schedules:list:${CLINIC_ID}:${professionalId}:all:2024-06-15:false:1:20`,
+    )
+  })
+
+  it('cache key separates the list with expired schedules from the one without', async () => {
+    mockSchedulesRepository.findAll.mockResolvedValue([[], 0])
+
+    await useCase.execute({ page: 1, limit: 20, includeExpired: true }, doctorUser)
+
+    expect(mockCacheService.get).toHaveBeenCalledWith(
+      `schedules:list:${CLINIC_ID}:${professionalId}:all:all:true:1:20`,
+    )
+  })
+
+  it("passes today's date to the repository, anchored to the clinic timezone", async () => {
+    mockSchedulesRepository.findAll.mockResolvedValue([[], 0])
+
+    await useCase.execute({ page: 1, limit: 20 }, doctorUser)
+
+    const [filters] = mockSchedulesRepository.findAll.mock.calls[0]
+    expect(filters.today).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    // Brasil é sempre UTC-3: às 22h de Brasília a data em UTC já virou, e usar
+    // a de UTC esconderia uma agenda que ainda vale por mais duas horas.
+    const expected = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10)
+    expect(filters.today).toBe(expected)
+  })
+
+  it('forwards includeExpired to the repository untouched', async () => {
+    mockSchedulesRepository.findAll.mockResolvedValue([[], 0])
+
+    await useCase.execute({ page: 1, limit: 20, includeExpired: true }, doctorUser)
+
+    expect(mockSchedulesRepository.findAll).toHaveBeenCalledWith(
+      expect.objectContaining({ includeExpired: true }),
+      CLINIC_ID,
     )
   })
 
@@ -212,7 +246,7 @@ describe('ListSchedulesUseCase', () => {
     await useCase.execute({} as ListSchedulesQueryDto, doctorUser)
 
     expect(mockCacheService.get).toHaveBeenCalledWith(
-      `schedules:list:${CLINIC_ID}:${professionalId}:all:all:1:20`,
+      `schedules:list:${CLINIC_ID}:${professionalId}:all:all:false:1:20`,
     )
   })
 

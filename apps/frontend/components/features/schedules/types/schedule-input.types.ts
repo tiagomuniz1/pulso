@@ -23,6 +23,8 @@ export interface IScheduleListParams {
   professionalId?: string
   dayOfWeek?: DayOfWeek
   activeOn?: string
+  /** Agenda encerrada some da listagem por padrão; isto a traz de volta. */
+  includeExpired?: boolean
   page?: number
   limit?: number
 }

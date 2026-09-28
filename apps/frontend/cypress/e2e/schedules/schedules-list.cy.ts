@@ -172,6 +172,25 @@ describe('Schedules List', () => {
     cy.wait('@filteredByProfessional').its('request.url').should('include', 'professionalId=doc-uuid-1')
   })
 
+  it('shows the expired-schedules checkbox unchecked by default', () => {
+    cy.intercept('GET', `${Cypress.env('API_URL')}/schedules*`, { statusCode: 200, body: populatedListResponse }).as('getSchedules')
+    visitClinic('/schedules', mockProfessionalUser)
+    cy.wait('@getSchedules').its('request.url').should('not.include', 'includeExpired')
+
+    cy.get('[data-testid="schedule-filter-include-expired"]').should('not.be.checked')
+    cy.contains('Mostrar agendas expiradas').should('be.visible')
+  })
+
+  it('checking the expired filter sends includeExpired param', () => {
+    cy.intercept('GET', `${Cypress.env('API_URL')}/schedules*`, { statusCode: 200, body: populatedListResponse }).as('getSchedules')
+    visitClinic('/schedules', mockProfessionalUser)
+    cy.wait('@getSchedules')
+
+    cy.intercept('GET', `${Cypress.env('API_URL')}/schedules*`, { statusCode: 200, body: populatedListResponse }).as('withExpired')
+    cy.get('[data-testid="schedule-filter-include-expired"]').check()
+    cy.wait('@withExpired').its('request.url').should('include', 'includeExpired=true')
+  })
+
   it('filter by day of week sends dayOfWeek param', () => {
     cy.intercept('GET', `${Cypress.env('API_URL')}/schedules*`, { statusCode: 200, body: populatedListResponse }).as('getSchedules')
     visitClinic('/schedules', mockProfessionalUser)

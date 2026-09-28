@@ -27,6 +27,16 @@ describe('schedulesService', () => {
     expect(mockApiClient.get).toHaveBeenCalledWith('/schedules?dayOfWeek=MONDAY&activeOn=2025-06-01')
   })
 
+  it('getAll sends includeExpired only when it is true', async () => {
+    ;(apiClient.get as jest.Mock).mockResolvedValue({ data: [], total: 0, page: 1, limit: 20 })
+
+    await schedulesService.getAll({ includeExpired: true })
+    expect(apiClient.get).toHaveBeenCalledWith('/schedules?includeExpired=true')
+
+    await schedulesService.getAll({ includeExpired: false })
+    expect(apiClient.get).toHaveBeenLastCalledWith('/schedules')
+  })
+
   it('getAll appends page and limit to query string', () => {
     mockApiClient.get.mockResolvedValue({} as any)
     schedulesService.getAll({ page: 2, limit: 10 })

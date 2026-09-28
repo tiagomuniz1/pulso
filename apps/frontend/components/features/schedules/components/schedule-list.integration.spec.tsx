@@ -196,7 +196,43 @@ describe('ScheduleList (integration)', () => {
       })
     })
 
-    it('filters by activeOn when date filter is changed', async () => {
+    it('renders the expired-schedules checkbox unchecked', async () => {
+    ;(schedulesService.getAll as jest.Mock).mockResolvedValue(makePaginatedResponse())
+
+    renderWithProviders(<ScheduleList />)
+
+    const checkbox = await screen.findByTestId('schedule-filter-include-expired')
+    expect(checkbox).not.toBeChecked()
+    expect(screen.getByText('Mostrar agendas expiradas')).toBeInTheDocument()
+  })
+
+  it('omits includeExpired from the request while the checkbox is unchecked', async () => {
+    ;(schedulesService.getAll as jest.Mock).mockResolvedValue(makePaginatedResponse())
+
+    renderWithProviders(<ScheduleList />)
+
+    await waitFor(() => {
+      expect(schedulesService.getAll).toHaveBeenCalledWith(
+        expect.not.objectContaining({ includeExpired: expect.anything() }),
+      )
+    })
+  })
+
+  it('asks for expired schedules once the checkbox is checked', async () => {
+    ;(schedulesService.getAll as jest.Mock).mockResolvedValue(makePaginatedResponse())
+
+    renderWithProviders(<ScheduleList />)
+
+    fireEvent.click(await screen.findByTestId('schedule-filter-include-expired'))
+
+    await waitFor(() => {
+      expect(schedulesService.getAll).toHaveBeenCalledWith(
+        expect.objectContaining({ includeExpired: true }),
+      )
+    })
+  })
+
+  it('filters by activeOn when date filter is changed', async () => {
       ;(schedulesService.getAll as jest.Mock).mockResolvedValue(makePaginatedResponse())
 
       renderWithProviders(<ScheduleList />)

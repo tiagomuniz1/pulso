@@ -3,8 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { QueryRunner, Repository } from 'typeorm'
 import { CreateScheduleDto, DayOfWeek, UpdateScheduleDto } from '@app/shared'
 import { Schedule } from '../entities/schedule.entity'
-import { ISchedulesRepository } from './schedules.repository.interface'
-import { ListSchedulesQueryDto } from '../dto/list-schedules-query.dto'
+import { ISchedulesRepository, ListSchedulesFilters } from './schedules.repository.interface'
 
 @Injectable()
 export class SchedulesRepository implements ISchedulesRepository {
@@ -13,8 +12,8 @@ export class SchedulesRepository implements ISchedulesRepository {
     private readonly repository: Repository<Schedule>,
   ) {}
 
-  async findAll(filters: ListSchedulesQueryDto, clinicId: string): Promise<[Schedule[], number]> {
-    const { professionalId, dayOfWeek, activeOn, page = 1, limit = 20 } = filters
+  async findAll(filters: ListSchedulesFilters, clinicId: string): Promise<[Schedule[], number]> {
+    const { professionalId, dayOfWeek, activeOn, includeExpired, today, page = 1, limit = 20 } = filters
 
     const qb = this.repository
       .createQueryBuilder('schedule')
@@ -35,6 +34,13 @@ export class SchedulesRepository implements ISchedulesRepository {
         '(schedule.valid_until IS NULL OR schedule.valid_until >= :activeOn)',
         { activeOn },
       )
+    }
+
+    // Agenda encerrada fica de fora por padrão. `activeOn` tem precedência:
+    // perguntar "o que valia em 2020" é pergunta sobre o passado, e aplicar o
+    // corte de hoje por cima devolveria lista vazia.
+    if (!activeOn && !includeExpired) {
+      qb.andWhere('(schedule.valid_until IS NULL OR schedule.valid_until >= :today)', { today })
     }
 
     if (professionalId) {

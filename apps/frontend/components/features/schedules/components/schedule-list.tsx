@@ -62,6 +62,7 @@ export function ScheduleList() {
   const [filterDoctorId, setFilterDoctorId] = useState('')
   const [filterDayOfWeek, setFilterDayOfWeek] = useState('')
   const [filterActiveOn, setFilterActiveOn] = useState('')
+  const [includeExpired, setIncludeExpired] = useState(false)
   const [scheduleToDelete, setScheduleToDelete] = useState<IScheduleModel | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
@@ -69,6 +70,7 @@ export function ScheduleList() {
     ...(filterDoctorId ? { professionalId: filterDoctorId } : {}),
     ...(filterDayOfWeek ? { dayOfWeek: filterDayOfWeek as DayOfWeek } : {}),
     ...(filterActiveOn ? { activeOn: filterActiveOn } : {}),
+    ...(includeExpired ? { includeExpired: true } : {}),
   }
 
   const { data: schedulesPage, isPending, isError } = useSchedules(params)
@@ -192,6 +194,22 @@ export function ScheduleList() {
             )}
             data-testid="schedule-filter-active-on"
           />
+        </div>
+
+        <div className="flex items-end">
+          <div className="flex items-center gap-2 pb-2.5">
+            <input
+              type="checkbox"
+              id="include-expired"
+              checked={includeExpired}
+              onChange={(e) => setIncludeExpired(e.target.checked)}
+              className="h-4 w-4 rounded border-line text-accent"
+              data-testid="schedule-filter-include-expired"
+            />
+            <label htmlFor="include-expired" className="cursor-pointer text-sm text-text-dim">
+              Mostrar agendas expiradas
+            </label>
+          </div>
         </div>
       </div>
 

@@ -3,6 +3,7 @@ import { DayOfWeek } from '@app/shared'
 import { Schedule } from '../entities/schedule.entity'
 import { SchedulesRepository } from './schedules.repository'
 
+const TODAY = '2026-09-28'
 const CLINIC_ID = 'fixed-clinic-uuid'
 
 const makeSchedule = (overrides = {}): Schedule =>
@@ -57,7 +58,7 @@ describe('SchedulesRepository', () => {
       qb.getManyAndCount.mockResolvedValue([[schedule], 1])
       mockRepository.createQueryBuilder.mockReturnValue(qb)
 
-      const result = await repository.findAll({ page: 1, limit: 20 }, CLINIC_ID)
+      const result = await repository.findAll({ today: TODAY, page: 1, limit: 20 }, CLINIC_ID)
 
       expect(result[0]).toHaveLength(1)
       expect(result[1]).toBe(1)
@@ -71,32 +72,71 @@ describe('SchedulesRepository', () => {
       qb.getManyAndCount.mockResolvedValue([[], 0])
       mockRepository.createQueryBuilder.mockReturnValue(qb)
 
-      await repository.findAll({ page: 1, limit: 20, professionalId }, CLINIC_ID)
+      await repository.findAll({ today: TODAY, page: 1, limit: 20, professionalId }, CLINIC_ID)
 
       const calls = qb.andWhere.mock.calls.map((c: any[]) => c[0])
       expect(calls.some((c: string) => c.includes('professional_id'))).toBe(true)
     })
 
-    it('applies validity filter only when activeOn is provided', async () => {
+    it('applies the two-sided validity window only when activeOn is provided', async () => {
       const qbWithDate = makeQueryBuilder()
       qbWithDate.getManyAndCount.mockResolvedValue([[], 0])
       mockRepository.createQueryBuilder.mockReturnValueOnce(qbWithDate)
 
-      await repository.findAll({ page: 1, limit: 20, activeOn: '2024-06-15' }, CLINIC_ID)
+      await repository.findAll({ today: TODAY, page: 1, limit: 20, activeOn: '2024-06-15' }, CLINIC_ID)
 
       const callsWithDate = qbWithDate.andWhere.mock.calls.map((c: any[]) => c[0])
       expect(callsWithDate.some((c: string) => c.includes('valid_from'))).toBe(true)
-      expect(callsWithDate.some((c: string) => c.includes('valid_until'))).toBe(true)
+      expect(callsWithDate.some((c: string) => c.includes(':activeOn'))).toBe(true)
 
       const qbNoDate = makeQueryBuilder()
       qbNoDate.getManyAndCount.mockResolvedValue([[], 0])
       mockRepository.createQueryBuilder.mockReturnValueOnce(qbNoDate)
 
-      await repository.findAll({ page: 1, limit: 20 }, CLINIC_ID)
+      await repository.findAll({ today: TODAY, page: 1, limit: 20 }, CLINIC_ID)
 
+      // Sem activeOn não há corte por `valid_from`: agenda que só passa a valer
+      // no mês que vem continua na lista.
       const callsNoDate = qbNoDate.andWhere.mock.calls.map((c: any[]) => c[0])
       expect(callsNoDate.every((c: string) => !c.includes('valid_from'))).toBe(true)
-      expect(callsNoDate.every((c: string) => !c.includes('valid_until'))).toBe(true)
+      expect(callsNoDate.every((c: string) => !c.includes(':activeOn'))).toBe(true)
+    })
+
+    it('hides expired schedules by default', async () => {
+      const qb = makeQueryBuilder()
+      qb.getManyAndCount.mockResolvedValue([[], 0])
+      mockRepository.createQueryBuilder.mockReturnValue(qb)
+
+      await repository.findAll({ today: TODAY, page: 1, limit: 20 }, CLINIC_ID)
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        '(schedule.valid_until IS NULL OR schedule.valid_until >= :today)',
+        { today: TODAY },
+      )
+    })
+
+    it('keeps expired schedules when includeExpired is true', async () => {
+      const qb = makeQueryBuilder()
+      qb.getManyAndCount.mockResolvedValue([[], 0])
+      mockRepository.createQueryBuilder.mockReturnValue(qb)
+
+      await repository.findAll({ today: TODAY, page: 1, limit: 20, includeExpired: true }, CLINIC_ID)
+
+      const calls = qb.andWhere.mock.calls.map((c: any[]) => c[0])
+      expect(calls.every((c: string) => !c.includes(':today'))).toBe(true)
+    })
+
+    it('lets activeOn win over the expired filter', async () => {
+      const qb = makeQueryBuilder()
+      qb.getManyAndCount.mockResolvedValue([[], 0])
+      mockRepository.createQueryBuilder.mockReturnValue(qb)
+
+      // Perguntar "o que valia em 2020" é pergunta sobre o passado; somar o
+      // corte de hoje devolveria lista vazia sempre.
+      await repository.findAll({ today: TODAY, page: 1, limit: 20, activeOn: '2020-06-15' }, CLINIC_ID)
+
+      const calls = qb.andWhere.mock.calls.map((c: any[]) => c[0])
+      expect(calls.every((c: string) => !c.includes(':today'))).toBe(true)
     })
 
     it('applies dayOfWeek filter when provided', async () => {
@@ -104,7 +144,7 @@ describe('SchedulesRepository', () => {
       qb.getManyAndCount.mockResolvedValue([[], 0])
       mockRepository.createQueryBuilder.mockReturnValue(qb)
 
-      await repository.findAll({ page: 1, limit: 20, dayOfWeek: DayOfWeek.FRIDAY }, CLINIC_ID)
+      await repository.findAll({ today: TODAY, page: 1, limit: 20, dayOfWeek: DayOfWeek.FRIDAY }, CLINIC_ID)
 
       const calls = qb.andWhere.mock.calls.map((c: any[]) => c[0])
       expect(calls.some((c: string) => c.includes('day_of_week'))).toBe(true)
