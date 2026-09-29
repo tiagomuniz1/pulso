@@ -1,5 +1,21 @@
 # Changelog — Backend
 
+## [1.20.0] - 2026-09-28
+
+### Added
+- **`includeExpired` em `GET /schedules`**, default `false`: agenda cuja validade já terminou some da listagem. A importação do IClinic criou sete agendas legado por profissional — uma por dia da semana, slots de cinco minutos — só para ancorar as consultas históricas, já que `appointments.schedule_id` é obrigatório. Na clínica do Dr. Yago, que ainda não tem agenda configurada, eram as **únicas** linhas visíveis, passando a impressão de que a agenda dele fora montada em blocos de cinco minutos
+
+### Fixed
+- **O importador do IClinic cancelava consultas marcadas para hoje**, à noite. `today` era calculado com `toISOString()`, que é UTC: entre 21h e a meia-noite de Brasília — e o tempo todo na instância de produção, que roda em UTC — "hoje" já era amanhã. A consulta de hoje caía em `row.date >= today` como falsa, era lida como passada e, sem prontuário casado (que consulta de hoje às 17h ainda não tem), virava `cancelled`. É o mesmo defeito que o `>=` veio corrigir na 1.18.0: o operador estava certo, a data é que não estava. Agora ancorado em UTC-3, como `send-appointment-reminders.use-case.ts` já fazia
+- `yesterdayIso()`, que fecha a agenda legado na véspera do go-live, tinha o mesmo desvio — à noite devolvia hoje, e a agenda de 5 minutos seguiria válida competindo com a agenda real
+- O spec de integração do importador **não limpava o banco**: deixava para trás prontuários que referenciam consultas, e qualquer spec seguinte com `DELETE FROM appointments` travava na FK. Só não colidia porque o acervo vazado, com as datas erradas, por acaso não batia
+
+### Notes
+- **`activeOn` vence sobre o corte de hoje.** Ele já filtra os dois lados da janela de validade; somar "não expirada" por cima anularia a pergunta — `activeOn=2020-06-15` quer saber o que valia naquela data, e devolveria lista vazia sempre
+- **Futura não é expirada.** Agenda que só passa a valer no mês que vem continua visível: quem acabou de criá-la estranharia vê-la sumir
+- **A data de corte é do servidor, não do DTO.** Com `forbidNonWhitelisted` ligado, um campo `today` no DTO viraria parâmetro que o cliente poderia mandar. Ancorada em UTC-3 como o resto do projeto — em UTC, entre 21h e a meia-noite de Brasília, uma agenda que ainda vale já teria sumido
+- Dois testes afirmavam o comportamento antigo e foram **reescritos, não remendados**
+
 ## [1.19.0] - 2026-09-25
 
 ### Added

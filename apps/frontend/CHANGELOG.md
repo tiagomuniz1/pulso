@@ -1,5 +1,10 @@
 # Changelog — Frontend
 
+## [1.19.0] - 2026-09-28
+
+### Added
+- **Agendas expiradas somem da listagem por padrão**, com um controle para trazê-las de volta. Depois da importação do IClinic, as agendas legado de cinco minutos eram as únicas linhas visíveis na clínica do Dr. Yago — o que lia como se a agenda dele tivesse sido montada assim
+
 ## [1.18.0] - 2026-09-25
 
 ### Added
