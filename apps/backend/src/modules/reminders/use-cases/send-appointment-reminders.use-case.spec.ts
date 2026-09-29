@@ -4,7 +4,9 @@ import { ConflictException } from '@nestjs/common'
 import { DataSource } from 'typeorm'
 import { getEnvConfig } from '../../../config/env.config'
 import { DistributedLockService } from '../../../cache/distributed-lock.service'
+import { NotificationChannel } from '@app/shared'
 import { IWhatsAppReminderAdapter } from '../adapters/whatsapp-reminder.adapter.interface'
+import { NotificationChannelResolver } from '../adapters/notification-channel.resolver'
 import { IAppointmentRemindersRepository } from '../repositories/appointment-reminders.repository.interface'
 import { SendAppointmentRemindersUseCase } from './send-appointment-reminders.use-case'
 
@@ -16,6 +18,8 @@ const appointmentAt = new Date('2026-08-20T14:00:00-03:00')
 const makeCandidate = (overrides = {}) => ({
   appointmentId: 'appt-1',
   clinicId: 'clinic-1',
+  clinicName: 'Clínica X',
+  channel: NotificationChannel.WHATSAPP,
   date: '2026-08-20',
   startTime: '14:00',
   patientName: 'Maria Silva Souza',
@@ -39,6 +43,10 @@ const mockWhatsAppAdapter: jest.Mocked<IWhatsAppReminderAdapter> = {
   sendReminder: jest.fn(),
 }
 
+const mockResolver = {
+  resolve: jest.fn(),
+} as unknown as jest.Mocked<NotificationChannelResolver>
+
 const mockLock = {
   runWithLock: jest.fn().mockImplementation((_key: string, _ttl: number, op: () => Promise<unknown>) => op()),
 } as unknown as jest.Mocked<DistributedLockService>
@@ -48,11 +56,12 @@ describe('SendAppointmentRemindersUseCase', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    useCase = new SendAppointmentRemindersUseCase({} as DataSource, mockRepo, mockWhatsAppAdapter, mockLock)
+    useCase = new SendAppointmentRemindersUseCase({} as DataSource, mockRepo, mockResolver, mockLock)
     mockGetEnvConfig.mockReturnValue({ REMINDER_OFFSETS_HOURS: undefined })
     mockRepo.findDueCandidates.mockResolvedValue([makeCandidate()])
     mockRepo.claim.mockResolvedValue({ id: 'reminder-1' } as any)
     mockWhatsAppAdapter.sendReminder.mockResolvedValue({ status: 'sent', providerMessageId: 'provider-msg-1' })
+    mockResolver.resolve.mockReturnValue(mockWhatsAppAdapter)
     mockLock.runWithLock.mockImplementation((_k: any, _t: any, op: any) => op())
   })
 
@@ -86,7 +95,7 @@ describe('SendAppointmentRemindersUseCase', () => {
     const arg = mockWhatsAppAdapter.sendReminder.mock.calls[0][0]
     expect(arg.toE164).toBe('+5511998877665')
     // Ordered: the template is positional, so position is the assertion.
-    expect(arg.variables).toEqual(['Maria', 'Dr. Ana', '20/08', '14:00'])
+    expect(arg.variables).toEqual(['Maria', 'Dr. Ana', 'Clínica X', '20/08', '14:00'])
     expect(mockRepo.markSent).toHaveBeenCalledWith('reminder-1', 'provider-msg-1')
   })
 
@@ -149,5 +158,58 @@ describe('SendAppointmentRemindersUseCase', () => {
     mockGetEnvConfig.mockReturnValue({ REMINDER_OFFSETS_HOURS: ' , abc ' })
     await useCase.execute(dueNow(24))
     expect(mockRepo.claim).toHaveBeenCalledWith('appt-1', 'clinic-1', '24h', 'whatsapp', 'pending')
+  })
+
+  // O canal deixou de ser constante: ele vem do vínculo da clínica. Se voltasse a
+  // ser fixo, este teste passaria mesmo com o candidato pedindo outro canal.
+  it('claims with the candidate channel, not a hardcoded one', async () => {
+    mockRepo.findDueCandidates.mockResolvedValue([
+      makeCandidate({ channel: 'email' as NotificationChannel }),
+    ])
+    mockResolver.resolve.mockReturnValue(mockWhatsAppAdapter)
+
+    await useCase.execute(dueNow(24))
+
+    expect(mockRepo.claim).toHaveBeenCalledWith('appt-1', 'clinic-1', '24h', 'email', 'pending')
+    expect(mockResolver.resolve).toHaveBeenCalledWith('email')
+  })
+
+  // Uma clínica com dois canais habilitados rende dois candidatos para a mesma
+  // consulta — é a projeção que abre em leque, e cada um reivindica seu slot.
+  it('sends once per enabled channel of the same appointment', async () => {
+    mockRepo.findDueCandidates.mockResolvedValue([
+      makeCandidate({ channel: NotificationChannel.WHATSAPP }),
+      makeCandidate({ channel: 'email' as NotificationChannel }),
+    ])
+
+    await useCase.execute(dueNow(24))
+
+    expect(mockRepo.claim).toHaveBeenCalledTimes(2)
+    expect(mockRepo.claim).toHaveBeenNthCalledWith(1, 'appt-1', 'clinic-1', '24h', 'whatsapp', 'pending')
+    expect(mockRepo.claim).toHaveBeenNthCalledWith(2, 'appt-1', 'clinic-1', '24h', 'email', 'pending')
+    expect(mockWhatsAppAdapter.sendReminder).toHaveBeenCalledTimes(2)
+  })
+
+  // Canal sem adapter registrado: libera o claim para reprocessar quando o
+  // adapter existir, em vez de gravar falha permanente ou derrubar o tick.
+  it('releases the claim when no adapter handles the channel', async () => {
+    mockResolver.resolve.mockReturnValue(null)
+
+    await useCase.execute(dueNow(24))
+
+    expect(mockRepo.release).toHaveBeenCalledWith('reminder-1')
+    expect(mockWhatsAppAdapter.sendReminder).not.toHaveBeenCalled()
+    expect(mockRepo.markFailed).not.toHaveBeenCalled()
+  })
+
+  it('skips an invalid phone with the candidate channel', async () => {
+    mockRepo.findDueCandidates.mockResolvedValue([
+      makeCandidate({ patientPhone: 'abc', channel: NotificationChannel.WHATSAPP }),
+    ])
+
+    await useCase.execute(dueNow(24))
+
+    expect(mockRepo.claim).toHaveBeenCalledWith('appt-1', 'clinic-1', '24h', 'whatsapp', 'skipped')
+    expect(mockWhatsAppAdapter.sendReminder).not.toHaveBeenCalled()
   })
 })

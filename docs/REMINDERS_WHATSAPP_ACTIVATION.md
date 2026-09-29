@@ -38,15 +38,16 @@ depende dele — dá para implantar dormente e ligar depois.
    O remetente fica em E.164 simples: `55XXXXXXXXXXX`, **sem** prefixo `whatsapp:`.
 3. **Template aprovado** (obrigatório para mensagem iniciada pela empresa): crie um
    template **utilitário** (categoria *Utility* — *Marketing* custa várias vezes
-   mais por conversa) com **4 placeholders posicionais**, na ordem exata que o
+   mais por conversa) com **5 placeholders posicionais**, na ordem exata que o
    backend envia:
-   `{{1}}` primeiro nome do paciente · `{{2}}` profissional · `{{3}}` data (DD/MM) · `{{4}}` hora (HH:MM).
-   Corpo em produção:
-   > `Olá, {{1}}! Lembrete da sua consulta com {{2}} em {{3}} às {{4}}. Se precisar remarcar, fale com a clínica.`
+   `{{1}}` primeiro nome do paciente · `{{2}}` profissional · `{{3}}` clínica · `{{4}}` data (DD/MM) · `{{5}}` hora (HH:MM).
+   Corpo em produção (`pulso_appointment_reminder_clinic`):
+   > `Olá, {{1}}! Lembrete da sua consulta com {{2}} na {{3}} em {{4}} às {{5}}. Se precisar remarcar, fale com a clínica.`
 
-   **A clínica não é placeholder**: ela já é o *display name* do remetente no celular
-   da paciente. Se um dia várias clínicas dividirem o mesmo remetente, ela precisa
-   voltar — ao template e ao `buildTemplateVariables`.
+   **A clínica é placeholder porque o remetente é compartilhado.** Ela chegou a sair
+   do corpo, enquanto uma só clínica enviava e o *display name* do remetente já a
+   nomeava. Com várias clínicas dividindo o mesmo número, a paciente receberia
+   "consulta com Dra. X" vinda de um negócio que não é o dela.
 
    Sem header, footer nem botões: cada elemento a mais é superfície de reprovação na
    revisão da Meta, e nenhum carrega informação que o lembrete precise.
@@ -77,6 +78,29 @@ terraform apply -var="aws_profile=pulso-workload" -var="frontend_url=https://pul
 > A AMI da EC2 continua **pinada** (`ami_id` no módulo `ec2_app`) — nenhum apply
 > recria a instância. Passe sempre `frontend_url=https://pulso.center` (valor vivo)
 > para não mexer no CORS.
+
+---
+
+## 1.5. Habilitar as clínicas no backoffice
+
+**Sem isto, nenhum lembrete sai — mesmo com a flag ligada e as credenciais no lugar.**
+
+Entre no backoffice como PLATFORM_ADMIN, abra a clínica (*Clínicas → a clínica*) e, na
+seção **Notificações**, ligue o canal desejado.
+
+A consulta de candidatos faz `INNER JOIN` com `clinic_notification_channels`: clínica
+sem canal habilitado simplesmente não produz candidato. É o que impede o primeiro
+disparo de ser indiscriminado — antes desta tabela, ligar `REMINDERS_ENABLED` fazia
+**toda clínica ativa** da plataforma começar a mandar WhatsApp.
+
+Conferir por API:
+
+```bash
+curl -s -H "Authorization: Bearer $PLATFORM_TOKEN" \
+  "$API_URL/clinics/$CLINIC_ID/notification-channels"
+```
+
+Lista vazia = clínica não envia nada.
 
 ---
 
@@ -212,6 +236,9 @@ aws ssm put-parameter --profile pulso-workload --region us-east-1 --overwrite \
   erro da Infobip no envio.
 - A consulta de candidatos **mantém o JOIN com `clinics` sem selecionar coluna dele**:
   é ele que aplica `is_active = true` e o soft delete da clínica.
+- **São dois freios, e os dois precisam estar soltos**: a flag global
+  `REMINDERS_ENABLED` (plataforma) e o canal habilitado por clínica (backoffice). A
+  flag é emergência; o canal é a decisão comercial de cada clínica.
 - O adapter **não faz retry**, de propósito: envio não é idempotente, e um timeout
   que na verdade entregou mandaria o lembrete duas vezes à paciente. A unique
   `(appointment_id, offset_label)` protege contra tick duplicado, não contra retry

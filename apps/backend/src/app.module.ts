@@ -15,6 +15,7 @@ import { AppointmentsModule } from './modules/appointments/appointments.module'
 import { SpecialtiesModule } from './modules/specialties/specialties.module'
 import { ClinicsModule } from './modules/clinics/clinics.module'
 import { ClinicSpecialtiesModule } from './modules/clinic-specialties/clinic-specialties.module'
+import { ClinicNotificationChannelsModule } from './modules/clinic-notification-channels/clinic-notification-channels.module'
 import { ThemesModule } from './modules/themes/themes.module'
 import { ScheduleExceptionsModule } from './modules/schedule-exceptions/schedule-exceptions.module'
 import { MedicalRecordCanonicalFieldsModule } from './modules/medical-record-canonical-fields/medical-record-canonical-fields.module'
@@ -57,6 +58,7 @@ import { RolesGuard } from './modules/auth/guards/roles.guard'
     SpecialtiesModule,
     ClinicsModule,
     ClinicSpecialtiesModule,
+    ClinicNotificationChannelsModule,
     ThemesModule,
     ScheduleExceptionsModule,
     MedicalRecordCanonicalFieldsModule,

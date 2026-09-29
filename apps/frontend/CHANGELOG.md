@@ -1,5 +1,12 @@
 # Changelog — Frontend
 
+## [1.18.0] - 2026-09-25
+
+### Added
+- **Seção "Notificações" no detalhe da clínica, no backoffice.** Lista de canais com um toggle por linha, onde o PLATFORM_ADMIN habilita o que cada clínica pode enviar. Fica logo abaixo de Especialidades, que é onde ele já decide o que a clínica pode fazer
+- A lista vem de `NOTIFICATION_CHANNEL_ORDER`/`NOTIFICATION_CHANNELS` do `@app/shared`, não da resposta da API: as linhas da clínica dizem o que está **ligado**, e o enum diz o que **existe**. Um canal que ninguém habilitou ainda precisa aparecer, senão nunca poderia ser ligado — e o segundo canal entra na tela sem tocar neste componente
+- A seção explica em texto o que nenhum canal habilitado significa. Sem isso, "tudo desligado" se lê como preferência da clínica, e não como a decisão de plataforma que é
+
 ## [1.17.0] - 2026-09-25
 
 ### Added

@@ -1,4 +1,5 @@
 import { Repository } from 'typeorm'
+import { NotificationChannel } from '@app/shared'
 import { AppointmentReminder } from '../entities/appointment-reminder.entity'
 import { AppointmentRemindersRepository } from './appointment-reminders.repository'
 
@@ -84,7 +85,7 @@ describe('AppointmentRemindersRepository', () => {
       const builder = makeInsertBuilder([{ id: 'r1', created_at: new Date(), updated_at: new Date() }])
       ;(repo.createQueryBuilder as jest.Mock).mockReturnValue(builder)
 
-      const result = await repository.claim('a1', 'c1', '24h', 'sms', 'pending')
+      const result = await repository.claim('a1', 'c1', '24h', NotificationChannel.WHATSAPP, 'pending')
 
       expect(builder.orIgnore).toHaveBeenCalled()
       expect(result).toMatchObject({ id: 'r1', appointmentId: 'a1', offsetLabel: '24h', status: 'pending' })
@@ -94,7 +95,7 @@ describe('AppointmentRemindersRepository', () => {
       const builder = makeInsertBuilder([])
       ;(repo.createQueryBuilder as jest.Mock).mockReturnValue(builder)
 
-      expect(await repository.claim('a1', 'c1', '24h', 'sms', 'pending')).toBeNull()
+      expect(await repository.claim('a1', 'c1', '24h', NotificationChannel.WHATSAPP, 'pending')).toBeNull()
     })
   })
 
