@@ -1,6 +1,12 @@
-// Stack real ponta a ponta — o filtro "Data de referência" (activeOn) da
-// listagem de agendas nunca tinha teste algum: mostra só agendas cuja janela
-// validFrom/validUntil cobre a data informada.
+// Stack real ponta a ponta para os dois filtros de validade da listagem:
+//
+// - "Mostrar agendas expiradas": agenda encerrada some por padrão.
+// - "Data de referência" (activeOn): mostra só o que valia na data informada,
+//   e tem precedência sobre o de cima — perguntar pelo passado não pode
+//   devolver lista vazia.
+//
+// As duas agendas do cenário são de 2020, portanto expiradas: o caso do
+// activeOn precisa marcar o checkbox antes de enxergá-las.
 
 import { CLINIC_SLUG } from '../../support/clinic'
 
@@ -41,9 +47,20 @@ describe('Schedules — filters real', () => {
         ).then((marchOnly) => {
           cy.loginAsClinicUser(ADMIN_EMAIL, ADMIN_PASSWORD, CLINIC_SLUG).then((adminToken) => {
             cy.visit(`/${CLINIC_SLUG}/schedules`)
+
+            // Expiradas ficam escondidas por padrão.
+            cy.get('[data-testid="schedules-page"]', { timeout: 10000 }).should('exist')
+            cy.get(`[data-testid="schedule-table-row-${januaryOnly.id}"]`).should('not.exist')
+            cy.get(`[data-testid="schedule-table-row-${marchOnly.id}"]`).should('not.exist')
+
+            cy.get('[data-testid="schedule-filter-include-expired"]').check()
             cy.get(`[data-testid="schedule-table-row-${januaryOnly.id}"]`, { timeout: 10000 }).should('exist')
             cy.get(`[data-testid="schedule-table-row-${marchOnly.id}"]`).should('exist')
 
+            cy.get('[data-testid="schedule-filter-include-expired"]').uncheck()
+            cy.get(`[data-testid="schedule-table-row-${januaryOnly.id}"]`).should('not.exist')
+
+            // activeOn vence o filtro de expiradas, mesmo com o checkbox limpo.
             cy.get('[data-testid="schedule-filter-active-on"]').type('2020-01-15')
             cy.get(`[data-testid="schedule-table-row-${januaryOnly.id}"]`, { timeout: 10000 }).should('exist')
             cy.get(`[data-testid="schedule-table-row-${marchOnly.id}"]`).should('not.exist')

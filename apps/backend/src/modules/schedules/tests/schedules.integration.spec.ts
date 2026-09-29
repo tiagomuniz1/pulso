@@ -391,7 +391,7 @@ describe('SchedulesController (integration)', () => {
       expect(body.data.every((s: any) => s.dayOfWeek === DayOfWeek.MONDAY)).toBe(true)
     })
 
-    it('returns all schedules by default regardless of validity period', async () => {
+    it('hides an expired schedule by default', async () => {
       await createScheduleAsDoctor({ validFrom: '2020-01-01', validUntil: '2020-12-31' }).expect(201)
 
       const { body } = await request(app.getHttpServer())
@@ -399,7 +399,58 @@ describe('SchedulesController (integration)', () => {
         .set('Cookie', `access_token=${doctorToken}`)
         .expect(200)
 
+      expect(body.total).toBe(0)
+    })
+
+    it('brings the expired schedule back with includeExpired', async () => {
+      await createScheduleAsDoctor({ validFrom: '2020-01-01', validUntil: '2020-12-31' }).expect(201)
+
+      const { body } = await request(app.getHttpServer())
+        .get('/schedules?includeExpired=true')
+        .set('Cookie', `access_token=${doctorToken}`)
+        .expect(200)
+
       expect(body.total).toBe(1)
+    })
+
+    it('keeps a schedule with no end date visible', async () => {
+      await createScheduleAsDoctor({ validFrom: '2020-01-01', validUntil: null }).expect(201)
+
+      const { body } = await request(app.getHttpServer())
+        .get('/schedules')
+        .set('Cookie', `access_token=${doctorToken}`)
+        .expect(200)
+
+      expect(body.total).toBe(1)
+    })
+
+    it('keeps a schedule that only starts in the future visible', async () => {
+      // Quem acabou de criar a agenda do mês que vem estranharia vê-la sumir:
+      // futura não é expirada.
+      await createScheduleAsDoctor({ validFrom: '2099-01-01', validUntil: '2099-12-31' }).expect(201)
+
+      const { body } = await request(app.getHttpServer())
+        .get('/schedules')
+        .set('Cookie', `access_token=${doctorToken}`)
+        .expect(200)
+
+      expect(body.total).toBe(1)
+    })
+
+    it('treats anything other than "true" as false', async () => {
+      // O @Transform do DTO coage qualquer outro valor para `false` — mesmo
+      // comportamento de `includeInactive` em medications. Vale registrar:
+      // um `includeExpired=1` não traz as expiradas, e isso é de propósito.
+      await createScheduleAsDoctor({ validFrom: '2020-01-01', validUntil: '2020-12-31' }).expect(201)
+
+      for (const value of ['false', '1', 'talvez']) {
+        const { body } = await request(app.getHttpServer())
+          .get(`/schedules?includeExpired=${value}`)
+          .set('Cookie', `access_token=${doctorToken}`)
+          .expect(200)
+
+        expect(body.total).toBe(0)
+      }
     })
 
     it('filters out expired schedules when activeOn is provided', async () => {
@@ -412,6 +463,19 @@ describe('SchedulesController (integration)', () => {
         .expect(200)
 
       expect(body.total).toBe(0)
+    })
+
+    it('lets activeOn win over the expired filter', async () => {
+      // Sem precedência, o corte de hoje anularia a pergunta e a lista viria
+      // vazia sempre que activeOn apontasse para o passado.
+      await createScheduleAsDoctor({ validFrom: '2020-01-01', validUntil: '2020-12-31' }).expect(201)
+
+      const { body } = await request(app.getHttpServer())
+        .get('/schedules?activeOn=2020-06-15')
+        .set('Cookie', `access_token=${doctorToken}`)
+        .expect(200)
+
+      expect(body.total).toBe(1)
     })
 
     it('returns expired schedule when activeOn matches its validity', async () => {

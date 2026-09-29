@@ -9,6 +9,8 @@ import { ISchedulesRepository } from '../repositories/schedules.repository.inter
 import { ListSchedulesQueryDto } from '../dto/list-schedules-query.dto'
 import { Schedule } from '../entities/schedule.entity'
 
+const BRAZIL_UTC_OFFSET_IN_MILLISECONDS = 3 * 60 * 60 * 1000
+
 @Injectable()
 export class ListSchedulesUseCase extends BaseUseCase {
   private readonly logger = new Logger(ListSchedulesUseCase.name)
@@ -35,9 +37,15 @@ export class ListSchedulesUseCase extends BaseUseCase {
       effectiveQuery.professionalId = professional.id
     }
 
-    const { professionalId, dayOfWeek, activeOn, page = 1, limit = 20 } = effectiveQuery
+    const { professionalId, dayOfWeek, activeOn, includeExpired, page = 1, limit = 20 } = effectiveQuery
 
-    const cacheKey = `schedules:list:${clinicId}:${professionalId ?? 'all'}:${dayOfWeek ?? 'all'}:${activeOn ?? 'all'}:${page}:${limit}`
+    // Hoje no fuso da clínica. O Brasil é sempre UTC-3 (horário de verão
+    // abolido em 2019), como em create-appointment.use-case.ts. Usar a data em
+    // UTC esconderia, entre 21h e a meia-noite de Brasília, uma agenda que
+    // ainda vale.
+    const today = new Date(Date.now() - BRAZIL_UTC_OFFSET_IN_MILLISECONDS).toISOString().slice(0, 10)
+
+    const cacheKey = `schedules:list:${clinicId}:${professionalId ?? 'all'}:${dayOfWeek ?? 'all'}:${activeOn ?? 'all'}:${includeExpired === true}:${page}:${limit}`
 
     try {
       const cached = await this.cacheService.get<PaginatedSchedulesResponseDto>(cacheKey)
@@ -46,7 +54,10 @@ export class ListSchedulesUseCase extends BaseUseCase {
       this.logger.warn('Cache read failed', { context: ListSchedulesUseCase.name })
     }
 
-    const [schedules, total] = await this.schedulesRepository.findAll(effectiveQuery, clinicId)
+    const [schedules, total] = await this.schedulesRepository.findAll(
+      { ...effectiveQuery, today },
+      clinicId,
+    )
 
     const professionalIds = [...new Set(schedules.map((s) => s.professionalId))]
     const professionalNames = await this.fetchProfessionalNames(professionalIds)

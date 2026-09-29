@@ -13,6 +13,8 @@ export const schedulesService = {
     if (params?.professionalId) searchParams.set('professionalId', params.professionalId)
     if (params?.dayOfWeek) searchParams.set('dayOfWeek', params.dayOfWeek)
     if (params?.activeOn) searchParams.set('activeOn', params.activeOn)
+    // Só vai na query quando verdadeiro: o default do backend já é esconder.
+    if (params?.includeExpired) searchParams.set('includeExpired', 'true')
     if (params?.page) searchParams.set('page', String(params.page))
     if (params?.limit) searchParams.set('limit', String(params.limit))
     const query = searchParams.toString()
