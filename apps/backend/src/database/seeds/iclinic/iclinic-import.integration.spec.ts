@@ -28,14 +28,30 @@ const MAIN_EMAIL = `brenna.${Date.now()}@e2e.test`
 const ORTHO_EMAIL = `yago.${Date.now()}@e2e.test`
 
 /** Data futura estável: sempre a próxima terça, para casar com a agenda criada. */
+/**
+ * Data no fuso da clínica (UTC-3) — a mesma âncora que `brtToday()` usa no
+ * importador. Precisa ser a mesma: com o spec em hora da máquina e o importador
+ * em BRT, os dois discordariam no CI (que roda em UTC) e o teste voltaria a
+ * falhar por fuso em vez de por regressão.
+ *
+ * Com `toISOString()` cru, `nextTuesday()` devolvia uma quarta — fora da grade
+ * de terça, sem linha para asserir — e `TODAY` virava amanhã, fazendo o caso
+ * "consulta de hoje" passar sem cobrir hoje.
+ */
+function brtDate(date: Date): string {
+  const HOUR_MS = 60 * 60 * 1000
+  return new Date(date.getTime() - 3 * HOUR_MS).toISOString().slice(0, 10)
+}
+
 function nextTuesday(): string {
-  const date = new Date()
-  date.setDate(date.getDate() + ((9 - date.getDay()) % 7 || 7))
+  const brtNow = new Date(Date.now() - 3 * 60 * 60 * 1000)
+  const date = new Date(brtNow)
+  date.setUTCDate(date.getUTCDate() + ((9 - date.getUTCDay()) % 7 || 7))
   return date.toISOString().slice(0, 10)
 }
 
 const FUTURE_DATE = nextTuesday()
-const TODAY = new Date().toISOString().slice(0, 10)
+const TODAY = brtDate(new Date())
 
 describe('importIClinic (integration)', () => {
   let dataSource: DataSource
@@ -51,6 +67,48 @@ describe('importIClinic (integration)', () => {
 
   afterAll(async () => {
     fs.rmSync(dir, { recursive: true, force: true })
+
+    // Este spec importa um acervo inteiro — pacientes, consultas e prontuários —
+    // e não limpava nada. Os prontuários que sobravam referenciam consultas, e
+    // qualquer spec seguinte que faça `DELETE FROM appointments` trava na FK.
+    // Passava despercebido só porque o acervo que vazava, com as datas erradas,
+    // por acaso não colidia.
+    //
+    // Escopado às duas clínicas que o próprio spec cria, em ordem inversa de FK.
+    for (const slug of [MAIN_SLUG, ORTHO_SLUG]) {
+      const clinic = `(SELECT id FROM test.clinics WHERE slug = '${slug}')`
+      const professionals = `(SELECT id FROM test.professionals WHERE clinic_id = ${clinic})`
+      const users = `(SELECT id FROM test.users WHERE clinic_id = ${clinic})`
+
+      // Folhas primeiro: o que aponta para consulta, paciente ou profissional.
+      for (const table of [
+        'medical_records',
+        'vaccine_indications',
+        'vaccinations',
+        'vaccine_decisions',
+        'appointments',
+        'appointment_series',
+        'schedule_exceptions',
+        'schedules',
+        'professional_registrations',
+        'appointment_labels',
+        'clinic_specialties',
+        'medical_record_templates',
+        'clinic_notification_channels',
+        'patients',
+      ]) {
+        await dataSource.query(`DELETE FROM test.${table} WHERE clinic_id = ${clinic}`)
+      }
+
+      // Sem clinic_id próprio: só se alcançam pelo profissional ou pelo usuário.
+      await dataSource.query(`DELETE FROM test.professional_specialties WHERE professional_id IN ${professionals}`)
+      await dataSource.query(`DELETE FROM test.professionals WHERE clinic_id = ${clinic}`)
+      await dataSource.query(`DELETE FROM test.refresh_tokens WHERE user_id IN ${users}`)
+      await dataSource.query(`DELETE FROM test.password_set_tokens WHERE user_id IN ${users}`)
+      await dataSource.query(`DELETE FROM test.users WHERE clinic_id = ${clinic}`)
+      await dataSource.query(`DELETE FROM test.clinics WHERE slug = '${slug}'`)
+    }
+
     await dataSource.destroy()
   })
 
@@ -258,7 +316,7 @@ async function createClinicWithProfessional(
     await dataSource.query(
       `INSERT INTO test.schedules (id, professional_id, clinic_id, day_of_week, start_time, end_time, slot_duration_in_minutes, valid_from)
        VALUES ($1, $2, $3, $4, '08:00', '12:30', 45, $5)`,
-      [randomUUID(), professionalId, clinicId, DayOfWeek.TUESDAY, new Date().toISOString().slice(0, 10)],
+      [randomUUID(), professionalId, clinicId, DayOfWeek.TUESDAY, brtDate(new Date())],
     )
 
     // Uma paciente que já existe no Pulso, sem origem externa — o importador

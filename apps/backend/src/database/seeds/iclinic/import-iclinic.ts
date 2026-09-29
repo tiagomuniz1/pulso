@@ -142,6 +142,22 @@ export async function importIClinic(
 
 // ---------------------------------------------------------------- catálogos
 
+/**
+ * Data de hoje no fuso da clínica (UTC-3), nunca `toISOString()` cru.
+ *
+ * O ISO é UTC, e a instância de produção roda em UTC: entre 21h e a meia-noite
+ * de Brasília, "hoje" já seria amanhã. Uma consulta marcada para hoje cairia em
+ * `row.date >= today` como falsa, seria lida como passada e — sem prontuário
+ * casado, que consulta de hoje às 17h ainda não tem — **cancelada**.
+ *
+ * É o mesmo bug que o `>=` veio corrigir; o operador estava certo, a data é que
+ * não estava. Mesma âncora usada em `send-appointment-reminders.use-case.ts`.
+ */
+function brtToday(): string {
+  const HOUR_MS = 60 * 60 * 1000
+  return new Date(Date.now() - 3 * HOUR_MS).toISOString().slice(0, 10)
+}
+
 async function ensureTemplates(
   queryRunner: QueryRunner,
   context: ImportContext,
@@ -557,7 +573,7 @@ async function importAppointments(
   const ids = new Map<string, string>()
 
   const recordKeys = new Set(records.map(recordKeyByPatientAndDate))
-  const today = new Date().toISOString().slice(0, 10)
+  const today = brtToday()
 
   // O índice UQ_appointment_slot_active proíbe dois `scheduled`/`confirmed` no
   // mesmo horário do mesmo profissional — e o IClinic permitia. Duas marcações
@@ -722,7 +738,7 @@ async function loadRealSlots(
 ): Promise<Map<string, RealSlot>> {
   const repo = queryRunner.manager.getRepository(Schedule)
   const slots = new Map<string, RealSlot>()
-  const today = new Date().toISOString().slice(0, 10)
+  const today = brtToday()
 
   for (const target of [context.main, context.orthopedics]) {
     const schedules = await repo
@@ -889,10 +905,12 @@ async function importMedicalRecords(
   }
 }
 
+// Véspera no fuso da clínica, pela mesma razão de `brtToday()`: à noite, em UTC,
+// isto devolveria hoje — e a agenda legado de 5 minutos continuaria válida,
+// competindo com a agenda real no dia do go-live.
 function yesterdayIso(): string {
-  const date = new Date()
-  date.setDate(date.getDate() - 1)
-  return date.toISOString().slice(0, 10)
+  const HOUR_MS = 60 * 60 * 1000
+  return new Date(Date.now() - 3 * HOUR_MS - 24 * HOUR_MS).toISOString().slice(0, 10)
 }
 
 /**
