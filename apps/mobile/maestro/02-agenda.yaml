@@ -1,0 +1,32 @@
+appId: center.pulso.app
+name: Navegar pela agenda do dia
+env:
+  EMAIL: ${MAESTRO_EMAIL}
+  PASSWORD: ${MAESTRO_PASSWORD}
+  CLINIC: ${MAESTRO_CLINIC}
+---
+- runFlow: shared/login.yaml
+
+- assertVisible:
+    id: "agenda-date"
+
+# "Voltar para hoje" só existe quando se saiu de hoje.
+- assertNotVisible:
+    id: "agenda-today"
+
+- tapOn:
+    id: "agenda-next-day"
+- assertVisible:
+    id: "agenda-today"
+
+- tapOn:
+    id: "agenda-previous-day"
+- tapOn:
+    id: "agenda-previous-day"
+- assertVisible:
+    id: "agenda-today"
+
+- tapOn:
+    id: "agenda-today"
+- assertNotVisible:
+    id: "agenda-today"

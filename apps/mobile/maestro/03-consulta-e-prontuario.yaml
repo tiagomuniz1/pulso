@@ -1,0 +1,53 @@
+appId: center.pulso.app
+name: Abrir consulta e preencher prontuário
+env:
+  EMAIL: ${MAESTRO_EMAIL}
+  PASSWORD: ${MAESTRO_PASSWORD}
+  CLINIC: ${MAESTRO_CLINIC}
+---
+- runFlow: shared/login.yaml
+
+# A primeira consulta do dia. O fluxo pressupõe a clínica semeada com agenda.
+- tapOn:
+    id: ".*appointment-row-.*"
+
+- assertVisible:
+    id: "appointment-detail-screen"
+- assertVisible:
+    id: "patient-card"
+- assertVisible:
+    id: "appointment-when"
+- assertVisible:
+    id: "appointment-status"
+
+- tapOn:
+    id: "open-medical-record"
+- assertVisible:
+    id: "medical-record-screen"
+
+# Modelo primeiro: a clínica pode ter vários no mesmo escopo, e quem escolhe
+# é quem atende.
+- assertVisible:
+    id: "template-picker"
+- tapOn:
+    id: ".*template-choice-.*"
+
+- assertVisible:
+    id: "record-notes"
+- tapOn:
+    id: "record-notes"
+- inputText: "Observação registrada pelo fluxo E2E."
+
+- tapOn:
+    id: "save-medical-record"
+- assertVisible:
+    id: "save-success"
+
+# Reabrir não oferece o seletor de novo: o schema ficou congelado no registro.
+- back
+- tapOn:
+    id: "open-medical-record"
+- assertVisible:
+    id: "record-notes"
+- assertNotVisible:
+    id: "template-picker"

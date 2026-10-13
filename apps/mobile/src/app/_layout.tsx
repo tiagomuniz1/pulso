@@ -8,6 +8,12 @@ import { useSessionStore } from '../features/auth/session.store'
 import { readSession } from '../lib/token-storage'
 import { setOnSessionExpired } from '../lib/api-client'
 import { ThemeProvider } from '../theme/theme-context'
+import { registerCoreApiClient } from '../lib/core-client'
+
+// No escopo do módulo, antes de qualquer tela montar: os services do
+// `@app/core` pedem o cliente na primeira chamada, e a agenda dispara a
+// primeira query já no primeiro render.
+registerCoreApiClient()
 
 // Mesma configuração da web (`lib/react-query.config.ts`): mutations não
 // repetem sozinhas, e um minuto de frescor evita refetch a cada foco de tela.

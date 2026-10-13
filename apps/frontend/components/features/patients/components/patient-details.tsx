@@ -1,19 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { KINSHIP_TYPE_LABELS, PatientGender } from '@app/shared'
+import { KINSHIP_TYPE_LABELS, PATIENT_GENDER_LABELS } from '@app/shared'
 import { useBasePath } from '@/lib/slug-context'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Typography } from '@/components/ui/atoms/typography/typography'
 import { formatPhone } from '@/lib/format-phone'
 import { formatCpf } from '@/lib/format-cpf'
 import type { IPatientModel } from '../types/patient-model.types'
-
-const genderLabel: Record<PatientGender, string> = {
-  [PatientGender.MALE]: 'Masculino',
-  [PatientGender.FEMALE]: 'Feminino',
-  [PatientGender.OTHER]: 'Outro',
-}
 
 interface PatientDetailsProps {
   patient: IPatientModel
@@ -101,7 +95,7 @@ export function PatientDetails({ patient, canManage, onDeleteClick }: PatientDet
           <div className="bg-surface px-6 py-4">
             <DetailRow
               label="Gênero"
-              value={genderLabel[patient.gender]}
+              value={PATIENT_GENDER_LABELS[patient.gender]}
               testId="patient-details-gender"
             />
           </div>

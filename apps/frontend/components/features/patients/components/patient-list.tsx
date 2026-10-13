@@ -6,7 +6,7 @@ import { useBasePath } from '@/lib/slug-context'
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Input } from '@/components/ui/atoms/input/input'
-import { PatientGender, UserRole } from '@app/shared'
+import { PATIENT_GENDER_LABELS, UserRole } from '@app/shared'
 import { formatPhone } from '@/lib/format-phone'
 import { MobileListCard } from '@/components/ui/molecules/mobile-list-card/mobile-list-card'
 import { usePatients } from '../hooks/use-patients.hook'
@@ -15,12 +15,6 @@ import { PatientListSkeleton } from './patient-list-skeleton'
 import { PatientDeleteDialog } from './patient-delete-dialog'
 import { useAuthStore } from '@/stores/auth.store'
 import type { IPatientModel } from '../types/patient-model.types'
-
-const genderLabel: Record<PatientGender, string> = {
-  [PatientGender.MALE]: 'Masculino',
-  [PatientGender.FEMALE]: 'Feminino',
-  [PatientGender.OTHER]: 'Outro',
-}
 
 export function PatientList() {
   const basePath = useBasePath()
@@ -190,7 +184,7 @@ export function PatientList() {
                       className="hidden px-6 py-4 text-sm text-text-dim lg:table-cell"
                       data-testid={`patient-gender-${patient.id}`}
                     >
-                      {genderLabel[patient.gender]}
+                      {PATIENT_GENDER_LABELS[patient.gender]}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -262,7 +256,7 @@ export function PatientList() {
                       year: 'numeric',
                     }),
                   },
-                  { label: 'Gênero', value: genderLabel[patient.gender] },
+                  { label: 'Gênero', value: PATIENT_GENDER_LABELS[patient.gender] },
                 ]}
                 actions={
                   <>

@@ -11,6 +11,11 @@ module.exports = {
     // apontar para `dist` obrigaria a reconstruir o core antes de cada rodada.
     '^@app/core$': '<rootDir>/../../packages/core/src/index.ts',
   },
-  collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/app/**'],
+  collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/app/**', '!src/tests/**'],
   coveragePathIgnorePatterns: ['/node_modules/'],
+  // A régua da casa, verificada pela máquina: um ramo novo sem teste falha o
+  // comando, em vez de aparecer num relatório que ninguém lê.
+  coverageThreshold: {
+    global: { branches: 100, functions: 100, lines: 100, statements: 100 },
+  },
 }
