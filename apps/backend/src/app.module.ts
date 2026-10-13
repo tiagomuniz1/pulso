@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 import { ScheduleModule } from '@nestjs/schedule'
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core'
-import { ThrottlerModule } from '@nestjs/throttler'
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { DatabaseModule } from './database/database.module'
 import { CacheModule } from './cache/cache.module'
 import { HealthModule } from './health/health.module'
@@ -41,9 +41,18 @@ import { RolesGuard } from './modules/auth/guards/roles.guard'
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot([
-      { name: 'default', ttl: 60000, limit: 300 },
-    ]),
+    ThrottlerModule.forRoot({
+      throttlers: [{ name: 'default', ttl: 60000, limit: 300 }],
+      // A suíte de integração dispara milhares de requisições do mesmo IP, e
+      // todo spec tem um helper `loginAs` — com o limite de 10/60s do login, a
+      // suíte inteira cairia em 429 (medido: 873 falhas). Desligar por flag é o
+      // que permite manter o guard registrado em produção sem tornar a suíte
+      // refém do contador.
+      //
+      // A flag é explícita, não derivada de NODE_ENV, justamente para o spec de
+      // throttling poder religá-la e provar que o 429 acontece.
+      skipIf: () => process.env.THROTTLE_DISABLED === 'true',
+    }),
     ScheduleModule.forRoot(),
     DatabaseModule,
     CacheModule,
@@ -81,6 +90,14 @@ import { RolesGuard } from './modules/auth/guards/roles.guard'
   providers: [
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
     { provide: APP_INTERCEPTOR, useClass: RequestIdInterceptor },
+    // Antes deste registro os @Throttle dos endpoints de auth eram decorativos:
+    // o módulo estava importado, mas sem guard global nada era aplicado. Na web
+    // isso era atenuado pelo navegador e pelo captcha após 2 falhas; com os
+    // endpoints de token para cliente nativo, seria força bruta sem freio.
+    //
+    // Vem antes do JwtAuthGuard de propósito — barrar a enxurrada custa menos
+    // que verificar a assinatura de cada token dela.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],

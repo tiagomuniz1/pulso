@@ -1,0 +1,10 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    // Explícito porque o `@types` do monorepo é compartilhado: sem isto o app
+    // herdaria os tipos de `express`, `bcrypt` e companhia, que são do backend
+    // e não existem em runtime nenhum do celular.
+    "types": ["jest"]
+  }
+}

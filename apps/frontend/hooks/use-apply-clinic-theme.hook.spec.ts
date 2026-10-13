@@ -1,15 +1,15 @@
 jest.mock('@/components/features/themes/hooks/use-active-theme.hook')
 
 import { renderHook } from '@testing-library/react'
-import { ThemeBorderRadius } from '@app/shared'
-import { useActiveTheme } from '@/components/features/themes/hooks/use-active-theme.hook'
 import {
-  useApplyClinicTheme,
+  computeBgDark,
+  computeBgLight,
   computeDarkAccent,
   computeDarkSoft,
-  computeBgLight,
-  computeBgDark,
-} from './use-apply-clinic-theme.hook'
+  ThemeBorderRadius,
+} from '@app/shared'
+import { useActiveTheme } from '@/components/features/themes/hooks/use-active-theme.hook'
+import { useApplyClinicTheme } from './use-apply-clinic-theme.hook'
 
 const mockUseActiveTheme = useActiveTheme as jest.MockedFunction<typeof useActiveTheme>
 
