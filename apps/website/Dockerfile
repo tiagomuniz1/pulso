@@ -6,6 +6,11 @@ COPY apps/backend/package.json ./apps/backend/
 COPY apps/frontend/package.json ./apps/frontend/
 COPY apps/website/package.json ./apps/website/
 COPY packages/shared/package.json ./packages/shared/
+COPY packages/core/package.json ./packages/core/
+# `apps/mobile` nunca é compilado aqui, mas o `yarn install --immutable`
+# recusa um lockfile cujo workspace não está presente: sem este manifesto
+# ele tenta buscar `@app/core` no registro público e o build morre.
+COPY apps/mobile/package.json ./apps/mobile/
 COPY tools/ai-cli/package.json ./tools/ai-cli/
 RUN corepack prepare --activate && yarn install --immutable
 

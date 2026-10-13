@@ -6,5 +6,12 @@
     // herdaria os tipos de `express`, `bcrypt` e companhia, que são do backend
     // e não existem em runtime nenhum do celular.
     "types": ["jest"]
-  }
+  },
+  // `include` é escrito pelo `expo start` — não editar à mão.
+  "include": [
+      "**/*.ts",
+      "**/*.tsx",
+      ".expo/types/**/*.ts",
+      "expo-env.d.ts"
+  ]
 }
