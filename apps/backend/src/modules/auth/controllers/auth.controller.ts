@@ -7,6 +7,7 @@ import { CurrentUser } from '../decorators/current-user.decorator'
 import { LoginDto } from '../dto/login.dto'
 import { LoginResponseDto } from '../dto/login-response.dto'
 import { MeResponseDto } from '../dto/me-response.dto'
+import { LogoutDto } from '../dto/logout.dto'
 import { RefreshTokenDto } from '../dto/refresh-token.dto'
 import { TokenResponseDto } from '../dto/token-response.dto'
 import { RefreshResponseDto } from '../dto/auth-response.dto'
@@ -151,6 +152,27 @@ export class AuthController {
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   async tokenRefresh(@Body() dto: RefreshTokenDto): Promise<RefreshResponseDto> {
     return this.refreshTokenUseCase.execute(dto)
+  }
+
+  /**
+   * Revoga o refresh token do app.
+   *
+   * O `/auth/logout` de cookie lê o token de `req.cookies` — sem cookie, ele
+   * limpa cabeçalhos e **não revoga nada**. Para o app isso seria sair da conta
+   * deixando uma credencial de sete dias viva no servidor, válida para quem
+   * tivesse extraído do aparelho.
+   *
+   * Público porque sair tem de funcionar com o access token já expirado: exigir
+   * autenticação aqui faria o logout falhar justamente quando mais importa.
+   * A posse do refresh token é a autorização — e revogar um token que já é seu
+   * não dá acesso a nada.
+   */
+  @Post('token/logout')
+  @Public()
+  @HttpCode(204)
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  async tokenLogout(@Body() dto: LogoutDto): Promise<void> {
+    await this.logoutUseCase.execute(dto)
   }
 
   @Post('logout')

@@ -201,6 +201,56 @@ describe('Auth — credenciais para cliente nativo (integration)', () => {
     })
   })
 
+  describe('POST /auth/token/logout', () => {
+    async function getTokens(): Promise<{ accessToken: string; refreshToken: string }> {
+      const { body } = await request(app.getHttpServer())
+        .post('/auth/token')
+        .send({ email, password: PASSWORD, slug: CLINIC_SLUG })
+        .expect(200)
+      return body
+    }
+
+    // Sem isto, sair da conta no app deixaria uma credencial de sete dias viva
+    // no servidor — o /auth/logout de cookie não revoga nada sem cookie.
+    it('revoga o refresh token, que deixa de servir', async () => {
+      const { refreshToken } = await getTokens()
+
+      await request(app.getHttpServer())
+        .post('/auth/token/logout')
+        .send({ refreshToken })
+        .expect(204)
+
+      await request(app.getHttpServer())
+        .post('/auth/token/refresh')
+        .send({ refreshToken })
+        .expect(401)
+    })
+
+    // Sair tem de funcionar com o access token já expirado — é justamente aí
+    // que mais importa. A posse do refresh token é a autorização.
+    it('não exige autenticação', async () => {
+      const { refreshToken } = await getTokens()
+
+      await request(app.getHttpServer())
+        .post('/auth/token/logout')
+        .send({ refreshToken })
+        .expect(204)
+    })
+
+    // Sair duas vezes, ou com um token que nunca existiu, não é erro: o
+    // use-case retorna em silêncio quando não há o que revogar.
+    it('é idempotente', async () => {
+      const { refreshToken } = await getTokens()
+
+      await request(app.getHttpServer()).post('/auth/token/logout').send({ refreshToken }).expect(204)
+      await request(app.getHttpServer()).post('/auth/token/logout').send({ refreshToken }).expect(204)
+      await request(app.getHttpServer())
+        .post('/auth/token/logout')
+        .send({ refreshToken: 'nunca-existiu' })
+        .expect(204)
+    })
+  })
+
   // O guard é global, mas a suíte roda com THROTTLE_DISABLED=true (ver
   // tests/setup-integration-env.ts): milhares de requisições do mesmo IP e um
   // helper `loginAs` por spec derrubariam tudo em 429. Aqui a flag é religada
