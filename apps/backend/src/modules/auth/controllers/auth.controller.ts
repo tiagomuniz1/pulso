@@ -7,6 +7,9 @@ import { CurrentUser } from '../decorators/current-user.decorator'
 import { LoginDto } from '../dto/login.dto'
 import { LoginResponseDto } from '../dto/login-response.dto'
 import { MeResponseDto } from '../dto/me-response.dto'
+import { RefreshTokenDto } from '../dto/refresh-token.dto'
+import { TokenResponseDto } from '../dto/token-response.dto'
+import { RefreshResponseDto } from '../dto/auth-response.dto'
 import { LoginUseCase } from '../use-cases/login.use-case'
 import { LogoutUseCase } from '../use-cases/logout.use-case'
 import { MeUseCase } from '../use-cases/me.use-case'
@@ -109,6 +112,45 @@ export class AuthController {
 
     res.cookie(names.access, accessToken, { ...cookieOptions, maxAge: expiresIn * 1000 })
     res.cookie(names.refresh, newRefreshToken, { ...cookieOptions, maxAge: refreshTokenExpiresIn * 1000 })
+  }
+
+  // ── Cliente nativo ────────────────────────────────────────────────────────
+  //
+  // O app React Native não tem cookie de navegador: `JwtStrategy` já aceita
+  // `Authorization: Bearer` como segundo extractor, então toda rota autenticada
+  // funciona — mas login e refresh não, porque hoje entregam os tokens
+  // exclusivamente em `Set-Cookie`.
+  //
+  // Estes dois endpoints resolvem isso sem mexer nos de cookie: reutilizam os
+  // mesmos use-cases, que já são agnósticos de transporte e já devolvem os
+  // tokens em memória. Rotação, revogação e captcha por tentativas continuam
+  // valendo sem uma linha nova de regra.
+
+  @Post('token')
+  @Public()
+  @HttpCode(200)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async token(@Body() dto: LoginDto): Promise<TokenResponseDto> {
+    const { user, accessToken, refreshToken, accessTokenMaxAge, refreshTokenMaxAge } =
+      await this.loginUseCase.execute(dto)
+
+    // maxAge vem em ms (é o que `response.cookie` espera); o contrato de token
+    // é em segundos, como o de refresh.
+    return {
+      user,
+      accessToken,
+      refreshToken,
+      expiresIn: Math.floor(accessTokenMaxAge / 1000),
+      refreshTokenExpiresIn: Math.floor(refreshTokenMaxAge / 1000),
+    }
+  }
+
+  @Post('token/refresh')
+  @Public()
+  @HttpCode(200)
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  async tokenRefresh(@Body() dto: RefreshTokenDto): Promise<RefreshResponseDto> {
+    return this.refreshTokenUseCase.execute(dto)
   }
 
   @Post('logout')

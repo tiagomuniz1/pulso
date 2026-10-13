@@ -9,3 +9,14 @@
  */
 process.env.EMAIL_PROVIDER = 'smtp'
 delete process.env.SMTP_HOST
+
+/**
+ * Throttling desligado por padrão na suíte.
+ *
+ * O `ThrottlerGuard` é global, e `POST /auth/login` tem limite de 10 por minuto.
+ * Todo spec de integração loga pelo menos uma vez, muitos logam por role — com o
+ * contador ligado, a suíte inteira cai em 429 a partir do primeiro minuto.
+ *
+ * O spec de throttling apaga esta variável para si e verifica o 429 de verdade.
+ */
+process.env.THROTTLE_DISABLED = 'true'
