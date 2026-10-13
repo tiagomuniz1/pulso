@@ -1,6 +1,6 @@
-jest.mock('@/lib/api-client')
+jest.mock('../../../api/api-client.registry')
 
-import { apiClient } from '@/lib/api-client'
+import { apiClient } from '../../../api/api-client.registry'
 import { CouncilType, MedicalRecordFieldType } from '@app/shared'
 import { medicalRecordTemplatesService } from './medical-record-templates.service'
 
@@ -49,6 +49,17 @@ describe('medicalRecordTemplatesService', () => {
       mockApiClient.get.mockResolvedValue({ data: [], total: 0, page: 1, limit: 1 })
       await medicalRecordTemplatesService.getAll({ councilType: CouncilType.CRN, limit: 1 })
       expect(mockApiClient.get).toHaveBeenCalledWith('/medical-record-templates?limit=1&councilType=crn')
+    })
+
+    // `false` precisa viajar: é como o ADMIN lista os modelos aposentados, e
+    // um `if (params.isActive)` comum trataria isso como "não filtrar".
+    it.each([
+      [true, 'isActive=true'],
+      [false, 'isActive=false'],
+    ])('sends isActive=%s to the query string', async (isActive, expected) => {
+      mockApiClient.get.mockResolvedValue({ data: [], total: 0, page: 1, limit: 20 } as any)
+      await medicalRecordTemplatesService.getAll({ isActive })
+      expect(mockApiClient.get).toHaveBeenCalledWith(`/medical-record-templates?${expected}`)
     })
 
     it('returns API response', async () => {

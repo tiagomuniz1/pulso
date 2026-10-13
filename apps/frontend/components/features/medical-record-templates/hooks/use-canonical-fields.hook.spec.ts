@@ -1,11 +1,11 @@
-jest.mock('../use-cases/list-canonical-fields.use-case')
+jest.mock('@app/core/src/features/medical-record-templates/use-cases/list-canonical-fields.use-case')
 
 import React from 'react'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { MedicalRecordFieldType } from '@app/shared'
 import { createQueryClient } from '@/lib/react-query.config'
-import { listCanonicalFieldsUseCase } from '../use-cases/list-canonical-fields.use-case'
+import { listCanonicalFieldsUseCase } from '@app/core'
 import { useCanonicalFields } from './use-canonical-fields.hook'
 
 function wrapper({ children }: { children: React.ReactNode }) {

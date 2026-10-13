@@ -10,7 +10,7 @@ import { usePatientMedicalHistory } from '../hooks/use-patient-medical-history.h
 import { useMedicalRecord } from '../hooks/use-medical-record.hook'
 import { downloadMedicalRecordPdfUseCase } from '../use-cases/download-medical-record-pdf.use-case'
 import { PatientMedicalHistory } from './patient-medical-history'
-import type { IMedicalRecordModel } from '../types/medical-record-model.types'
+import type { IMedicalRecordModel } from '@app/core'
 
 const mockUseHistory = usePatientMedicalHistory as jest.Mock
 const mockUseRecord = useMedicalRecord as jest.Mock

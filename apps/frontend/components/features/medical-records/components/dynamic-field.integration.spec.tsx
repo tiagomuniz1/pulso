@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MedicalRecordFieldType } from '@app/shared'
 import { DynamicField } from './dynamic-field'
-import type { IRecordFieldModel } from '../types/medical-record-model.types'
+import type { IRecordFieldModel } from '@app/core'
 
 function makeField(overrides: Partial<IRecordFieldModel> = {}): IRecordFieldModel {
   return {

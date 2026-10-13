@@ -1,9 +1,9 @@
-jest.mock('../services/canonical-fields.service')
+jest.mock('@app/core/src/features/medical-record-templates/services/canonical-fields.service')
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MedicalRecordFieldType } from '@app/shared'
-import { canonicalFieldsService } from '../services/canonical-fields.service'
+import { canonicalFieldsService } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { CanonicalFieldPicker } from './canonical-field-picker'
 

@@ -1,5 +1,5 @@
 import { CouncilType } from '@app/shared'
-import type { ITemplateModel } from '../types/template-model.types'
+import type { ITemplateModel } from '@app/core'
 import { professionLabel, specialtyLabel } from './template-labels'
 
 const template = (overrides: Partial<ITemplateModel>) => overrides as ITemplateModel

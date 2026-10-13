@@ -1,6 +1,6 @@
-jest.mock('@/lib/api-client')
+jest.mock('../../../api/api-client.registry')
 
-import { apiClient } from '@/lib/api-client'
+import { apiClient } from '../../../api/api-client.registry'
 import { medicalRecordsService } from './medical-records.service'
 
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>
@@ -57,6 +57,17 @@ describe('medicalRecordsService', () => {
       await medicalRecordsService.listByPatient('patient-uuid', { page: 2, limit: 10 })
       expect(mockApiClient.get).toHaveBeenCalledWith(
         '/medical-records?patientId=patient-uuid&page=2&limit=10',
+      )
+    })
+
+    it('narrows by specialty and excludes the current appointment', async () => {
+      mockApiClient.get.mockResolvedValue({ data: [], total: 0, page: 1, limit: 20 } as any)
+      await medicalRecordsService.listByPatient('patient-uuid', {
+        specialtyId: 'spec-uuid',
+        excludeAppointmentId: 'appt-uuid',
+      })
+      expect(mockApiClient.get).toHaveBeenCalledWith(
+        '/medical-records?patientId=patient-uuid&specialtyId=spec-uuid&excludeAppointmentId=appt-uuid',
       )
     })
   })

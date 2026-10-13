@@ -1,4 +1,4 @@
-import type { IApiError } from '@/types/api.types'
+import type { IApiError } from '../../../api/api-client.contract'
 import { medicalRecordsService } from '../services/medical-records.service'
 import { toMedicalRecordModel } from '../mappers/to-medical-record-model.mapper'
 import type { IMedicalRecordModel } from '../types/medical-record-model.types'

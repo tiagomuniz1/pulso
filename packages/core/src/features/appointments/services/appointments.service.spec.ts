@@ -1,13 +1,30 @@
-jest.mock('@/lib/api-client')
+jest.mock('../../../api/api-client.registry')
 
 import { AppointmentCancellationScope, AppointmentStatus, RecurrenceInterval } from '@app/shared'
-import { apiClient } from '@/lib/api-client'
+import { apiClient } from '../../../api/api-client.registry'
 import { appointmentsService } from './appointments.service'
 
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>
 
 describe('appointmentsService', () => {
   beforeEach(() => jest.clearAllMocks())
+
+  it('setLabel calls PATCH /appointments/:id/label', () => {
+    mockApiClient.patch.mockResolvedValue({} as any)
+    appointmentsService.setLabel('appt-uuid', 'label-uuid')
+    expect(mockApiClient.patch).toHaveBeenCalledWith('/appointments/appt-uuid/label', {
+      labelId: 'label-uuid',
+    })
+  })
+
+  // Removing the label is the same endpoint with null — not a DELETE.
+  it('setLabel sends null to clear the label', () => {
+    mockApiClient.patch.mockResolvedValue({} as any)
+    appointmentsService.setLabel('appt-uuid', null)
+    expect(mockApiClient.patch).toHaveBeenCalledWith('/appointments/appt-uuid/label', {
+      labelId: null,
+    })
+  })
 
   it('getAll calls GET /appointments without query when no params', () => {
     mockApiClient.get.mockResolvedValue({} as any)

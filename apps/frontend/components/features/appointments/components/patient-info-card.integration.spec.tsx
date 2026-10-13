@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react'
 import { PatientGender } from '@app/shared'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { PatientInfoCard } from './patient-info-card'
-import type { IAppointmentPatientModel } from '../types/appointment-model.types'
+import type { IAppointmentPatientModel } from '@app/core'
 
 const makePatient = (overrides: Partial<IAppointmentPatientModel> = {}): IAppointmentPatientModel => ({
   fullName: 'Maria Silva',

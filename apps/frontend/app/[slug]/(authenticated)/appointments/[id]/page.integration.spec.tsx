@@ -1,7 +1,7 @@
-jest.mock('@/components/features/appointments/services/appointments.service')
+jest.mock('@app/core/src/features/appointments/services/appointments.service')
 jest.mock('@/components/features/professionals/services/professionals.service')
-jest.mock('@/components/features/medical-records/services/medical-records.service')
-jest.mock('@/components/features/medical-record-templates/services/medical-record-templates.service')
+jest.mock('@app/core/src/features/medical-records/services/medical-records.service')
+jest.mock('@app/core/src/features/medical-record-templates/services/medical-record-templates.service')
 jest.mock('@/components/features/prescriptions/services/prescriptions.service')
 jest.mock('@/components/features/atestados/services/atestados.service')
 jest.mock('@/components/features/exames/services/exams.service')
@@ -17,10 +17,10 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AppointmentStatus, PatientGender, UserRole, CouncilType } from '@app/shared'
 import { useRouter } from 'next/navigation'
-import { appointmentsService } from '@/components/features/appointments/services/appointments.service'
+import { appointmentsService } from '@app/core'
 import { professionalsService } from '@/components/features/professionals/services/professionals.service'
-import { medicalRecordsService } from '@/components/features/medical-records/services/medical-records.service'
-import { medicalRecordTemplatesService } from '@/components/features/medical-record-templates/services/medical-record-templates.service'
+import { medicalRecordsService } from '@app/core'
+import { medicalRecordTemplatesService } from '@app/core'
 import { prescriptionsService } from '@/components/features/prescriptions/services/prescriptions.service'
 import { atestadosService } from '@/components/features/atestados/services/atestados.service'
 import { examsService } from '@/components/features/exames/services/exams.service'

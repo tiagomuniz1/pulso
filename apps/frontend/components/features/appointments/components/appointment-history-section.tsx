@@ -8,7 +8,7 @@ import { formatFieldValue } from '@/components/features/medical-records/utils/fo
 import type {
   IMedicalRecordModel,
   IRecordFieldModel,
-} from '@/components/features/medical-records/types/medical-record-model.types'
+} from '@app/core'
 
 // Carrega uma página larga de propósito: a busca é local, e paginar em 10
 // faria o médico procurar dentro de um pedaço do histórico sem saber disso.

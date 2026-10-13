@@ -4,7 +4,7 @@ import { MedicalRecordFieldType } from '@app/shared'
 import { FormField } from '@/components/ui/molecules/form-field/form-field'
 import { Input } from '@/components/ui/atoms/input/input'
 import { cn } from '@/lib/cn'
-import type { IRecordFieldModel } from '../types/medical-record-model.types'
+import type { IRecordFieldModel } from '@app/core'
 
 interface DynamicFieldProps {
   field: IRecordFieldModel

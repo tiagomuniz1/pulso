@@ -1,13 +1,13 @@
-jest.mock('../use-cases/preview-recurrence.use-case')
+jest.mock('@app/core/src/features/appointments/use-cases/preview-recurrence.use-case')
 
 import React from 'react'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { DayOfWeek, RecurrenceInterval, RecurringOccurrenceAvailability } from '@app/shared'
 import { createQueryClient } from '@/lib/react-query.config'
-import { previewRecurrenceUseCase } from '../use-cases/preview-recurrence.use-case'
+import { previewRecurrenceUseCase } from '@app/core'
 import { useRecurrencePreview } from './use-recurrence-preview.hook'
-import type { IRecurrencePreviewModel } from '../types/appointment-model.types'
+import type { IRecurrencePreviewModel } from '@app/core'
 
 function wrapper({ children }: { children: React.ReactNode }) {
   const client = createQueryClient()

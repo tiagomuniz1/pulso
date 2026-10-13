@@ -1,4 +1,4 @@
-jest.mock('../services/appointments.service')
+jest.mock('@app/core/src/features/appointments/services/appointments.service')
 jest.mock('@/components/features/patients/services/patients.service')
 jest.mock('@/components/features/professionals/services/professionals.service')
 jest.mock('next/navigation', () => ({ useRouter: jest.fn(() => ({ push: jest.fn() })) }))
@@ -11,7 +11,7 @@ import { AppointmentStatus,
   MINIMUM_RECURRING_OCCURRENCES,
   RecurrenceInterval,
   RecurringOccurrenceAvailability, CouncilType, PatientGender } from '@app/shared'
-import { appointmentsService } from '../services/appointments.service'
+import { appointmentsService } from '@app/core'
 import { patientsService } from '@/components/features/patients/services/patients.service'
 import { professionalsService } from '@/components/features/professionals/services/professionals.service'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'

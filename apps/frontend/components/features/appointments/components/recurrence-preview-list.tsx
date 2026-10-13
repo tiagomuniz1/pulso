@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/atoms/skeleton/skeleton'
 import { RECURRENCE_STATUS_BADGE_CLASS, RECURRENCE_STATUS_LABELS } from '@/lib/recurrence-status'
 import { formatDateToBR } from '@/lib/format-date'
 import { cn } from '@/lib/cn'
-import type { IRecurrencePreviewModel } from '../types/appointment-model.types'
+import type { IRecurrencePreviewModel } from '@app/core'
 
 interface RecurrencePreviewListProps {
   preview?: IRecurrencePreviewModel

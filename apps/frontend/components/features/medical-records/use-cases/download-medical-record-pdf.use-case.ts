@@ -1,5 +1,5 @@
 import { downloadBlob } from '@/lib/download-blob'
-import { medicalRecordsService } from '../services/medical-records.service'
+import { medicalRecordsService } from '@app/core'
 
 export async function downloadMedicalRecordPdfUseCase(
   id: string,

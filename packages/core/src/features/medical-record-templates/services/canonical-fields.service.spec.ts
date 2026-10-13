@@ -1,6 +1,6 @@
-jest.mock('@/lib/api-client')
+jest.mock('../../../api/api-client.registry')
 
-import { apiClient } from '@/lib/api-client'
+import { apiClient } from '../../../api/api-client.registry'
 import { canonicalFieldsService } from './canonical-fields.service'
 
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>

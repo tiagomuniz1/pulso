@@ -14,7 +14,7 @@ import { useDeleteTemplate } from '../hooks/use-delete-template.hook'
 import { TemplateListSkeleton } from './template-list-skeleton'
 import { TemplateDeleteDialog } from './template-delete-dialog'
 import type { MedicalRecordFieldType } from '@app/shared'
-import type { ITemplateFieldModel, ITemplateModel, ITemplateSectionModel } from '../types/template-model.types'
+import type { ITemplateFieldModel, ITemplateModel, ITemplateSectionModel } from '@app/core'
 import { professionLabel, specialtyLabel } from '../utils/template-labels'
 
 const FIELD_TYPE_LABELS: Record<MedicalRecordFieldType, string> = {

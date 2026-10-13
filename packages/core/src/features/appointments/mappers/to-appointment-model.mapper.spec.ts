@@ -1,4 +1,4 @@
-import { AppointmentStatus } from '@app/shared'
+import { AppointmentLabelColor, AppointmentStatus } from '@app/shared'
 import { toAppointmentModel } from './to-appointment-model.mapper'
 
 const makeDto = (overrides = {}) => ({
@@ -83,5 +83,21 @@ describe('toAppointmentModel', () => {
   it('maps COMPLETED status correctly', () => {
     const model = toAppointmentModel(makeDto({ status: AppointmentStatus.COMPLETED }))
     expect(model.status).toBe(AppointmentStatus.COMPLETED)
+  })
+
+  // O outro lado do ternário: `label: null` já era o caso coberto, e é o
+  // normal — mas a consulta rotulada é a razão de o campo existir.
+  it('maps the label when the appointment has one', () => {
+    const result = toAppointmentModel(
+      makeDto({
+        label: { id: 'label-uuid', name: 'Retorno', color: AppointmentLabelColor.MUSTARD },
+      }) as never,
+    )
+
+    expect(result.label).toEqual({
+      id: 'label-uuid',
+      name: 'Retorno',
+      color: AppointmentLabelColor.MUSTARD,
+    })
   })
 })

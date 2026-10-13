@@ -1,10 +1,10 @@
-jest.mock('../use-cases/list-templates.use-case')
+jest.mock('@app/core/src/features/medical-record-templates/use-cases/list-templates.use-case')
 
 import React from 'react'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createQueryClient } from '@/lib/react-query.config'
-import { listTemplatesUseCase } from '../use-cases/list-templates.use-case'
+import { listTemplatesUseCase } from '@app/core'
 import { useTemplates } from './use-templates.hook'
 
 function wrapper({ children }: { children: React.ReactNode }) {

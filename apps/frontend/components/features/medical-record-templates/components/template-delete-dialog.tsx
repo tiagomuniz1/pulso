@@ -2,7 +2,7 @@
 
 import { Modal } from '@/components/ui/organisms/modal/modal'
 import { Button } from '@/components/ui/atoms/button/button'
-import type { ITemplateModel } from '../types/template-model.types'
+import type { ITemplateModel } from '@app/core'
 
 interface TemplateDeleteDialogProps {
   template: ITemplateModel | null

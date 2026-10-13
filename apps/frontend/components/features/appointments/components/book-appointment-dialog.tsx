@@ -23,8 +23,8 @@ import type { IApiError } from '@/types/api.types'
 import { formatDateToBR } from '@/lib/format-date'
 import { RecurrenceFields } from './recurrence-fields'
 import { RecurrencePreviewList } from './recurrence-preview-list'
-import type { IBookFormValues } from '../types/book-form.types'
-import type { IRecurrencePreviewInput } from '../types/appointment-input.types'
+import type { IBookFormValues } from '@app/core'
+import type { IRecurrencePreviewInput } from '@app/core'
 
 /**
  * Built once per specialtyCount rather than inline on every render, so the

@@ -12,7 +12,7 @@ import { TemplateListSkeleton } from '@/components/features/medical-record-templ
 import { useTemplate } from '@/components/features/medical-record-templates/hooks/use-template.hook'
 import { useUpdateTemplate } from '@/components/features/medical-record-templates/hooks/use-update-template.hook'
 import { useAuthStore } from '@/stores/auth.store'
-import type { IUpdateTemplateInput } from '@/components/features/medical-record-templates/types/template-input.types'
+import type { IUpdateTemplateInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 interface EditMedicalRecordTemplatePageProps {

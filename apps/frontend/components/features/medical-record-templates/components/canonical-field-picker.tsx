@@ -3,7 +3,7 @@
 import { MedicalRecordFieldType } from '@app/shared'
 import { Button } from '@/components/ui/atoms/button/button'
 import { useCanonicalFields } from '../hooks/use-canonical-fields.hook'
-import type { ICanonicalFieldModel } from '../types/canonical-field-model.types'
+import type { ICanonicalFieldModel } from '@app/core'
 
 const FIELD_TYPE_LABELS: Record<MedicalRecordFieldType, string> = {
   [MedicalRecordFieldType.TEXT]: 'Texto',

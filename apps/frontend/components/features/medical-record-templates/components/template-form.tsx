@@ -15,9 +15,9 @@ import { SectionEditor } from './section-editor'
 import { CanonicalFieldPicker } from './canonical-field-picker'
 import { SortableList, SortableItem } from '@/components/ui/molecules/sortable-list/sortable-list'
 import { useClinicSpecialties } from '@/components/features/clinic-specialties/hooks/use-clinic-specialties.hook'
-import type { ITemplateModel } from '../types/template-model.types'
-import type { ICreateTemplateInput, IUpdateTemplateInput, ITemplateFieldInput, ITemplateSectionInput } from '../types/template-input.types'
-import type { ICanonicalFieldModel } from '../types/canonical-field-model.types'
+import type { ITemplateModel } from '@app/core'
+import type { ICreateTemplateInput, IUpdateTemplateInput, ITemplateFieldInput, ITemplateSectionInput } from '@app/core'
+import type { ICanonicalFieldModel } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 const SELECT_TYPES = [MedicalRecordFieldType.SELECT, MedicalRecordFieldType.MULTISELECT]

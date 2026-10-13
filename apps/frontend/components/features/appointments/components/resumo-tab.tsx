@@ -6,7 +6,7 @@ import { useBasePath } from '@/lib/slug-context'
 import { formatPhone } from '@/lib/format-phone'
 import { formatCpf } from '@/lib/format-cpf'
 import { calculateAge } from '@/lib/calculate-age'
-import type { IAppointmentPatientModel } from '../types/appointment-model.types'
+import type { IAppointmentPatientModel } from '@app/core'
 
 const genderLabel: Record<PatientGender, string> = {
   [PatientGender.MALE]: 'Masculino',

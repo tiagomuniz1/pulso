@@ -98,4 +98,22 @@ describe('coerceFieldValue', () => {
       expect(coerceFieldValue(MedicalRecordFieldType.NUMBER, '')).toBe('')
     })
   })
+
+  // Um multiselect pode chegar com uma string só quando o prontuário nasceu de
+  // um modelo onde o campo era select. O valor vira lista de um item, não some.
+  describe('multiselect fed a single string', () => {
+    it('wraps a non-empty string into a one-item list', () => {
+      expect(coerceFieldValue(MedicalRecordFieldType.MULTISELECT, 'Dipirona')).toEqual(['Dipirona'])
+    })
+
+    // A string vazia sai na guarda do topo, antes do switch: campo não
+    // preenchido é ausência, e vira `[]` só quando o valor não é string.
+    it('leaves the empty string to the guard at the top', () => {
+      expect(coerceFieldValue(MedicalRecordFieldType.MULTISELECT, '')).toBe('')
+    })
+
+    it('falls back to an empty list for anything else', () => {
+      expect(coerceFieldValue(MedicalRecordFieldType.MULTISELECT, 42)).toEqual([])
+    })
+  })
 })

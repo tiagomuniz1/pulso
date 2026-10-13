@@ -1,13 +1,13 @@
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
 jest.mock('@/lib/slug-context', () => ({ useSlug: jest.fn(() => 'clinic-slug'), useBasePath: () => '/clinic-slug' }))
-jest.mock('../use-cases/update-template.use-case')
+jest.mock('@app/core/src/features/medical-record-templates/use-cases/update-template.use-case')
 
 import React from 'react'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { createQueryClient } from '@/lib/react-query.config'
-import { updateTemplateUseCase } from '../use-cases/update-template.use-case'
+import { updateTemplateUseCase } from '@app/core'
 import { useUpdateTemplate } from './use-update-template.hook'
 
 const mockPush = jest.fn()

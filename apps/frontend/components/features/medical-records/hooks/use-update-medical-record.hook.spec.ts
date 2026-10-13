@@ -1,10 +1,10 @@
-jest.mock('../use-cases/update-medical-record.use-case')
+jest.mock('@app/core/src/features/medical-records/use-cases/update-medical-record.use-case')
 
 import React from 'react'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createQueryClient } from '@/lib/react-query.config'
-import { updateMedicalRecordUseCase } from '../use-cases/update-medical-record.use-case'
+import { updateMedicalRecordUseCase } from '@app/core'
 import { useUpdateMedicalRecord } from './use-update-medical-record.hook'
 
 function wrapper({ children }: { children: React.ReactNode }) {

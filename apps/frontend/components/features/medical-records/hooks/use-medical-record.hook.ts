@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { getMedicalRecordUseCase } from '../use-cases/get-medical-record.use-case'
+import { getMedicalRecordUseCase } from '@app/core'
 
 export function useMedicalRecord(id: string) {
   return useQuery({

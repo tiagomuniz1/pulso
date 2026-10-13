@@ -17,9 +17,9 @@ import { MedicalRecordFormSkeleton } from '@/components/features/medical-records
 import { MedicalRecordTemplatePicker } from '@/components/features/medical-records/components/medical-record-template-picker'
 import { ChangeTemplateDialog } from '@/components/features/medical-records/components/change-template-dialog'
 import { useTemplate } from '@/components/features/medical-record-templates/hooks/use-template.hook'
-import type { IRecordFieldModel } from '@/components/features/medical-records/types/medical-record-model.types'
-import type { ITemplateFieldModel } from '@/components/features/medical-record-templates/types/template-model.types'
-import type { ITemplateListParams } from '@/components/features/medical-record-templates/services/medical-record-templates.service'
+import type { IRecordFieldModel } from '@app/core'
+import type { ITemplateFieldModel } from '@app/core'
+import type { ITemplateListParams } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 type MedicalRecordMode = 'fill' | null

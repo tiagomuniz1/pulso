@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { cancelAppointmentUseCase } from '../use-cases/cancel-appointment.use-case'
-import type { ICancelAppointmentInput } from '../types/appointment-input.types'
-import type { IAppointmentModel } from '../types/appointment-model.types'
+import { cancelAppointmentUseCase } from '@app/core'
+import type { ICancelAppointmentInput } from '@app/core'
+import type { IAppointmentModel } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export function useCancelAppointment() {

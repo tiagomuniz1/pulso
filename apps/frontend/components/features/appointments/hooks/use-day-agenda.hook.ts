@@ -1,7 +1,7 @@
 import { AppointmentStatus } from '@app/shared'
 import { useAppointments } from './use-appointments.hook'
 import { useAvailability } from './use-availability.hook'
-import type { IAgendaSlot } from '../types/appointment-model.types'
+import type { IAgendaSlot } from '@app/core'
 
 // Availability only withholds a slot while an appointment is SCHEDULED, so a
 // cancelled, confirmed, completed or no-show appointment comes back as a free

@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@app/core": "1.0.0",
     "@app/shared": "workspace:*",
     "@tanstack/react-query": "^5.104.2",
     "axios": "^1.20.0",
@@ -34,7 +35,7 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "start": "expo start",
+    "start": "yarn workspace @app/shared build && yarn workspace @app/core build && expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "typecheck": "tsc --noEmit",

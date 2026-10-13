@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { createTemplateUseCase } from '../use-cases/create-template.use-case'
+import { createTemplateUseCase } from '@app/core'
 import { useBasePath } from '@/lib/slug-context'
 
 export function useCreateTemplate() {

@@ -21,7 +21,7 @@ import userEvent from '@testing-library/user-event'
 import { MedicalRecordFieldType } from '@app/shared'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { MedicalRecordForm } from './medical-record-form'
-import type { IRecordFieldModel } from '../types/medical-record-model.types'
+import type { IRecordFieldModel } from '@app/core'
 
 function makeField(overrides: Partial<IRecordFieldModel> = {}): IRecordFieldModel {
   return {
