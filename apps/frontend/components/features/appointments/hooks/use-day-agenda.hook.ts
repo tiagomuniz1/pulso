@@ -1,7 +1,6 @@
-import { AppointmentStatus } from '@app/shared'
 import { useAppointments } from './use-appointments.hook'
 import { useAvailability } from './use-availability.hook'
-import type { IAgendaSlot } from '@app/core'
+import { filterSlotsByLabel, mergeSlotsByStartTime, type IAgendaSlot } from '@app/core'
 
 // Availability only withholds a slot while an appointment is SCHEDULED, so a
 // cancelled, confirmed, completed or no-show appointment comes back as a free
@@ -14,60 +13,6 @@ import type { IAgendaSlot } from '@app/core'
 // the useful row, and the cancellation stays visible in the appointment list and
 // in the patient history. A cancelled appointment with no matching free slot (the
 // schedule changed since) is still shown, so nothing disappears without a trace.
-function pickSlot(candidates: IAgendaSlot[]): IAgendaSlot {
-  const active = candidates.find(
-    (s) =>
-      s.appointment !== null &&
-      s.appointment.status !== AppointmentStatus.CANCELLED,
-  )
-  if (active) return active
-
-  const free = candidates.find((s) => s.appointment === null)
-  if (free) return free
-
-  return candidates[0]
-}
-
-export function mergeSlotsByStartTime(
-  freeSlots: IAgendaSlot[],
-  bookedSlots: IAgendaSlot[],
-): IAgendaSlot[] {
-  const byStartTime = new Map<string, IAgendaSlot[]>()
-
-  for (const slot of [...freeSlots, ...bookedSlots]) {
-    const group = byStartTime.get(slot.startTime)
-    if (group) group.push(slot)
-    else byStartTime.set(slot.startTime, [slot])
-  }
-
-  return [...byStartTime.values()]
-    .map(pickSlot)
-    .sort((a, b) => a.startTime.localeCompare(b.startTime))
-}
-
-/**
- * Recorta a agenda pelo rótulo, DEPOIS do merge.
- *
- * Precisa ser aqui e não no `GET /appointments`: `pickSlot` prefere a consulta
- * ao horário livre, e não havendo consulta cai no livre. Se o filtro tirasse a
- * consulta do payload, o horário voltaria a aparecer como "Livre — clique para
- * agendar" por cima de uma consulta que existe, e a recepção agendaria em cima.
- * Um filtro visual causaria agendamento duplo.
- *
- * Os horários livres somem sob filtro: quem procura "Retorno" quer a lista
- * curta, não vinte linhas de "Livre" no meio.
- */
-export function filterSlotsByLabel(
-  slots: IAgendaSlot[],
-  labelFilter?: string | null,
-): IAgendaSlot[] {
-  if (!labelFilter) return slots
-  if (labelFilter === 'none') {
-    return slots.filter((slot) => slot.appointment !== null && slot.appointment.label === null)
-  }
-  return slots.filter((slot) => slot.appointment?.label?.id === labelFilter)
-}
-
 export function useDayAgenda(
   professionalId: string | null,
   date: string,

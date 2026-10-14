@@ -1,6 +1,6 @@
 jest.mock('@app/core/src/features/appointments/services/appointments.service')
 jest.mock('@/components/features/patients/services/patients.service')
-jest.mock('@/components/features/professionals/services/professionals.service')
+jest.mock('@app/core/src/features/professionals/services/professionals.service')
 jest.mock('@/components/features/schedule-exceptions/services/schedule-exceptions.service')
 jest.mock('@/stores/auth.store')
 jest.mock('next/navigation', () => ({
@@ -14,7 +14,7 @@ import { UserRole, CouncilType } from '@app/shared'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { appointmentsService } from '@app/core'
 import { patientsService } from '@/components/features/patients/services/patients.service'
-import { professionalsService } from '@/components/features/professionals/services/professionals.service'
+import { professionalsService } from '@app/core'
 import { scheduleExceptionsService } from '@/components/features/schedule-exceptions/services/schedule-exceptions.service'
 import { useAuthStore } from '@/stores/auth.store'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'

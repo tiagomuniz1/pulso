@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { listProfessionalsUseCase } from '../use-cases/list-professionals.use-case'
-import type { IProfessionalListParams } from '../types/professional-input.types'
+import { listProfessionalsUseCase } from '@app/core'
+import type { IProfessionalListParams } from '@app/core'
 
 export function useProfessionals(params?: IProfessionalListParams, options?: { enabled?: boolean }) {
   return useQuery({

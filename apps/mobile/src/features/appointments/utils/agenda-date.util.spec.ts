@@ -1,6 +1,7 @@
 import {
   addDays,
   formatAgendaDate,
+  formatToolbarDate,
   formatShortDate,
   formatTime,
   isToday,
@@ -72,5 +73,16 @@ describe('agenda-date', () => {
     it('is false for any other day', () => {
       expect(isToday(addDays(todayIsoDate(), 1))).toBe(false)
     })
+  })
+
+  // O formato da barra da web: "13 de out. de 2026". Abreviado à mão porque o
+  // Hermes nem sempre embarca os dados de locale, e um mês em inglês no meio
+  // da agenda é pior do que uma tabela de doze strings.
+  it.each([
+    ['2026-10-13', '13 de out. de 2026'],
+    ['2026-01-01', '1 de jan. de 2026'],
+    ['2026-12-31', '31 de dez. de 2026'],
+  ])('formatToolbarDate(%s) = %s', (iso, expected) => {
+    expect(formatToolbarDate(iso)).toBe(expected)
   })
 })

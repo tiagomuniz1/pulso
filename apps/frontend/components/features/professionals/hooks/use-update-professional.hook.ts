@@ -3,9 +3,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useBasePath } from '@/lib/slug-context'
-import { updateProfessionalUseCase } from '../use-cases/update-professional.use-case'
-import type { IUpdateProfessionalInput } from '../types/professional-input.types'
-import type { IProfessionalModel } from '../types/professional-model.types'
+import { updateProfessionalUseCase } from '@app/core'
+import type { IUpdateProfessionalInput } from '@app/core'
+import type { IProfessionalModel } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export function useUpdateProfessional() {

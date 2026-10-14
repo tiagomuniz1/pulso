@@ -2,7 +2,7 @@ jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
 jest.mock('@/lib/slug-context', () => ({ useSlug: jest.fn(() => 'clinic-slug'), useBasePath: () => '/clinic-slug' }))
 jest.mock('@/stores/auth.store')
 jest.mock('@app/core/src/features/medical-record-templates/services/medical-record-templates.service')
-jest.mock('../../professionals/services/professionals.service')
+jest.mock('@app/core/src/features/professionals/services/professionals.service')
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation'
 import { CouncilType, UserRole, MedicalRecordFieldType } from '@app/shared'
 import { useAuthStore } from '@/stores/auth.store'
 import { medicalRecordTemplatesService } from '@app/core'
-import { professionalsService } from '../../professionals/services/professionals.service'
+import { professionalsService } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { TemplateDetails } from './template-details'
 

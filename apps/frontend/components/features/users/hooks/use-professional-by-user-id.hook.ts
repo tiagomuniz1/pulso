@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useProfessionals } from '@/components/features/professionals/hooks/use-professionals.hook'
-import type { IProfessionalModel } from '@/components/features/professionals/types/professional-model.types'
+import type { IProfessionalModel } from '@app/core'
 
 // No backend endpoint filters professionals by userId — this looks the professional
 // up client-side within a single page. Fine for the clinic scale this system targets

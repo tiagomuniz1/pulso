@@ -1,7 +1,7 @@
 import { CouncilType } from '@app/shared'
-jest.mock('@/lib/api-client')
+jest.mock('../../../api/api-client.registry')
 
-import { apiClient } from '@/lib/api-client'
+import { apiClient } from '../../../api/api-client.registry'
 import { professionalsService } from './professionals.service'
 
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>
@@ -18,6 +18,14 @@ const makeDto = () => ({
 
 describe('professionalsService', () => {
   beforeEach(() => jest.clearAllMocks())
+
+  // O backend devolve `null` quando o usuário não tem ficha — e é o service
+  // que precisa aceitar isso, senão a tipagem empurra o problema adiante.
+  it('getMine calls GET /professionals/me', () => {
+    mockApiClient.get.mockResolvedValue(null as never)
+    professionalsService.getMine()
+    expect(mockApiClient.get).toHaveBeenCalledWith('/professionals/me')
+  })
 
   it('getAll calls GET /professionals and returns result', async () => {
     const response = { data: [makeDto()], total: 1, page: 1, limit: 20 }

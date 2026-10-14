@@ -1,13 +1,13 @@
 jest.mock('@app/core/src/features/medical-records/services/medical-records.service')
 jest.mock('@app/core/src/features/medical-record-templates/services/medical-record-templates.service')
-jest.mock('@/components/features/professionals/services/professionals.service')
+jest.mock('@app/core/src/features/professionals/services/professionals.service')
 
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AppointmentStatus, CouncilType, MedicalRecordFieldType } from '@app/shared'
 import { medicalRecordsService } from '@app/core'
 import { medicalRecordTemplatesService } from '@app/core'
-import { professionalsService } from '@/components/features/professionals/services/professionals.service'
+import { professionalsService } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { MedicalRecordSection, TEMPLATE_PICKER_LIMIT } from './medical-record-section'
 

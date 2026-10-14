@@ -13,6 +13,11 @@ const MONTHS = [
   'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
 ]
 
+const MONTHS_SHORT = [
+  'jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.',
+  'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.',
+]
+
 const pad = (value: number): string => String(value).padStart(2, '0')
 
 /** `YYYY-MM-DD` a partir dos componentes locais da data. */
@@ -40,6 +45,19 @@ export function formatAgendaDate(isoDate: string): string {
   const [year, month, day] = isoDate.split('-').map(Number)
   const date = new Date(year, month - 1, day)
   return `${WEEKDAYS[date.getDay()]}, ${day} de ${MONTHS[month - 1]}`
+}
+
+/**
+ * "13 de out. de 2026" — o rótulo da barra, no formato da web.
+ *
+ * Mês abreviado com ponto, como o `toLocaleDateString('pt-BR', { month:
+ * 'short' })` do navegador produz. Abreviar aqui em vez de usar `Intl` porque
+ * o Hermes nem sempre embarca os dados de locale, e um mês em inglês no meio
+ * da agenda é pior do que uma tabela de doze strings.
+ */
+export function formatToolbarDate(isoDate: string): string {
+  const [year, month, day] = isoDate.split('-').map(Number)
+  return `${day} de ${MONTHS_SHORT[month - 1]} de ${year}`
 }
 
 /** "10/03/2026", para onde a data aparece ao lado de outro dado. */

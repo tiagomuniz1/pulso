@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { deleteProfessionalUseCase } from '../use-cases/delete-professional.use-case'
+import { deleteProfessionalUseCase } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export function useDeleteProfessional() {

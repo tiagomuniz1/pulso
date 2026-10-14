@@ -1,13 +1,13 @@
 jest.mock('../services/vaccinations.service')
 jest.mock('@/components/features/vaccines/services/vaccines.service')
-jest.mock('@/components/features/professionals/services/professionals.service')
+jest.mock('@app/core/src/features/professionals/services/professionals.service')
 
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { CouncilType, UserRole } from '@app/shared'
 import { vaccinationsService } from '../services/vaccinations.service'
 import { vaccinesService } from '@/components/features/vaccines/services/vaccines.service'
-import { professionalsService } from '@/components/features/professionals/services/professionals.service'
+import { professionalsService } from '@app/core'
 import { useAuthStore } from '@/stores/auth.store'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { VaccinationHistory } from './vaccination-history'

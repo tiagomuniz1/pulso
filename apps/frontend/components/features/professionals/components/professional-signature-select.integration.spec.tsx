@@ -6,7 +6,7 @@ import { CouncilType } from '@app/shared'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { ProfessionalSignatureSelect } from './professional-signature-select'
 import { useProfessional } from '../hooks/use-professional.hook'
-import type { IProfessionalModel } from '../types/professional-model.types'
+import type { IProfessionalModel } from '@app/core'
 
 const mockUseProfessional = useProfessional as jest.Mock
 

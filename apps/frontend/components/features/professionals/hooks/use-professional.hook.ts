@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getProfessionalUseCase } from '../use-cases/get-professional.use-case'
+import { getProfessionalUseCase } from '@app/core'
 
 export function useProfessional(id: string, options?: { enabled?: boolean }) {
   return useQuery({

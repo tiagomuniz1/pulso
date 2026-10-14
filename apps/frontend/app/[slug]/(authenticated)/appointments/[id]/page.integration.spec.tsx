@@ -1,5 +1,5 @@
 jest.mock('@app/core/src/features/appointments/services/appointments.service')
-jest.mock('@/components/features/professionals/services/professionals.service')
+jest.mock('@app/core/src/features/professionals/services/professionals.service')
 jest.mock('@app/core/src/features/medical-records/services/medical-records.service')
 jest.mock('@app/core/src/features/medical-record-templates/services/medical-record-templates.service')
 jest.mock('@/components/features/prescriptions/services/prescriptions.service')
@@ -18,7 +18,7 @@ import userEvent from '@testing-library/user-event'
 import { AppointmentStatus, PatientGender, UserRole, CouncilType } from '@app/shared'
 import { useRouter } from 'next/navigation'
 import { appointmentsService } from '@app/core'
-import { professionalsService } from '@/components/features/professionals/services/professionals.service'
+import { professionalsService } from '@app/core'
 import { medicalRecordsService } from '@app/core'
 import { medicalRecordTemplatesService } from '@app/core'
 import { prescriptionsService } from '@/components/features/prescriptions/services/prescriptions.service'

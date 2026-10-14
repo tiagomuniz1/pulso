@@ -1,5 +1,5 @@
 jest.mock('@app/core/src/features/appointments/services/appointments.service')
-jest.mock('@/components/features/appointment-labels/services/appointment-labels.service')
+jest.mock('@app/core/src/features/appointment-labels/services/appointment-labels.service')
 jest.mock('@/lib/slug-context', () => ({ useSlug: jest.fn(() => 'clinic-slug'), useBasePath: () => '/clinic-slug' }))
 jest.mock('next/navigation', () => ({ useRouter: jest.fn(() => ({ push: jest.fn() })) }))
 
@@ -8,7 +8,7 @@ import userEvent from '@testing-library/user-event'
 import { AppointmentLabelColor, AppointmentStatus, PatientGender, UserRole } from '@app/shared'
 import { useRouter } from 'next/navigation'
 import { appointmentsService } from '@app/core'
-import { appointmentLabelsService } from '@/components/features/appointment-labels/services/appointment-labels.service'
+import { appointmentLabelsService } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { AppointmentDetailsDialog } from './appointment-details-dialog'
 
