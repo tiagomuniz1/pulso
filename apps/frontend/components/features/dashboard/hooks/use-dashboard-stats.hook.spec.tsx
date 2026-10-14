@@ -13,9 +13,10 @@ const fakeModel = { kpi: { scheduled: 3 } } as unknown as IDashboardModel
 
 function createWrapper() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  )
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return <QueryClientProvider client={client}>{children}</QueryClientProvider>
+  }
+  return Wrapper
 }
 
 describe('useDashboardStats', () => {

@@ -29,7 +29,7 @@ export function TemplateDeleteDialog({
       data-testid="template-delete-dialog"
     >
       <p className="text-sm text-text-dim mb-6">
-        Deseja excluir o modelo <strong>"{template.name}"</strong>? Esta ação não pode ser desfeita.
+        Deseja excluir o modelo <strong>&quot;{template.name}&quot;</strong>? Esta ação não pode ser desfeita.
       </p>
       <div className="flex gap-3 justify-end">
         <Button

@@ -67,7 +67,9 @@ export function AppointmentHistorySection({
     limit: TAMANHO_DA_PAGINA,
   })
 
-  const registros = data?.data ?? []
+  // Memoizado porque o `?? []` cria um array novo a cada render, e o
+  // `useMemo` do filtro abaixo o tem como dependência.
+  const registros = useMemo(() => data?.data ?? [], [data])
   const total = data?.total ?? 0
   const truncado = total > registros.length
 

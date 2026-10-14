@@ -121,7 +121,9 @@ export function BookAppointmentDialog({
   } = useRecurrencePreview(step === 2 ? previewParams : null)
 
   const occurrences = preview?.occurrences ?? []
-  const specialties = doctor?.specialties ?? []
+  // Memoizado porque o `?? []` cria um array novo a cada render, e o
+  // `useEffect` que pré-seleciona a especialidade o tem como dependência.
+  const specialties = useMemo(() => doctor?.specialties ?? [], [doctor])
   const specialtyCount = specialties.length
   const doctorLoaded = !isDoctorLoading && !!professionalId
 
