@@ -1,9 +1,9 @@
-jest.mock('../use-cases/create-exam-request.use-case')
+jest.mock('@app/core/src/features/exames/use-cases/create-exam-request.use-case')
 
 import React from 'react'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { createExamRequestUseCase } from '../use-cases/create-exam-request.use-case'
+import { createExamRequestUseCase } from '@app/core'
 import { useCreateExamRequest } from './use-create-exam-request.hook'
 
 function makeWrapper(client: QueryClient) {

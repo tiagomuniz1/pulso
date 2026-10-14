@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { ExamRequestStatus } from '@app/shared'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { ExamePreviewModal } from './exame-preview-modal'
-import type { IExamRequestModel } from '../types/exam-request-model.types'
+import type { IExamRequestModel } from '@app/core'
 
 function makeExamRequest(overrides: Partial<IExamRequestModel> = {}): IExamRequestModel {
   return {

@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import { StyleSheet, Text } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { AppointmentStatus } from '@app/shared'
+import { AppointmentStatus, UserRole } from '@app/shared'
 import { ErrorState, LoadingState, Screen, ScreenScroll } from '../../../components/ui/screen'
 import { TextField } from '../../../components/ui/fields'
 import { Button } from '../../../components/ui/button'
 import { Card, CardTitle } from '../../../components/ui/card'
 import { useTheme } from '../../../theme/theme-context'
+import { useSessionStore } from '../../auth/session.store'
 import { MedicalRecordTab } from '../../medical-records/components/medical-record-tab'
 import { AppointmentActionsBar } from '../components/appointment-actions-bar'
 import { AppointmentHeaderCard } from '../components/appointment-header-card'
 import { AppointmentTabs, type AppointmentTabId } from '../components/appointment-tabs'
+import { DocumentSection } from '../../documents/components/document-section'
 import { HistoryTab } from '../components/history-tab'
 import { ResumoTab } from '../components/resumo-tab'
 import { useAppointment } from '../hooks/use-appointment.hook'
@@ -28,6 +30,7 @@ export function AppointmentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
   const theme = useTheme()
+  const user = useSessionStore((state) => state.user)
 
   const [tab, setTab] = useState<AppointmentTabId>('resumo')
   const [cancelling, setCancelling] = useState(false)
@@ -58,6 +61,11 @@ export function AppointmentDetailScreen() {
     )
   }
 
+  // Excluir documento é administrativo: o ADMIN é irrestrito na clínica, e o
+  // profissional só nos próprios — e a listagem já lhe devolve apenas esses.
+  const canManage =
+    user?.role === UserRole.ADMIN || user?.role === UserRole.PROFESSIONAL
+
   const isOpen =
     appointment.status === AppointmentStatus.SCHEDULED ||
     appointment.status === AppointmentStatus.CONFIRMED
@@ -81,6 +89,18 @@ export function AppointmentDetailScreen() {
             specialtyId={appointment.specialtyId}
             appointmentId={id}
           />
+        ) : null}
+
+        {tab === 'receitas' ? (
+          <DocumentSection kind="receita" appointmentId={id} canManage={canManage} />
+        ) : null}
+
+        {tab === 'atestados' ? (
+          <DocumentSection kind="atestado" appointmentId={id} canManage={canManage} />
+        ) : null}
+
+        {tab === 'exames' ? (
+          <DocumentSection kind="exame" appointmentId={id} canManage={canManage} />
         ) : null}
 
         {cancelling ? (

@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createAtestadoUseCase } from '../use-cases/create-atestado.use-case'
+import { createAtestadoUseCase } from '@app/core'
 
 export function useCreateAtestado() {
   const queryClient = useQueryClient()

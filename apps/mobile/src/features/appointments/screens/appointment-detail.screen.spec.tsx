@@ -1,6 +1,9 @@
 import { AppointmentCancellationScope, AppointmentStatus, PatientGender } from '@app/shared'
 import {
   cancelAppointmentUseCase,
+  listAtestadosUseCase,
+  listExamRequestsUseCase,
+  listPrescriptionsUseCase,
   completeAppointmentUseCase,
   getAppointmentUseCase,
   getMedicalRecordByAppointmentUseCase,
@@ -18,6 +21,9 @@ jest.mock('@app/core/src/features/appointments/use-cases/complete-appointment.us
 jest.mock('@app/core/src/features/medical-records/use-cases/get-medical-record-by-appointment.use-case')
 jest.mock('@app/core/src/features/medical-records/use-cases/list-patient-medical-history.use-case')
 jest.mock('@app/core/src/features/medical-record-templates/use-cases/list-templates.use-case')
+jest.mock('@app/core/src/features/prescriptions/use-cases/list-prescriptions.use-case')
+jest.mock('@app/core/src/features/atestados/use-cases/list-atestados.use-case')
+jest.mock('@app/core/src/features/exames/use-cases/list-exam-requests.use-case')
 
 const mockBack = jest.fn()
 jest.mock('expo-router', () => ({
@@ -80,6 +86,9 @@ describe('AppointmentDetailScreen', () => {
     mockRecord.mockResolvedValue(null)
     mockTemplates.mockResolvedValue(emptyPage)
     mockHistory.mockResolvedValue(emptyPage)
+    ;(listPrescriptionsUseCase as jest.Mock).mockResolvedValue([])
+    ;(listAtestadosUseCase as jest.Mock).mockResolvedValue([])
+    ;(listExamRequestsUseCase as jest.Mock).mockResolvedValue([])
   })
 
   it('mostra o giro enquanto carrega', async () => {
@@ -188,16 +197,16 @@ describe('AppointmentDetailScreen', () => {
       ids.forEach((id) => expect(screen.getByTestId(`appointment-tab-${id}`)).toBeTruthy())
     })
 
-    // A fileira é o índice do atendimento: uma versão com três faria parecer
+    // A fileira é o índice do atendimento: uma versão reduzida faria parecer
     // que o app tem menos a oferecer do que o sistema tem.
     it('apaga as abas ainda não portadas, sem escondê-las', async () => {
       await renderWithProviders(<AppointmentDetailScreen />)
       await screen.findByTestId('appointment-tabs')
 
-      expect(screen.getByTestId('appointment-tab-receitas')).toHaveStyle({ opacity: 0.4 })
+      expect(screen.getByTestId('appointment-tab-fotos')).toHaveStyle({ opacity: 0.4 })
       expect(screen.getByTestId('appointment-tab-resumo')).toHaveStyle({ opacity: 1 })
 
-      fireEvent.press(screen.getByTestId('appointment-tab-receitas'))
+      fireEvent.press(screen.getByTestId('appointment-tab-fotos'))
       expect(screen.getByTestId('resumo-tab')).toBeTruthy()
     })
 
@@ -452,6 +461,9 @@ describe('AppointmentDetailScreen', () => {
     await screen.findByTestId('appointment-history-error')
 
     mockHistory.mockResolvedValue(emptyPage)
+    ;(listPrescriptionsUseCase as jest.Mock).mockResolvedValue([])
+    ;(listAtestadosUseCase as jest.Mock).mockResolvedValue([])
+    ;(listExamRequestsUseCase as jest.Mock).mockResolvedValue([])
     fireEvent.press(screen.getByTestId('appointment-history-error-retry'))
 
     expect(await screen.findByTestId('appointment-history-empty')).toBeTruthy()
@@ -479,5 +491,18 @@ describe('AppointmentDetailScreen', () => {
 
     await screen.findByTestId('appointment-history-item-rec-2')
     expect(screen.getByText('Dra. Ana')).toBeTruthy()
+  })
+
+  // As três abas de documento são o mesmo componente a menos de um nome; o
+  // que este teste prova é que a tela liga cada uma ao tipo certo.
+  it.each([
+    ['receitas', 'receita'],
+    ['atestados', 'atestado'],
+    ['exames', 'exame'],
+  ])('a aba %s abre a seção de %s', async (tabId, kind) => {
+    await renderWithProviders(<AppointmentDetailScreen />)
+    fireEvent.press(await screen.findByTestId(`appointment-tab-${tabId}`))
+
+    expect(await screen.findByTestId(`document-section-${kind}`)).toBeTruthy()
   })
 })

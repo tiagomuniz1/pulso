@@ -3,7 +3,7 @@
 import { Modal } from '@/components/ui/organisms/modal/modal'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Typography } from '@/components/ui/atoms/typography/typography'
-import type { IMedicationModel } from '../types/medication-model.types'
+import type { IMedicationModel } from '@app/core'
 
 export interface MedicationDeleteDialogProps {
   medication: IMedicationModel | null

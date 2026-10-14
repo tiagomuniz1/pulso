@@ -1,7 +1,7 @@
-jest.mock('@/lib/api-client')
+jest.mock('../../../api/api-client.registry')
 
 import { MedicalCertificateType } from '@app/shared'
-import { apiClient } from '@/lib/api-client'
+import { apiClient } from '../../../api/api-client.registry'
 import { atestadosService } from './atestados.service'
 
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>

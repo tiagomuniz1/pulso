@@ -1,8 +1,8 @@
-jest.mock('@/lib/api-client', () => ({
+jest.mock('../../../api/api-client.registry', () => ({
   apiClient: { get: jest.fn(), post: jest.fn(), patch: jest.fn(), delete: jest.fn() },
 }))
 
-import { apiClient } from '@/lib/api-client'
+import { apiClient } from '../../../api/api-client.registry'
 import { medicationsService } from './medications.service'
 
 describe('medicationsService', () => {

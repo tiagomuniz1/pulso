@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { listAtestadosUseCase } from '../use-cases/list-atestados.use-case'
+import { listAtestadosUseCase } from '@app/core'
 
 export function useAtestados(appointmentId: string) {
   return useQuery({

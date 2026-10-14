@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createPrescriptionUseCase } from '../use-cases/create-prescription.use-case'
+import { createPrescriptionUseCase } from '@app/core'
 
 export function useCreatePrescription() {
   const queryClient = useQueryClient()

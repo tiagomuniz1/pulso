@@ -13,7 +13,7 @@ import { ProfessionalSignatureSelect } from '@/components/features/professionals
 import { usePrescriptionTemplates } from '@/components/features/prescription-templates/hooks/use-prescription-templates.hook'
 import { useCreatePrescriptionTemplate } from '@/components/features/prescription-templates/hooks/use-create-prescription-template.hook'
 import type { IPrescriptionTemplateItemModel } from '@/components/features/prescription-templates/types/prescription-template-model.types'
-import type { ICreatePrescriptionInput } from '../types/prescription-input.types'
+import type { ICreatePrescriptionInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 const itemSchema = z.object({

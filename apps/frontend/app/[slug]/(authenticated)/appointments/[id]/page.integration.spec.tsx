@@ -2,9 +2,9 @@ jest.mock('@app/core/src/features/appointments/services/appointments.service')
 jest.mock('@app/core/src/features/professionals/services/professionals.service')
 jest.mock('@app/core/src/features/medical-records/services/medical-records.service')
 jest.mock('@app/core/src/features/medical-record-templates/services/medical-record-templates.service')
-jest.mock('@/components/features/prescriptions/services/prescriptions.service')
-jest.mock('@/components/features/atestados/services/atestados.service')
-jest.mock('@/components/features/exames/services/exams.service')
+jest.mock('@app/core/src/features/prescriptions/services/prescriptions.service')
+jest.mock('@app/core/src/features/atestados/services/atestados.service')
+jest.mock('@app/core/src/features/exames/services/exams.service')
 jest.mock('@/components/features/consultation-photos/services/consultation-photos.service')
 jest.mock('@/stores/auth.store')
 jest.mock('@/lib/slug-context', () => ({ useSlug: jest.fn(() => 'clinic-slug'), useBasePath: () => '/clinic-slug' }))
@@ -21,9 +21,9 @@ import { appointmentsService } from '@app/core'
 import { professionalsService } from '@app/core'
 import { medicalRecordsService } from '@app/core'
 import { medicalRecordTemplatesService } from '@app/core'
-import { prescriptionsService } from '@/components/features/prescriptions/services/prescriptions.service'
-import { atestadosService } from '@/components/features/atestados/services/atestados.service'
-import { examsService } from '@/components/features/exames/services/exams.service'
+import { prescriptionsService } from '@app/core'
+import { atestadosService } from '@app/core'
+import { examsService } from '@app/core'
 import { consultationPhotosService } from '@/components/features/consultation-photos/services/consultation-photos.service'
 import { useAuthStore } from '@/stores/auth.store'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'

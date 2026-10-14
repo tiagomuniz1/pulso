@@ -3,7 +3,7 @@
 import { ExamRequestStatus } from '@app/shared'
 import { Modal } from '@/components/ui/organisms/modal/modal'
 import { ExameResultUpload } from './exame-result-upload'
-import type { IExamRequestModel } from '../types/exam-request-model.types'
+import type { IExamRequestModel } from '@app/core'
 
 const statusLabel: Record<ExamRequestStatus, string> = {
   [ExamRequestStatus.REQUESTED]: 'Solicitado',

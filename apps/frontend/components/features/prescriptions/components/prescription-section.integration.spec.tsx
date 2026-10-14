@@ -1,13 +1,13 @@
-jest.mock('../services/prescriptions.service')
-jest.mock('@/components/features/medications/services/medications.service')
+jest.mock('@app/core/src/features/prescriptions/services/prescriptions.service')
+jest.mock('@app/core/src/features/medications/services/medications.service')
 jest.mock('../use-cases/download-prescription-pdf.use-case')
 jest.mock('@/components/features/professionals/hooks/use-professional.hook')
 
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { UserRole } from '@app/shared'
-import { prescriptionsService } from '../services/prescriptions.service'
-import { medicationsService } from '@/components/features/medications/services/medications.service'
+import { prescriptionsService } from '@app/core'
+import { medicationsService } from '@app/core'
 import { downloadPrescriptionPdfUseCase } from '../use-cases/download-prescription-pdf.use-case'
 import { useProfessional } from '@/components/features/professionals/hooks/use-professional.hook'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'

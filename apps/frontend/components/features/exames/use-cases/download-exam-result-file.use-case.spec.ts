@@ -1,6 +1,6 @@
-jest.mock('../services/exams.service')
+jest.mock('@app/core/src/features/exames/services/exams.service')
 
-import { examsService } from '../services/exams.service'
+import { examsService } from '@app/core'
 import { downloadExamResultFileUseCase } from './download-exam-result-file.use-case'
 
 const mockService = examsService as jest.Mocked<typeof examsService>

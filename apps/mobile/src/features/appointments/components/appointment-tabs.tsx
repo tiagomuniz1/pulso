@@ -29,9 +29,9 @@ export const APPOINTMENT_TABS: Tab[] = [
   { id: 'resumo', label: 'Resumo', available: true },
   { id: 'prontuario', label: 'Prontuário', available: true },
   { id: 'historico', label: 'Histórico', available: true },
-  { id: 'receitas', label: 'Receitas', available: false },
-  { id: 'atestados', label: 'Atestados', available: false },
-  { id: 'exames', label: 'Exames', available: false },
+  { id: 'receitas', label: 'Receitas', available: true },
+  { id: 'atestados', label: 'Atestados', available: true },
+  { id: 'exames', label: 'Exames', available: true },
   { id: 'fotos', label: 'Fotos', available: false },
   { id: 'vacinas', label: 'Vacinas', available: false },
 ]

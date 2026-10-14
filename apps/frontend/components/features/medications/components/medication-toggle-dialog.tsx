@@ -2,7 +2,7 @@
 
 import { Modal } from '@/components/ui/organisms/modal/modal'
 import { Button } from '@/components/ui/atoms/button/button'
-import type { IMedicationModel } from '../types/medication-model.types'
+import type { IMedicationModel } from '@app/core'
 
 interface MedicationToggleDialogProps {
   medication: IMedicationModel | null

@@ -1,4 +1,4 @@
-import { apiClient } from '@/lib/api-client'
+import { apiClient } from '../../../api/api-client.registry'
 import type { CreatePrescriptionDto, PrescriptionResponseDto } from '@app/shared'
 
 export const prescriptionsService = {

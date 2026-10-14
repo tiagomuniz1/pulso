@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { MedicalCertificateType } from '@app/shared'
 import { AtestadoPreviewModal } from './atestado-preview-modal'
-import type { IAtestadoModel } from '../types/atestado-model.types'
+import type { IAtestadoModel } from '@app/core'
 
 const makeLeaveAtestado = (overrides: Partial<IAtestadoModel> = {}): IAtestadoModel => ({
   id: 'cert-uuid',
