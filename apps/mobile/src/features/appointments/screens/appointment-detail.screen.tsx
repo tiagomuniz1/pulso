@@ -13,6 +13,7 @@ import { AppointmentActionsBar } from '../components/appointment-actions-bar'
 import { AppointmentHeaderCard } from '../components/appointment-header-card'
 import { AppointmentTabs, type AppointmentTabId } from '../components/appointment-tabs'
 import { DocumentSection } from '../../documents/components/document-section'
+import { useCanIssue } from '../../documents/hooks/use-can-issue.hook'
 import { HistoryTab } from '../components/history-tab'
 import { ResumoTab } from '../components/resumo-tab'
 import { useAppointment } from '../hooks/use-appointment.hook'
@@ -40,6 +41,9 @@ export function AppointmentDetailScreen() {
   const { data: appointment, isLoading, isError, refetch } = useAppointment(id)
   const complete = useCompleteAppointment(id)
   const cancel = useCancelAppointment(id)
+  // Antes de qualquer retorno antecipado: a contagem de hooks não pode mudar
+  // entre o render que carrega e o que mostra.
+  const canIssue = useCanIssue(appointment?.professionalId)
 
   if (isLoading) {
     return (
@@ -92,15 +96,15 @@ export function AppointmentDetailScreen() {
         ) : null}
 
         {tab === 'receitas' ? (
-          <DocumentSection kind="receita" appointmentId={id} canManage={canManage} />
+          <DocumentSection kind="receita" appointmentId={id} canManage={canManage} canIssue={canIssue} />
         ) : null}
 
         {tab === 'atestados' ? (
-          <DocumentSection kind="atestado" appointmentId={id} canManage={canManage} />
+          <DocumentSection kind="atestado" appointmentId={id} canManage={canManage} canIssue={canIssue} />
         ) : null}
 
         {tab === 'exames' ? (
-          <DocumentSection kind="exame" appointmentId={id} canManage={canManage} />
+          <DocumentSection kind="exame" appointmentId={id} canManage={canManage} canIssue={canIssue} />
         ) : null}
 
         {cancelling ? (

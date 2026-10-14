@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  createAtestadoUseCase,
+  createExamRequestUseCase,
+  createPrescriptionUseCase,
   deleteAtestadoUseCase,
   deleteExamRequestUseCase,
   deletePrescriptionUseCase,
@@ -30,6 +33,9 @@ interface DocumentKindConfig {
   remove: (id: string) => Promise<void>
   pdfPath: (id: string) => string
   fileName: (id: string) => string
+  /** O rótulo do botão que abre o formulário, como na web. */
+  newLabel: string
+  create: (input: never) => Promise<unknown>
 }
 
 export const DOCUMENT_KINDS: Record<DocumentKind, DocumentKindConfig> = {
@@ -45,6 +51,8 @@ export const DOCUMENT_KINDS: Record<DocumentKind, DocumentKindConfig> = {
     remove: deletePrescriptionUseCase,
     pdfPath: (id) => `/prescriptions/${id}/pdf`,
     fileName: (id) => `receita-${id}.pdf`,
+    newLabel: '+ Nova receita',
+    create: createPrescriptionUseCase as (input: never) => Promise<unknown>,
   },
   atestado: {
     title: 'Atestados',
@@ -59,6 +67,8 @@ export const DOCUMENT_KINDS: Record<DocumentKind, DocumentKindConfig> = {
     remove: deleteAtestadoUseCase,
     pdfPath: (id) => `/atestados/${id}/pdf`,
     fileName: (id) => `atestado-${id}.pdf`,
+    newLabel: '+ Novo atestado',
+    create: createAtestadoUseCase as (input: never) => Promise<unknown>,
   },
   exame: {
     title: 'Exames',
@@ -72,6 +82,8 @@ export const DOCUMENT_KINDS: Record<DocumentKind, DocumentKindConfig> = {
     remove: deleteExamRequestUseCase,
     pdfPath: (id) => `/exam-requests/${id}/pdf`,
     fileName: (id) => `pedido-exame-${id}.pdf`,
+    newLabel: '+ Novo pedido de exames',
+    create: createExamRequestUseCase as (input: never) => Promise<unknown>,
   },
 }
 
@@ -120,4 +132,30 @@ export function useDownloadDocument(kind: DocumentKind) {
   return useMutation<void, Error, string>({
     mutationFn: (id) => downloadAndShareDocument(config.pdfPath(id), config.fileName(id)),
   })
+}
+
+/**
+ * Emitir.
+ *
+ * O 422 do backend tem causa conhecida — consulta cancelada — e vale uma
+ * frase própria: "tente de novo" seria mentira, porque tentar de novo não
+ * descancela nada.
+ */
+export function useCreateDocument(kind: DocumentKind, appointmentId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation<unknown, IApiError, unknown>({
+    mutationFn: (input) => DOCUMENT_KINDS[kind].create(input as never),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['documents', kind, appointmentId] })
+    },
+  })
+}
+
+export function createErrorMessage(kind: DocumentKind, error: IApiError | null): string | null {
+  if (!error) return null
+  const what = { receita: 'a receita', atestado: 'o atestado', exame: 'o pedido' }[kind]
+  if (error.status === 422) return `Não é possível emitir para uma consulta cancelada.`
+  if (error.status === 403) return `Você não tem permissão para emitir ${what}.`
+  return `Ocorreu um erro ao emitir ${what}. Tente novamente.`
 }

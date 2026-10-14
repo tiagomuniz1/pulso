@@ -1,6 +1,7 @@
 import { AppointmentCancellationScope, AppointmentStatus, PatientGender } from '@app/shared'
 import {
   cancelAppointmentUseCase,
+  getMyProfessionalUseCase,
   listAtestadosUseCase,
   listExamRequestsUseCase,
   listPrescriptionsUseCase,
@@ -24,6 +25,7 @@ jest.mock('@app/core/src/features/medical-record-templates/use-cases/list-templa
 jest.mock('@app/core/src/features/prescriptions/use-cases/list-prescriptions.use-case')
 jest.mock('@app/core/src/features/atestados/use-cases/list-atestados.use-case')
 jest.mock('@app/core/src/features/exames/use-cases/list-exam-requests.use-case')
+jest.mock('@app/core/src/features/professionals/use-cases/get-my-professional.use-case')
 
 const mockBack = jest.fn()
 jest.mock('expo-router', () => ({
@@ -89,6 +91,9 @@ describe('AppointmentDetailScreen', () => {
     ;(listPrescriptionsUseCase as jest.Mock).mockResolvedValue([])
     ;(listAtestadosUseCase as jest.Mock).mockResolvedValue([])
     ;(listExamRequestsUseCase as jest.Mock).mockResolvedValue([])
+    // Sem ficha: é o ADMIN que administra sem atender. Os testes que precisam
+    // da permissão de emitir a concedem explicitamente.
+    ;(getMyProfessionalUseCase as jest.Mock).mockResolvedValue(null)
   })
 
   it('mostra o giro enquanto carrega', async () => {
@@ -464,6 +469,9 @@ describe('AppointmentDetailScreen', () => {
     ;(listPrescriptionsUseCase as jest.Mock).mockResolvedValue([])
     ;(listAtestadosUseCase as jest.Mock).mockResolvedValue([])
     ;(listExamRequestsUseCase as jest.Mock).mockResolvedValue([])
+    // Sem ficha: é o ADMIN que administra sem atender. Os testes que precisam
+    // da permissão de emitir a concedem explicitamente.
+    ;(getMyProfessionalUseCase as jest.Mock).mockResolvedValue(null)
     fireEvent.press(screen.getByTestId('appointment-history-error-retry'))
 
     expect(await screen.findByTestId('appointment-history-empty')).toBeTruthy()
