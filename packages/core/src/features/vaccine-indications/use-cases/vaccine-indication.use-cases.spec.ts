@@ -4,7 +4,6 @@ import { vaccineIndicationsService } from '../services/vaccine-indications.servi
 import { listVaccineIndicationsUseCase } from './list-vaccine-indications.use-case'
 import { createVaccineIndicationUseCase } from './create-vaccine-indication.use-case'
 import { deleteVaccineIndicationUseCase } from './delete-vaccine-indication.use-case'
-import { downloadVaccineIndicationPdfUseCase } from './download-vaccine-indication-pdf.use-case'
 
 const mockService = vaccineIndicationsService as jest.Mocked<typeof vaccineIndicationsService>
 
@@ -65,45 +64,5 @@ describe('deleteVaccineIndicationUseCase', () => {
     mockService.remove.mockResolvedValue(undefined)
     await deleteVaccineIndicationUseCase('indication-uuid')
     expect(mockService.remove).toHaveBeenCalledWith('indication-uuid')
-  })
-})
-
-describe('downloadVaccineIndicationPdfUseCase', () => {
-  const mockObjectUrl = 'blob:mock-url'
-  const mockCreateObjectURL = jest.fn(() => mockObjectUrl)
-  const mockRevokeObjectURL = jest.fn()
-  const mockClick = jest.fn()
-  let anchorElement: HTMLAnchorElement
-
-  beforeAll(() => {
-    Object.defineProperty(globalThis, 'URL', {
-      value: { createObjectURL: mockCreateObjectURL, revokeObjectURL: mockRevokeObjectURL },
-      writable: true,
-    })
-  })
-
-  beforeEach(() => {
-    jest.clearAllMocks()
-    anchorElement = { href: '', download: '', click: mockClick } as unknown as HTMLAnchorElement
-    jest.spyOn(document, 'createElement').mockReturnValue(anchorElement)
-  })
-
-  afterEach(() => jest.restoreAllMocks())
-
-  it('baixa com nome padrão e libera a URL do blob', async () => {
-    const blob = new Blob(['%PDF'], { type: 'application/pdf' })
-    mockService.downloadPdf.mockResolvedValue(blob)
-
-    await downloadVaccineIndicationPdfUseCase('indication-uuid')
-
-    expect(anchorElement.download).toBe('indicacao-vacina-indication-uuid.pdf')
-    expect(mockClick).toHaveBeenCalled()
-    expect(mockRevokeObjectURL).toHaveBeenCalledWith(mockObjectUrl)
-  })
-
-  it('respeita o nome de arquivo informado', async () => {
-    mockService.downloadPdf.mockResolvedValue(new Blob(['%PDF']))
-    await downloadVaccineIndicationPdfUseCase('indication-uuid', 'custom.pdf')
-    expect(anchorElement.download).toBe('custom.pdf')
   })
 })

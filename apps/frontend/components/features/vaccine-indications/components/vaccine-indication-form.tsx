@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/atoms/button/button'
 import { ModalFormActions } from '@/components/ui/molecules/modal-form-actions/modal-form-actions'
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { useVaccines } from '@/components/features/vaccines/hooks/use-vaccines.hook'
-import type { IVaccineModel } from '@/components/features/vaccines/types/vaccine-model.types'
-import type { ICreateVaccineIndicationInput } from '../types/vaccine-indication-input.types'
+import type { IVaccineModel } from '@app/core'
+import type { ICreateVaccineIndicationInput } from '@app/core'
 
 interface ItemDraft {
   vaccineId: string

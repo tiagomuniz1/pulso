@@ -21,3 +21,21 @@ export function useCanIssue(appointmentProfessionalId: string | undefined): bool
 
   return Boolean(myProfessional?.id) && myProfessional?.id === appointmentProfessionalId
 }
+
+/**
+ * Só a ficha, sem exigir ser o profissional da consulta.
+ *
+ * Registrar dose e registrar conduta vacinal são exercício, mas não há
+ * assinatura em jogo: a caderneta frequentemente transcreve dose aplicada
+ * anos atrás noutro serviço. Cargo administrativo sozinho não basta, mas o
+ * dono do atendimento não precisa ser você.
+ */
+export function useHasProfessionalRecord(): boolean {
+  const { data: myProfessional } = useQuery({
+    queryKey: ['professionals', 'me'],
+    queryFn: getMyProfessionalUseCase,
+    staleTime: 1000 * 60 * 30,
+  })
+
+  return Boolean(myProfessional?.id)
+}

@@ -1,10 +1,10 @@
-jest.mock('../services/consultation-photos.service')
-jest.mock('../use-cases/fetch-consultation-photo-blob.use-case')
+jest.mock('@app/core/src/features/consultation-photos/services/consultation-photos.service')
+jest.mock('@app/core/src/features/consultation-photos/use-cases/fetch-consultation-photo-blob.use-case')
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { consultationPhotosService } from '../services/consultation-photos.service'
-import { fetchConsultationPhotoBlobUseCase } from '../use-cases/fetch-consultation-photo-blob.use-case'
+import { consultationPhotosService } from '@app/core'
+import { fetchConsultationPhotoBlobUseCase } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { PatientPhotoGallery } from './patient-photo-gallery'
 

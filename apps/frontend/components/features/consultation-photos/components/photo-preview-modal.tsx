@@ -5,7 +5,7 @@ import { Modal } from '@/components/ui/organisms/modal/modal'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Skeleton } from '@/components/ui/atoms/skeleton/skeleton'
 import { usePhotoThumbnail } from '../hooks/use-photo-thumbnail.hook'
-import type { IConsultationPhotoModel, IConsultationPhotoGalleryItemModel } from '../types/consultation-photo-model.types'
+import type { IConsultationPhotoModel, IConsultationPhotoGalleryItemModel } from '@app/core'
 
 export interface PhotoPreviewModalProps {
   photo: IConsultationPhotoModel | IConsultationPhotoGalleryItemModel | null

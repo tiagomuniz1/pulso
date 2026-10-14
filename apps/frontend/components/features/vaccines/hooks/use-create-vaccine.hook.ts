@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createVaccineUseCase } from '../use-cases/create-vaccine.use-case'
+import { createVaccineUseCase } from '@app/core'
 
 export function useCreateVaccine() {
   const queryClient = useQueryClient()

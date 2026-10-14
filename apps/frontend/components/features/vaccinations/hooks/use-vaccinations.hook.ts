@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { listVaccinationsUseCase } from '../use-cases/list-vaccinations.use-case'
-import type { IVaccinationListParams } from '../types/vaccination-model.types'
+import { listVaccinationsUseCase } from '@app/core'
+import type { IVaccinationListParams } from '@app/core'
 
 export function useVaccinations(params: IVaccinationListParams) {
   return useQuery({

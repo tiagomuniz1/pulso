@@ -8,7 +8,7 @@ import { ModalFormActions } from '@/components/ui/molecules/modal-form-actions/m
 import { Input } from '@/components/ui/atoms/input/input'
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { useVaccines } from '@/components/features/vaccines/hooks/use-vaccines.hook'
-import type { ICreateVaccinationInput } from '../types/vaccination-input.types'
+import type { ICreateVaccinationInput } from '@app/core'
 
 const hoje = new Date().toISOString().slice(0, 10)
 

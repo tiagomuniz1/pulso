@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { updateVaccineUseCase } from '../use-cases/update-vaccine.use-case'
-import type { IUpdateVaccineInput } from '../types/vaccine-input.types'
+import { updateVaccineUseCase } from '@app/core'
+import type { IUpdateVaccineInput } from '@app/core'
 
 export function useUpdateVaccine() {
   const queryClient = useQueryClient()

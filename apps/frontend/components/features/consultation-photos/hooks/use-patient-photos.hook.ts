@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { listPatientPhotosUseCase } from '../use-cases/list-patient-photos.use-case'
+import { listPatientPhotosUseCase } from '@app/core'
 
 export function usePatientPhotos(patientId: string, page: number, limit: number) {
   return useQuery({

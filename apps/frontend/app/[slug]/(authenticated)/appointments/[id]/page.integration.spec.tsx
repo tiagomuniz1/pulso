@@ -5,7 +5,7 @@ jest.mock('@app/core/src/features/medical-record-templates/services/medical-reco
 jest.mock('@app/core/src/features/prescriptions/services/prescriptions.service')
 jest.mock('@app/core/src/features/atestados/services/atestados.service')
 jest.mock('@app/core/src/features/exames/services/exams.service')
-jest.mock('@/components/features/consultation-photos/services/consultation-photos.service')
+jest.mock('@app/core/src/features/consultation-photos/services/consultation-photos.service')
 jest.mock('@/stores/auth.store')
 jest.mock('@/lib/slug-context', () => ({ useSlug: jest.fn(() => 'clinic-slug'), useBasePath: () => '/clinic-slug' }))
 jest.mock('next/navigation', () => ({
@@ -24,7 +24,7 @@ import { medicalRecordTemplatesService } from '@app/core'
 import { prescriptionsService } from '@app/core'
 import { atestadosService } from '@app/core'
 import { examsService } from '@app/core'
-import { consultationPhotosService } from '@/components/features/consultation-photos/services/consultation-photos.service'
+import { consultationPhotosService } from '@app/core'
 import { useAuthStore } from '@/stores/auth.store'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import AppointmentDetailPage from './page'

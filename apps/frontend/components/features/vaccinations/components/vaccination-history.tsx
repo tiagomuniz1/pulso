@@ -13,8 +13,8 @@ import { useVaccinations } from '../hooks/use-vaccinations.hook'
 import { useCreateVaccination } from '../hooks/use-create-vaccination.hook'
 import { useDeleteVaccination } from '../hooks/use-delete-vaccination.hook'
 import { VaccinationForm } from './vaccination-form'
-import type { ICreateVaccinationInput } from '../types/vaccination-input.types'
-import type { IVaccinationModel } from '../types/vaccination-model.types'
+import type { ICreateVaccinationInput } from '@app/core'
+import type { IVaccinationModel } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 const PAGE_SIZE = 20

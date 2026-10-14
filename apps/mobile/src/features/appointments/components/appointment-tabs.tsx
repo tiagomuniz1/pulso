@@ -14,26 +14,18 @@ export type AppointmentTabId =
 interface Tab {
   id: AppointmentTabId
   label: string
-  /** Falso enquanto o conteúdo não foi portado. */
-  available: boolean
 }
 
-/**
- * As oito abas da web, na mesma ordem.
- *
- * As cinco ainda não portadas aparecem **apagadas**, não escondidas: a fileira
- * de abas é o índice do atendimento, e uma versão com três faria parecer que o
- * app tem menos a oferecer do que o sistema tem.
- */
+/** As oito abas da web, na mesma ordem. */
 export const APPOINTMENT_TABS: Tab[] = [
-  { id: 'resumo', label: 'Resumo', available: true },
-  { id: 'prontuario', label: 'Prontuário', available: true },
-  { id: 'historico', label: 'Histórico', available: true },
-  { id: 'receitas', label: 'Receitas', available: true },
-  { id: 'atestados', label: 'Atestados', available: true },
-  { id: 'exames', label: 'Exames', available: true },
-  { id: 'fotos', label: 'Fotos', available: false },
-  { id: 'vacinas', label: 'Vacinas', available: false },
+  { id: 'resumo', label: 'Resumo' },
+  { id: 'prontuario', label: 'Prontuário' },
+  { id: 'historico', label: 'Histórico' },
+  { id: 'receitas', label: 'Receitas' },
+  { id: 'atestados', label: 'Atestados' },
+  { id: 'exames', label: 'Exames' },
+  { id: 'fotos', label: 'Fotos' },
+  { id: 'vacinas', label: 'Vacinas' },
 ]
 
 export function AppointmentTabs({
@@ -56,16 +48,14 @@ export function AppointmentTabs({
           <Pressable
             key={tab.id}
             accessibilityRole="tab"
-            accessibilityState={{ selected: isActive, disabled: !tab.available }}
-            disabled={!tab.available}
-            onPress={tab.available ? () => onChange(tab.id) : undefined}
+            accessibilityState={{ selected: isActive }}
+            onPress={() => onChange(tab.id)}
             testID={`appointment-tab-${tab.id}`}
             style={[
               styles.tab,
               {
                 borderRadius: theme.radius.md,
                 backgroundColor: isActive ? theme.accentSoft : 'transparent',
-                opacity: tab.available ? 1 : 0.4,
               },
             ]}
           >

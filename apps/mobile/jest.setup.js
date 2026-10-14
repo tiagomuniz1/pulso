@@ -31,3 +31,15 @@ jest.mock('expo-constants', () => ({
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 )
+
+/**
+ * `expo-image-picker` é módulo nativo e, sem mock, deixa um handle aberto que
+ * impede o jest de encerrar — o run passa e depois pendura. Cada spec que
+ * precisa de um resultado específico sobrescreve o retorno.
+ */
+jest.mock('expo-image-picker', () => ({
+  requestCameraPermissionsAsync: jest.fn(async () => ({ granted: true })),
+  requestMediaLibraryPermissionsAsync: jest.fn(async () => ({ granted: true })),
+  launchCameraAsync: jest.fn(async () => ({ canceled: true, assets: null })),
+  launchImageLibraryAsync: jest.fn(async () => ({ canceled: true, assets: null })),
+}))

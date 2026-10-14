@@ -2,6 +2,10 @@ import { AppointmentCancellationScope, AppointmentStatus, PatientGender } from '
 import {
   cancelAppointmentUseCase,
   getMyProfessionalUseCase,
+  listAppointmentPhotosUseCase,
+  listVaccinationsUseCase,
+  listVaccineIndicationsUseCase,
+  listVaccinesUseCase,
   listAtestadosUseCase,
   listExamRequestsUseCase,
   listPrescriptionsUseCase,
@@ -26,6 +30,10 @@ jest.mock('@app/core/src/features/prescriptions/use-cases/list-prescriptions.use
 jest.mock('@app/core/src/features/atestados/use-cases/list-atestados.use-case')
 jest.mock('@app/core/src/features/exames/use-cases/list-exam-requests.use-case')
 jest.mock('@app/core/src/features/professionals/use-cases/get-my-professional.use-case')
+jest.mock('@app/core/src/features/consultation-photos/use-cases/list-appointment-photos.use-case')
+jest.mock('@app/core/src/features/vaccine-indications/use-cases/list-vaccine-indications.use-case')
+jest.mock('@app/core/src/features/vaccinations/use-cases/list-vaccinations.use-case')
+jest.mock('@app/core/src/features/vaccines/use-cases/list-vaccines.use-case')
 
 const mockBack = jest.fn()
 jest.mock('expo-router', () => ({
@@ -94,6 +102,10 @@ describe('AppointmentDetailScreen', () => {
     // Sem ficha: é o ADMIN que administra sem atender. Os testes que precisam
     // da permissão de emitir a concedem explicitamente.
     ;(getMyProfessionalUseCase as jest.Mock).mockResolvedValue(null)
+    ;(listAppointmentPhotosUseCase as jest.Mock).mockResolvedValue([])
+    ;(listVaccineIndicationsUseCase as jest.Mock).mockResolvedValue([])
+    ;(listVaccinationsUseCase as jest.Mock).mockResolvedValue(emptyPage)
+    ;(listVaccinesUseCase as jest.Mock).mockResolvedValue(emptyPage)
   })
 
   it('mostra o giro enquanto carrega', async () => {
@@ -200,19 +212,6 @@ describe('AppointmentDetailScreen', () => {
 
       const ids = ['resumo', 'prontuario', 'historico', 'receitas', 'atestados', 'exames', 'fotos', 'vacinas']
       ids.forEach((id) => expect(screen.getByTestId(`appointment-tab-${id}`)).toBeTruthy())
-    })
-
-    // A fileira é o índice do atendimento: uma versão reduzida faria parecer
-    // que o app tem menos a oferecer do que o sistema tem.
-    it('apaga as abas ainda não portadas, sem escondê-las', async () => {
-      await renderWithProviders(<AppointmentDetailScreen />)
-      await screen.findByTestId('appointment-tabs')
-
-      expect(screen.getByTestId('appointment-tab-fotos')).toHaveStyle({ opacity: 0.4 })
-      expect(screen.getByTestId('appointment-tab-resumo')).toHaveStyle({ opacity: 1 })
-
-      fireEvent.press(screen.getByTestId('appointment-tab-fotos'))
-      expect(screen.getByTestId('resumo-tab')).toBeTruthy()
     })
 
     it('troca para o prontuário', async () => {
@@ -472,6 +471,10 @@ describe('AppointmentDetailScreen', () => {
     // Sem ficha: é o ADMIN que administra sem atender. Os testes que precisam
     // da permissão de emitir a concedem explicitamente.
     ;(getMyProfessionalUseCase as jest.Mock).mockResolvedValue(null)
+    ;(listAppointmentPhotosUseCase as jest.Mock).mockResolvedValue([])
+    ;(listVaccineIndicationsUseCase as jest.Mock).mockResolvedValue([])
+    ;(listVaccinationsUseCase as jest.Mock).mockResolvedValue(emptyPage)
+    ;(listVaccinesUseCase as jest.Mock).mockResolvedValue(emptyPage)
     fireEvent.press(screen.getByTestId('appointment-history-error-retry'))
 
     expect(await screen.findByTestId('appointment-history-empty')).toBeTruthy()
@@ -512,5 +515,15 @@ describe('AppointmentDetailScreen', () => {
     fireEvent.press(await screen.findByTestId(`appointment-tab-${tabId}`))
 
     expect(await screen.findByTestId(`document-section-${kind}`)).toBeTruthy()
+  })
+
+  it.each([
+    ['fotos', 'photo-section'],
+    ['vacinas', 'vaccine-section'],
+  ])('a aba %s abre a sua seção', async (tabId, sectionTestId) => {
+    await renderWithProviders(<AppointmentDetailScreen />)
+    fireEvent.press(await screen.findByTestId(`appointment-tab-${tabId}`))
+
+    expect(await screen.findByTestId(sectionTestId)).toBeTruthy()
   })
 })

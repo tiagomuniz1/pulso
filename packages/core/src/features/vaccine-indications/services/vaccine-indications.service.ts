@@ -1,4 +1,4 @@
-import { apiClient } from '@/lib/api-client'
+import { apiClient } from '../../../api/api-client.registry'
 import type { CreateVaccineIndicationDto, VaccineIndicationResponseDto } from '@app/shared'
 
 export const vaccineIndicationsService = {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createVaccineIndicationUseCase } from '../use-cases/create-vaccine-indication.use-case'
+import { createVaccineIndicationUseCase } from '@app/core'
 
 export function useCreateVaccineIndication() {
   const queryClient = useQueryClient()

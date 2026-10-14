@@ -13,7 +13,9 @@ import { AppointmentActionsBar } from '../components/appointment-actions-bar'
 import { AppointmentHeaderCard } from '../components/appointment-header-card'
 import { AppointmentTabs, type AppointmentTabId } from '../components/appointment-tabs'
 import { DocumentSection } from '../../documents/components/document-section'
-import { useCanIssue } from '../../documents/hooks/use-can-issue.hook'
+import { useCanIssue, useHasProfessionalRecord } from '../../documents/hooks/use-can-issue.hook'
+import { PhotoSection } from '../../photos/components/photo-section'
+import { VaccineSection } from '../../vaccines/components/vaccine-section'
 import { HistoryTab } from '../components/history-tab'
 import { ResumoTab } from '../components/resumo-tab'
 import { useAppointment } from '../hooks/use-appointment.hook'
@@ -44,6 +46,8 @@ export function AppointmentDetailScreen() {
   // Antes de qualquer retorno antecipado: a contagem de hooks não pode mudar
   // entre o render que carrega e o que mostra.
   const canIssue = useCanIssue(appointment?.professionalId)
+  // Registrar dose depende da ficha, não de ser o dono do atendimento.
+  const hasFicha = useHasProfessionalRecord()
 
   if (isLoading) {
     return (
@@ -105,6 +109,19 @@ export function AppointmentDetailScreen() {
 
         {tab === 'exames' ? (
           <DocumentSection kind="exame" appointmentId={id} canManage={canManage} canIssue={canIssue} />
+        ) : null}
+
+        {tab === 'fotos' ? (
+          <PhotoSection appointmentId={id} canIssue={canIssue} />
+        ) : null}
+
+        {tab === 'vacinas' ? (
+          <VaccineSection
+            appointmentId={id}
+            patientId={appointment.patientId}
+            canIssue={canIssue}
+            hasFicha={hasFicha}
+          />
         ) : null}
 
         {cancelling ? (
