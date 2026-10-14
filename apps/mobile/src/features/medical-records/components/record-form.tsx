@@ -4,6 +4,7 @@ import type { IRecordFieldModel, ITemplateSectionModel } from '@app/core'
 import { Button } from '../../../components/ui/button'
 import { Card, CardTitle } from '../../../components/ui/card'
 import { TextField } from '../../../components/ui/fields'
+import { useTheme } from '../../../theme/theme-context'
 import { DynamicField } from './dynamic-field'
 import {
   buildInitialValues,
@@ -43,6 +44,7 @@ export function RecordForm({
   )
   const [notes, setNotes] = useState(savedNotes)
   const [missing, setMissing] = useState<string[]>([])
+  const theme = useTheme()
 
   function handleSave() {
     const blanks = findMissingRequired(schema, values)
@@ -92,7 +94,7 @@ export function RecordForm({
       </Card>
 
       {missing.length > 0 ? (
-        <Text style={styles.warning} testID="missing-required">
+        <Text style={[styles.warning, { color: theme.danger }]} testID="missing-required">
           Preencha os campos obrigatórios antes de salvar.
         </Text>
       ) : null}
@@ -108,5 +110,5 @@ export function RecordForm({
 }
 
 const styles = StyleSheet.create({
-  warning: { fontSize: 14, color: '#b91c1c', textAlign: 'center' },
+  warning: { fontSize: 14, textAlign: 'center' },
 })

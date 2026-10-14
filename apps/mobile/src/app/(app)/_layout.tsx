@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router'
-import { Pressable, Text } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
+import { ThemeToggle } from '../../components/ui/theme-toggle'
 import { logout } from '../../features/auth/auth.service'
 import { useSessionStore } from '../../features/auth/session.store'
 import { useTheme } from '../../theme/theme-context'
@@ -36,12 +37,23 @@ export default function AuthenticatedLayout() {
     >
       <Stack.Screen
         name="index"
-        options={{ title: 'Agenda', headerRight: () => <LogoutButton /> }}
+        options={{
+          title: 'Agenda',
+          headerRight: () => (
+            <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
+              <ThemeToggle />
+              <LogoutButton />
+            </View>
+          ),
+        }}
       />
-      <Stack.Screen name="appointments/[id]/index" options={{ title: 'Consulta' }} />
+      <Stack.Screen
+        name="appointments/[id]/index"
+        options={{ title: 'Consulta', headerRight: () => <ThemeToggle /> }}
+      />
       <Stack.Screen
         name="appointments/[id]/medical-record"
-        options={{ title: 'Prontuário' }}
+        options={{ title: 'Prontuário', headerRight: () => <ThemeToggle /> }}
       />
     </Stack>
   )

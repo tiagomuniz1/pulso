@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { themesService } from '../services/themes.service'
+import { themesService } from '@app/core'
 
 export function useDeleteTheme() {
   const queryClient = useQueryClient()

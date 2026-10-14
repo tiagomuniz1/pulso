@@ -7,6 +7,7 @@ import { Button } from '../../../components/ui/button'
 import { Card, CardTitle, Row } from '../../../components/ui/card'
 import { TextField } from '../../../components/ui/fields'
 import { ErrorState, LoadingState, Screen, ScreenScroll } from '../../../components/ui/screen'
+import { useTheme } from '../../../theme/theme-context'
 import { useAppointment } from '../hooks/use-appointment.hook'
 import { useCancelAppointment, useCompleteAppointment } from '../hooks/use-appointment-actions.hook'
 import { formatShortDate, formatTime, todayIsoDate } from '../utils/agenda-date.util'
@@ -21,6 +22,7 @@ function ageFrom(birthDate: Date, todayIso: string): number {
 }
 
 export function AppointmentDetailScreen() {
+  const theme = useTheme()
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
   const { data: appointment, isLoading, isError, refetch } = useAppointment(id)
@@ -62,7 +64,7 @@ export function AppointmentDetailScreen() {
         <Card testID="patient-card">
           <CardTitle>{appointment.patient.fullName}</CardTitle>
           {appointment.isFirstVisitWithProfessional ? (
-            <Text style={styles.firstVisit} testID="first-visit-badge">
+            <Text style={[styles.firstVisit, { color: theme.textDim }]} testID="first-visit-badge">
               Primeira vez com {appointment.professionalName}
             </Text>
           ) : null}
@@ -168,7 +170,7 @@ export function AppointmentDetailScreen() {
         ) : null}
 
         {complete.isError || cancel.isError ? (
-          <Text style={styles.actionError} testID="action-error">
+          <Text style={[styles.actionError, { color: theme.danger }]} testID="action-error">
             Não foi possível concluir a ação. Tente de novo.
           </Text>
         ) : null}
@@ -178,6 +180,6 @@ export function AppointmentDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  firstVisit: { fontSize: 13, color: '#6b7280', fontStyle: 'italic' },
-  actionError: { fontSize: 14, color: '#b91c1c', textAlign: 'center' },
+  firstVisit: { fontSize: 13, fontStyle: 'italic' },
+  actionError: { fontSize: 14, textAlign: 'center' },
 })

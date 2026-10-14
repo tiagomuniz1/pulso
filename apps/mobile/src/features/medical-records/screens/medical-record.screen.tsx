@@ -6,6 +6,7 @@ import { Card, CardTitle } from '../../../components/ui/card'
 import { ChoiceField } from '../../../components/ui/fields'
 import { EmptyState, ErrorState, LoadingState, Screen, ScreenScroll } from '../../../components/ui/screen'
 import { useAppointment } from '../../appointments/hooks/use-appointment.hook'
+import { useTheme } from '../../../theme/theme-context'
 import { RecordForm } from '../components/record-form'
 import {
   useActiveTemplates,
@@ -33,6 +34,7 @@ export function MedicalRecordScreen() {
   const save = useSaveMedicalRecord(appointmentId)
 
   const [templateId, setTemplateId] = useState<string | null>(null)
+  const theme = useTheme()
 
   // Derivados com o fallback aqui, e não espalhado pelo corpo: durante o
   // carregamento `data` é mesmo `undefined`, e é o único lugar onde isso
@@ -139,18 +141,18 @@ export function MedicalRecordScreen() {
           />
         ) : (
           <View testID="awaiting-template">
-            <Text style={styles.hint}>Escolha um modelo para começar.</Text>
+            <Text style={[styles.hint, { color: theme.textDim }]}>Escolha um modelo para começar.</Text>
           </View>
         )}
 
         {save.isError ? (
-          <Text style={styles.warning} testID="save-error">
+          <Text style={[styles.warning, { color: theme.danger }]} testID="save-error">
             Não foi possível salvar o prontuário. Tente de novo.
           </Text>
         ) : null}
 
         {save.isSuccess ? (
-          <Text style={styles.success} testID="save-success">
+          <Text style={[styles.success, { color: theme.good }]} testID="save-success">
             Prontuário salvo.
           </Text>
         ) : null}
@@ -160,7 +162,7 @@ export function MedicalRecordScreen() {
 }
 
 const styles = StyleSheet.create({
-  warning: { fontSize: 14, color: '#b91c1c', textAlign: 'center' },
-  success: { fontSize: 14, color: '#15803d', textAlign: 'center' },
-  hint: { fontSize: 14, color: '#6b7280', textAlign: 'center', paddingVertical: 24 },
+  warning: { fontSize: 14, textAlign: 'center' },
+  success: { fontSize: 14, textAlign: 'center' },
+  hint: { fontSize: 14, textAlign: 'center', paddingVertical: 24 },
 })

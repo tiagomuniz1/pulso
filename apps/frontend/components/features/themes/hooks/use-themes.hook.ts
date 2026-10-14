@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getThemesUseCase } from '../use-cases/get-themes.use-case'
+import { getThemesUseCase } from '@app/core'
 
 export function useThemes(page = 1, limit = 20) {
   return useQuery({

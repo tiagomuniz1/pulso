@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useBasePath } from '@/lib/slug-context'
-import { createThemeUseCase } from '../use-cases/create-theme.use-case'
+import { createThemeUseCase } from '@app/core'
 
 export function useCreateTheme() {
   const queryClient = useQueryClient()

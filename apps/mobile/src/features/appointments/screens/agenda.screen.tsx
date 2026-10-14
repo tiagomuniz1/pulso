@@ -26,7 +26,7 @@ export function AgendaScreen() {
   return (
     <Screen testID="agenda-screen">
       <View style={styles.header}>
-        <Text style={styles.greeting} numberOfLines={1}>
+        <Text style={[styles.greeting, { color: theme.textDim }]} numberOfLines={1}>
           {user?.fullName ?? ''}
         </Text>
         <View style={styles.nav}>
@@ -92,7 +92,7 @@ export function AgendaScreen() {
 
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12, gap: 8 },
-  greeting: { fontSize: 13, color: '#6b7280' },
+  greeting: { fontSize: 13 },
   nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   navButton: { minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
   navArrow: { fontSize: 28, lineHeight: 32 },

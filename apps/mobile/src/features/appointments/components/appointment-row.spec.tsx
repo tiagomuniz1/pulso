@@ -1,12 +1,8 @@
-import { useColorScheme } from 'react-native'
 import { AppointmentLabelColor, AppointmentStatus } from '@app/shared'
 import { screen } from '@testing-library/react-native'
 import { renderWithProviders } from '../../../tests/render-with-providers'
+import { useThemeStore } from '../../../theme/theme.store'
 import { AppointmentRow } from './appointment-row'
-
-jest.mock('react-native/Libraries/Utilities/useColorScheme')
-
-const mockScheme = useColorScheme as jest.MockedFunction<typeof useColorScheme>
 
 const appointment = {
   id: 'appt-1',
@@ -37,10 +33,10 @@ const appointment = {
  * a variante clara e a faixa deixaria de ser legível à noite.
  */
 describe('AppointmentRow no tema escuro', () => {
-  afterEach(() => mockScheme.mockReset())
+  afterEach(() => useThemeStore.setState({ mode: 'light' }))
 
   it('uses the dark variant of the label colour', async () => {
-    mockScheme.mockReturnValue('dark')
+    useThemeStore.setState({ mode: 'dark' })
 
     await renderWithProviders(<AppointmentRow appointment={appointment} onPress={jest.fn()} />)
 
@@ -50,7 +46,7 @@ describe('AppointmentRow no tema escuro', () => {
   })
 
   it('uses the light variant otherwise', async () => {
-    mockScheme.mockReturnValue('light')
+    useThemeStore.setState({ mode: 'light' })
 
     await renderWithProviders(<AppointmentRow appointment={appointment} onPress={jest.fn()} />)
 
@@ -62,7 +58,7 @@ describe('AppointmentRow no tema escuro', () => {
   // A segunda linha diz o que é a consulta. Sem especialidade — clínico
   // geral, por exemplo — o profissional é a informação que resta.
   it('falls back to the professional when there is no specialty', async () => {
-    mockScheme.mockReturnValue('light')
+    useThemeStore.setState({ mode: 'light' })
 
     await renderWithProviders(
       <AppointmentRow

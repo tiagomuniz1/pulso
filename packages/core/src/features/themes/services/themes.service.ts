@@ -1,4 +1,4 @@
-import { apiClient } from '@/lib/api-client'
+import { apiClient } from '../../../api/api-client.registry'
 import type { ThemeResponseDto, PaginatedThemesResponseDto } from '@app/shared'
 import type { ICreateThemeInput, IUpdateThemeInput } from '../types/theme-input.types'
 

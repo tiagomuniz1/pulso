@@ -43,7 +43,12 @@ export function AppointmentRow({
       testID={`appointment-row-${appointment.id}`}
       style={[
         styles.row,
-        { borderRadius: theme.radius.md, opacity: isCancelled ? 0.55 : 1 },
+        {
+          borderRadius: theme.radius.md,
+          backgroundColor: theme.surface2,
+          borderColor: theme.line,
+          opacity: isCancelled ? 0.55 : 1,
+        },
       ]}
     >
       <View
@@ -54,21 +59,21 @@ export function AppointmentRow({
         <Text style={[styles.timeText, { color: theme.accent }]}>
           {formatTime(appointment.startTime)}
         </Text>
-        <Text style={styles.endTime}>{formatTime(appointment.endTime)}</Text>
+        <Text style={[styles.endTime, { color: theme.textDim }]}>{formatTime(appointment.endTime)}</Text>
       </View>
       <View style={styles.body}>
         <Text
-          style={[styles.patient, isCancelled && styles.struck]}
+          style={[styles.patient, { color: theme.text }, isCancelled && styles.struck]}
           numberOfLines={1}
           testID={`appointment-patient-${appointment.id}`}
         >
           {appointment.patientName}
         </Text>
-        <Text style={styles.meta} numberOfLines={1}>
+        <Text style={[styles.meta, { color: theme.textDim }]} numberOfLines={1}>
           {appointment.specialtyName ?? appointment.professionalName}
         </Text>
         <View style={styles.badges}>
-          <Text style={styles.status} testID={`appointment-status-${appointment.id}`}>
+          <Text style={[styles.status, { color: theme.textDim }]} testID={`appointment-status-${appointment.id}`}>
             {APPOINTMENT_STATUS_LABELS[appointment.status]}
           </Text>
           {chip ? (
@@ -92,18 +97,18 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 12,
     minHeight: 72,
-    backgroundColor: 'rgba(127,127,127,0.06)',
+    borderWidth: 1,
     overflow: 'hidden',
   },
   stripe: { width: 4, borderRadius: 2 },
   time: { width: 52 },
   timeText: { fontSize: 16, fontWeight: '700' },
-  endTime: { fontSize: 12, color: '#6b7280' },
+  endTime: { fontSize: 12 },
   body: { flex: 1, gap: 2 },
-  patient: { fontSize: 15, fontWeight: '600', color: '#111827' },
+  patient: { fontSize: 15, fontWeight: '600' },
   struck: { textDecorationLine: 'line-through' },
-  meta: { fontSize: 13, color: '#6b7280' },
+  meta: { fontSize: 13 },
   badges: { flexDirection: 'row', gap: 6, marginTop: 4, flexWrap: 'wrap' },
-  status: { fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 },
+  status: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 },
   label: { fontSize: 11, fontWeight: '600', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, overflow: 'hidden' },
 })

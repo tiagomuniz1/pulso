@@ -2,10 +2,11 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useTheme } from '../../theme/theme-context'
 
 function Label({ label, required }: { label: string; required: boolean }) {
+  const theme = useTheme()
   return (
-    <Text style={styles.label}>
+    <Text style={[styles.label, { color: theme.text }]}>
       {label}
-      {required ? <Text style={styles.required}> *</Text> : null}
+      {required ? <Text style={{ color: theme.danger }}> *</Text> : null}
     </Text>
   )
 }
@@ -48,16 +49,21 @@ export function TextField({
         keyboardType={keyboardType}
         secureTextEntry={secureTextEntry}
         placeholder={placeholder ?? undefined}
-        placeholderTextColor="#9ca3af"
+        placeholderTextColor={theme.textMute}
         style={[
           styles.input,
           multiline && styles.inputMultiline,
-          { borderRadius: theme.radius.md, borderColor: error ? '#b91c1c' : '#d1d5db' },
+          {
+            borderRadius: theme.radius.md,
+            borderColor: error ? theme.danger : theme.line,
+            backgroundColor: theme.surface,
+            color: theme.text,
+          },
         ]}
       />
-      {helpText ? <Text style={styles.help}>{helpText}</Text> : null}
+      {helpText ? <Text style={[styles.help, { color: theme.textMute }]}>{helpText}</Text> : null}
       {error ? (
-        <Text style={styles.error} testID={`${testID}-error`}>
+        <Text style={[styles.error, { color: theme.danger }]} testID={`${testID}-error`}>
           {error}
         </Text>
       ) : null}
@@ -116,21 +122,21 @@ export function ChoiceField({
                 styles.choice,
                 {
                   borderRadius: theme.radius.xl,
-                  borderColor: isOn ? theme.accent : '#d1d5db',
-                  backgroundColor: isOn ? theme.accent : 'transparent',
+                  borderColor: isOn ? theme.accent : theme.line,
+                  backgroundColor: isOn ? theme.accent : theme.surface,
                 },
               ]}
             >
-              <Text style={{ color: isOn ? '#ffffff' : '#374151', fontWeight: isOn ? '600' : '400' }}>
+              <Text style={{ color: isOn ? theme.surface : theme.text, fontWeight: isOn ? '600' : '400' }}>
                 {option.label}
               </Text>
             </Pressable>
           )
         })}
       </View>
-      {helpText ? <Text style={styles.help}>{helpText}</Text> : null}
+      {helpText ? <Text style={[styles.help, { color: theme.textMute }]}>{helpText}</Text> : null}
       {error ? (
-        <Text style={styles.error} testID={`${testID}-error`}>
+        <Text style={[styles.error, { color: theme.danger }]} testID={`${testID}-error`}>
           {error}
         </Text>
       ) : null}
@@ -140,19 +146,17 @@ export function ChoiceField({
 
 const styles = StyleSheet.create({
   field: { gap: 6 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  required: { color: '#b91c1c' },
+  label: { fontSize: 13, fontWeight: '600' },
   input: {
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#111827',
     minHeight: 48,
   },
   inputMultiline: { minHeight: 96, textAlignVertical: 'top' },
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   choice: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, minHeight: 44, justifyContent: 'center' },
-  help: { fontSize: 12, color: '#6b7280' },
-  error: { fontSize: 12, color: '#b91c1c' },
+  help: { fontSize: 12 },
+  error: { fontSize: 12 },
 })

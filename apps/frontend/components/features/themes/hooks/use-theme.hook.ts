@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getThemeByIdUseCase } from '../use-cases/get-theme-by-id.use-case'
+import { getThemeByIdUseCase } from '@app/core'
 
 export function useTheme(id: string) {
   return useQuery({

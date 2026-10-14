@@ -22,3 +22,12 @@ jest.mock('expo-constants', () => ({
   __esModule: true,
   default: { expoConfig: { extra: { apiUrl: 'http://api.test' } } },
 }))
+
+/**
+ * `AsyncStorage` também é módulo nativo. A biblioteca publica o próprio mock,
+ * que é preferível a um escrito à mão: ele acompanha a API quando ela muda, e
+ * qualquer tela que renderize o tema passa por aqui.
+ */
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+)

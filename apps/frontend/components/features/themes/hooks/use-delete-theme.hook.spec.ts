@@ -1,10 +1,10 @@
-jest.mock('../services/themes.service')
+jest.mock('@app/core/src/features/themes/services/themes.service')
 
 import React from 'react'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createQueryClient } from '@/lib/react-query.config'
-import { themesService } from '../services/themes.service'
+import { themesService } from '@app/core'
 import { useDeleteTheme } from './use-delete-theme.hook'
 
 function makeWrapper(client: QueryClient) {

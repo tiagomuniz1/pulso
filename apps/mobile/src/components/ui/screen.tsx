@@ -65,7 +65,7 @@ export function ErrorState({
   const theme = useTheme()
   return (
     <View style={styles.centered} testID={testID}>
-      <Text style={styles.errorText}>{message}</Text>
+      <Text style={[styles.errorText, { color: theme.danger }]}>{message}</Text>
       {onRetry ? (
         <Pressable
           onPress={onRetry}
@@ -80,9 +80,10 @@ export function ErrorState({
 }
 
 export function EmptyState({ testID, message }: { testID: string; message: string }) {
+  const theme = useTheme()
   return (
     <View style={styles.centered} testID={testID}>
-      <Text style={styles.emptyText}>{message}</Text>
+      <Text style={[styles.emptyText, { color: theme.textDim }]}>{message}</Text>
     </View>
   )
 }
@@ -91,7 +92,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   scroll: { padding: 16, gap: 12, paddingBottom: 32 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 16 },
-  errorText: { fontSize: 15, color: '#b91c1c', textAlign: 'center' },
-  emptyText: { fontSize: 15, color: '#6b7280', textAlign: 'center' },
+  errorText: { fontSize: 15, textAlign: 'center' },
+  emptyText: { fontSize: 15, textAlign: 'center' },
   retry: { borderWidth: 1, paddingHorizontal: 20, paddingVertical: 12 },
 })

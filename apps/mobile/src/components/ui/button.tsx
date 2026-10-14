@@ -26,9 +26,9 @@ export function Button({
   const isBlocked = disabled || loading
 
   const palette = {
-    primary: { background: theme.accent, border: theme.accent, text: '#ffffff' },
+    primary: { background: theme.accent, border: theme.accent, text: theme.surface },
     outline: { background: 'transparent', border: theme.accent, text: theme.accent },
-    danger: { background: 'transparent', border: '#b91c1c', text: '#b91c1c' },
+    danger: { background: 'transparent', border: theme.danger, text: theme.danger },
   }[variant]
 
   return (
