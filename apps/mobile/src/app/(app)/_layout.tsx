@@ -27,8 +27,8 @@ export default function AuthenticatedLayout() {
         }}
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="appointments/[id]/index" options={{ title: 'Consulta' }} />
-        <Stack.Screen name="appointments/[id]/medical-record" options={{ title: 'Prontuário' }} />
+        {/* A consulta traz o próprio cabeçalho, com voltar e situação. */}
+        <Stack.Screen name="appointments/[id]/index" options={{ headerShown: false }} />
       </Stack>
     </View>
   )

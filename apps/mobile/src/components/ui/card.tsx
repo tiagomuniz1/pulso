@@ -30,23 +30,8 @@ export function CardTitle({ children }: { children: ReactNode }) {
   return <Text style={[styles.title, { color: theme.accent }]}>{children}</Text>
 }
 
-/** Rótulo em cima, valor embaixo: numa tela estreita, lado a lado trunca. */
-export function Row({ label, value, testID }: { label: string; value: string; testID?: string }) {
-  const theme = useTheme()
-  return (
-    <View style={styles.row}>
-      <Text style={[styles.rowLabel, { color: theme.textMute }]}>{label}</Text>
-      <Text style={[styles.rowValue, { color: theme.text }]} testID={testID}>
-        {value}
-      </Text>
-    </View>
-  )
-}
 
 const styles = StyleSheet.create({
   card: { borderWidth: 1, padding: 16, gap: 10 },
   title: { fontSize: 17, fontWeight: '700' },
-  row: { gap: 2 },
-  rowLabel: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
-  rowValue: { fontSize: 15 },
 })

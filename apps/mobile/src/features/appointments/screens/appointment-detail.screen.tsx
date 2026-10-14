@@ -1,35 +1,42 @@
 import { useState } from 'react'
 import { StyleSheet, Text } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { AppointmentStatus, PATIENT_GENDER_LABELS } from '@app/shared'
-import { APPOINTMENT_STATUS_LABELS } from '@app/core'
-import { Button } from '../../../components/ui/button'
-import { Card, CardTitle, Row } from '../../../components/ui/card'
-import { TextField } from '../../../components/ui/fields'
+import { AppointmentStatus } from '@app/shared'
 import { ErrorState, LoadingState, Screen, ScreenScroll } from '../../../components/ui/screen'
+import { TextField } from '../../../components/ui/fields'
+import { Button } from '../../../components/ui/button'
+import { Card, CardTitle } from '../../../components/ui/card'
 import { useTheme } from '../../../theme/theme-context'
+import { MedicalRecordTab } from '../../medical-records/components/medical-record-tab'
+import { AppointmentActionsBar } from '../components/appointment-actions-bar'
+import { AppointmentHeaderCard } from '../components/appointment-header-card'
+import { AppointmentTabs, type AppointmentTabId } from '../components/appointment-tabs'
+import { HistoryTab } from '../components/history-tab'
+import { ResumoTab } from '../components/resumo-tab'
 import { useAppointment } from '../hooks/use-appointment.hook'
 import { useCancelAppointment, useCompleteAppointment } from '../hooks/use-appointment-actions.hook'
-import { formatShortDate, formatTime, todayIsoDate } from '../utils/agenda-date.util'
+import { todayIsoDate } from '../utils/agenda-date.util'
 
-/** A idade é o que a profissional lê; a data de nascimento é o que o servidor manda. */
-function ageFrom(birthDate: Date, todayIso: string): number {
-  const [year, month, day] = todayIso.split('-').map(Number)
-  let age = year - birthDate.getFullYear()
-  const monthDiff = month - (birthDate.getMonth() + 1)
-  if (monthDiff < 0 || (monthDiff === 0 && day < birthDate.getDate())) age -= 1
-  return age
-}
-
+/**
+ * A consulta, no desenho que a web usa em celular.
+ *
+ * Cartão-cabeçalho com a paciente em primeiro plano e os dados do atendimento
+ * recolhidos, as oito abas, e a faixa de ações presa na base — fora da
+ * rolagem, porque concluir não pode depender de rolar um prontuário inteiro.
+ */
 export function AppointmentDetailScreen() {
-  const theme = useTheme()
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
+  const theme = useTheme()
+
+  const [tab, setTab] = useState<AppointmentTabId>('resumo')
+  const [cancelling, setCancelling] = useState(false)
+  const [reason, setReason] = useState('')
+  const [reassigning, setReassigning] = useState(false)
+
   const { data: appointment, isLoading, isError, refetch } = useAppointment(id)
   const complete = useCompleteAppointment(id)
   const cancel = useCancelAppointment(id)
-  const [cancelling, setCancelling] = useState(false)
-  const [reason, setReason] = useState('')
 
   if (isLoading) {
     return (
@@ -54,95 +61,29 @@ export function AppointmentDetailScreen() {
   const isOpen =
     appointment.status === AppointmentStatus.SCHEDULED ||
     appointment.status === AppointmentStatus.CONFIRMED
-  // Concluir consulta futura o backend recusa com 422. Esconder o botão evita
-  // oferecer um caminho que só termina em erro.
-  const isInThePast = appointment.date <= todayIsoDate()
 
   return (
-    <Screen testID="appointment-detail-screen">
+    <Screen testID="appointment-detail-screen" edges={['top']}>
       <ScreenScroll>
-        <Card testID="patient-card">
-          <CardTitle>{appointment.patient.fullName}</CardTitle>
-          {appointment.isFirstVisitWithProfessional ? (
-            <Text style={[styles.firstVisit, { color: theme.textDim }]} testID="first-visit-badge">
-              Primeira vez com {appointment.professionalName}
-            </Text>
-          ) : null}
-          <Row
-            label="Idade"
-            value={`${ageFrom(appointment.patient.birthDate, todayIsoDate())} anos`}
-            testID="patient-age"
-          />
-          <Row
-            label="Sexo"
-            value={PATIENT_GENDER_LABELS[appointment.patient.gender]}
-            testID="patient-gender"
-          />
-          <Row label="Telefone" value={appointment.patient.phoneNumber} testID="patient-phone" />
-        </Card>
+        <AppointmentHeaderCard appointment={appointment} onBack={() => router.back()} />
 
-        <Card testID="appointment-card">
-          <CardTitle>Consulta</CardTitle>
-          <Row
-            label="Quando"
-            value={`${formatShortDate(appointment.date)} às ${formatTime(appointment.startTime)}`}
-            testID="appointment-when"
-          />
-          <Row
-            label="Profissional"
-            value={appointment.professionalName}
-            testID="appointment-professional"
-          />
-          {appointment.specialtyName ? (
-            <Row
-              label="Especialidade"
-              value={appointment.specialtyName}
-              testID="appointment-specialty"
-            />
-          ) : null}
-          <Row
-            label="Situação"
-            value={APPOINTMENT_STATUS_LABELS[appointment.status]}
-            testID="appointment-status"
-          />
-          {appointment.reason ? (
-            <Row label="Motivo" value={appointment.reason} testID="appointment-reason" />
-          ) : null}
-          {appointment.cancellationReason ? (
-            <Row
-              label="Motivo do cancelamento"
-              value={appointment.cancellationReason}
-              testID="appointment-cancellation-reason"
-            />
-          ) : null}
-        </Card>
+        <AppointmentTabs activeId={tab} onChange={setTab} />
 
-        <Button
-          label="Prontuário"
-          onPress={() => router.push(`/(app)/appointments/${id}/medical-record`)}
-          testID="open-medical-record"
-        />
+        {tab === 'resumo' ? <ResumoTab appointment={appointment} /> : null}
 
-        {isOpen && isInThePast ? (
-          <Button
-            label="Concluir consulta"
-            variant="outline"
-            loading={complete.isPending}
-            onPress={() => complete.mutate()}
-            testID="complete-appointment"
+        {tab === 'prontuario' ? (
+          <MedicalRecordTab appointmentId={id} specialtyId={appointment.specialtyId} />
+        ) : null}
+
+        {tab === 'historico' ? (
+          <HistoryTab
+            patientId={appointment.patientId}
+            specialtyId={appointment.specialtyId}
+            appointmentId={id}
           />
         ) : null}
 
-        {isOpen && !cancelling ? (
-          <Button
-            label="Cancelar consulta"
-            variant="danger"
-            onPress={() => setCancelling(true)}
-            testID="start-cancel"
-          />
-        ) : null}
-
-        {isOpen && cancelling ? (
+        {cancelling ? (
           <Card testID="cancel-card">
             <CardTitle>Cancelar consulta</CardTitle>
             <TextField
@@ -169,17 +110,34 @@ export function AppointmentDetailScreen() {
           </Card>
         ) : null}
 
+        {reassigning ? (
+          <Text style={[styles.notice, { color: theme.textDim }]} testID="reassign-unavailable">
+            Trocar o profissional ainda não está disponível no app. Use o site.
+          </Text>
+        ) : null}
+
         {complete.isError || cancel.isError ? (
-          <Text style={[styles.actionError, { color: theme.danger }]} testID="action-error">
+          <Text style={[styles.notice, { color: theme.danger }]} testID="action-error">
             Não foi possível concluir a ação. Tente de novo.
           </Text>
         ) : null}
       </ScreenScroll>
+
+      {isOpen ? (
+        <AppointmentActionsBar
+          // Concluir consulta futura o backend recusa com 422.
+          canComplete={appointment.date <= todayIsoDate()}
+          isCompleting={complete.isPending}
+          isCancelling={cancel.isPending}
+          onReassign={() => setReassigning(true)}
+          onCancel={() => setCancelling(true)}
+          onComplete={() => complete.mutate()}
+        />
+      ) : null}
     </Screen>
   )
 }
 
 const styles = StyleSheet.create({
-  firstVisit: { fontSize: 13, fontStyle: 'italic' },
-  actionError: { fontSize: 14, textAlign: 'center' },
+  notice: { fontSize: 13, textAlign: 'center' },
 })

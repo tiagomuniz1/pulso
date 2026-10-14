@@ -1,5 +1,12 @@
 import { AppointmentCancellationScope, AppointmentStatus, PatientGender } from '@app/shared'
-import { cancelAppointmentUseCase, completeAppointmentUseCase, getAppointmentUseCase } from '@app/core'
+import {
+  cancelAppointmentUseCase,
+  completeAppointmentUseCase,
+  getAppointmentUseCase,
+  getMedicalRecordByAppointmentUseCase,
+  listPatientMedicalHistoryUseCase,
+  listTemplatesUseCase,
+} from '@app/core'
 import { fireEvent, screen, waitFor } from '@testing-library/react-native'
 import { renderWithProviders } from '../../../tests/render-with-providers'
 import { AppointmentDetailScreen } from './appointment-detail.screen'
@@ -8,57 +15,74 @@ import { addDays, todayIsoDate } from '../utils/agenda-date.util'
 jest.mock('@app/core/src/features/appointments/use-cases/get-appointment.use-case')
 jest.mock('@app/core/src/features/appointments/use-cases/cancel-appointment.use-case')
 jest.mock('@app/core/src/features/appointments/use-cases/complete-appointment.use-case')
+jest.mock('@app/core/src/features/medical-records/use-cases/get-medical-record-by-appointment.use-case')
+jest.mock('@app/core/src/features/medical-records/use-cases/list-patient-medical-history.use-case')
+jest.mock('@app/core/src/features/medical-record-templates/use-cases/list-templates.use-case')
 
-const mockPush = jest.fn()
+const mockBack = jest.fn()
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ back: mockBack }),
   useLocalSearchParams: () => ({ id: 'appt-1' }),
 }))
 
 const mockGet = getAppointmentUseCase as jest.MockedFunction<typeof getAppointmentUseCase>
 const mockCancel = cancelAppointmentUseCase as jest.MockedFunction<typeof cancelAppointmentUseCase>
-const mockComplete = completeAppointmentUseCase as jest.MockedFunction<
-  typeof completeAppointmentUseCase
+const mockComplete = completeAppointmentUseCase as jest.MockedFunction<typeof completeAppointmentUseCase>
+const mockRecord = getMedicalRecordByAppointmentUseCase as jest.MockedFunction<
+  typeof getMedicalRecordByAppointmentUseCase
 >
+const mockHistory = listPatientMedicalHistoryUseCase as jest.MockedFunction<
+  typeof listPatientMedicalHistoryUseCase
+>
+const mockTemplates = listTemplatesUseCase as jest.MockedFunction<typeof listTemplatesUseCase>
 
-const detail = (overrides = {}) => ({
-  id: 'appt-1',
-  professionalId: 'doc-1',
-  professionalName: 'Dra. Ana',
-  patientId: 'pat-1',
-  patientName: 'Maria Silva',
-  specialtyId: 'spec-1',
-  specialtyName: 'Ginecologia',
-  scheduleId: 'sch-1',
-  date: todayIsoDate(),
-  startTime: '09:00:00',
-  endTime: '09:30:00',
-  status: AppointmentStatus.SCHEDULED,
-  reason: null,
-  cancellationReason: null,
-  seriesId: null,
-  seriesSequence: null,
-  seriesTotalOccurrences: null,
-  seriesFutureCount: null,
-  isFirstVisitWithProfessional: false,
-  label: null,
-  patient: {
-    fullName: 'Maria Silva',
-    email: 'maria@exemplo.test',
-    phoneNumber: '(81) 99999-0000',
-    birthDate: new Date(1990, 4, 20),
-    documentNumber: null,
-    gender: PatientGender.FEMALE,
-  },
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  ...overrides,
-})
+const detail = (overrides = {}) =>
+  ({
+    id: 'appt-1',
+    professionalId: 'doc-1',
+    professionalName: 'Dra. Ana',
+    patientId: 'pat-1',
+    patientName: 'Maria Silva',
+    specialtyId: 'spec-1',
+    specialtyName: 'Ginecologia',
+    scheduleId: 'sch-1',
+    date: todayIsoDate(),
+    startTime: '09:00',
+    endTime: '09:30',
+    status: AppointmentStatus.SCHEDULED,
+    reason: null,
+    cancellationReason: null,
+    seriesId: null,
+    seriesSequence: null,
+    seriesTotalOccurrences: null,
+    seriesFutureCount: null,
+    isFirstVisitWithProfessional: false,
+    label: null,
+    patient: {
+      fullName: 'Maria Silva',
+      email: 'maria@exemplo.test',
+      phoneNumber: '(81) 99999-0000',
+      birthDate: new Date(1990, 4, 20),
+      documentNumber: '902.741.017-41',
+      gender: PatientGender.FEMALE,
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  }) as never
+
+const emptyPage = { data: [], total: 0, page: 1, limit: 20 } as never
 
 describe('AppointmentDetailScreen', () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockGet.mockResolvedValue(detail())
+    mockRecord.mockResolvedValue(null)
+    mockTemplates.mockResolvedValue(emptyPage)
+    mockHistory.mockResolvedValue(emptyPage)
+  })
 
-  it('shows the spinner while loading', async () => {
+  it('mostra o giro enquanto carrega', async () => {
     mockGet.mockReturnValue(new Promise(() => {}))
 
     await renderWithProviders(<AppointmentDetailScreen />)
@@ -66,185 +90,278 @@ describe('AppointmentDetailScreen', () => {
     expect(screen.getByTestId('appointment-loading')).toBeTruthy()
   })
 
-  it('offers to try again when the appointment fails to load', async () => {
+  it('oferece tentar de novo quando falha', async () => {
     mockGet.mockRejectedValue(new Error('rede'))
 
     await renderWithProviders(<AppointmentDetailScreen />)
     expect(await screen.findByTestId('appointment-error')).toBeTruthy()
 
-    mockGet.mockResolvedValue(detail() as never)
+    mockGet.mockResolvedValue(detail())
     fireEvent.press(screen.getByTestId('appointment-error-retry'))
 
-    expect(await screen.findByTestId('patient-card')).toBeTruthy()
+    expect(await screen.findByTestId('appointment-header-card')).toBeTruthy()
   })
 
-  describe('a paciente', () => {
-    it('shows name, age, gender and phone', async () => {
-      mockGet.mockResolvedValue(detail() as never)
-
+  describe('o cartão do topo', () => {
+    it('põe a paciente em primeiro plano', async () => {
       await renderWithProviders(<AppointmentDetailScreen />)
 
-      expect(await screen.findByText('Maria Silva')).toBeTruthy()
-      expect(screen.getByTestId('patient-gender')).toHaveTextContent('Feminino')
-      expect(screen.getByTestId('patient-phone')).toHaveTextContent('(81) 99999-0000')
-    })
-
-    // A idade é o que se lê de relance; a data de nascimento exige conta.
-    it.each([
-      [new Date(1990, 0, 1), 'anos'],
-      [new Date(2000, 11, 31), 'anos'],
-    ])('turns the birth date into an age', async (birthDate) => {
-      mockGet.mockResolvedValue(detail({ patient: { ...detail().patient, birthDate } }) as never)
-
-      await renderWithProviders(<AppointmentDetailScreen />)
-
-      expect(await screen.findByTestId('patient-age')).toHaveTextContent(/^\d+ anos$/)
-    })
-
-    // Aniversário que ainda não chegou neste ano não conta.
-    it('does not count a birthday that has not come yet this year', async () => {
-      const today = new Date()
-      const birthDate = new Date(today.getFullYear() - 30, today.getMonth(), today.getDate() + 1)
-      mockGet.mockResolvedValue(detail({ patient: { ...detail().patient, birthDate } }) as never)
-
-      await renderWithProviders(<AppointmentDetailScreen />)
-
-      expect(await screen.findByTestId('patient-age')).toHaveTextContent('29 anos')
-    })
-
-    it('shows the first-visit badge only on a first visit', async () => {
-      mockGet.mockResolvedValue(detail({ isFirstVisitWithProfessional: true }) as never)
-
-      await renderWithProviders(<AppointmentDetailScreen />)
-
-      expect(await screen.findByTestId('first-visit-badge')).toHaveTextContent(
-        /Primeira vez com Dra\. Ana/,
+      await screen.findByTestId('appointment-header-card')
+      expect(screen.getByTestId('header-patient-name')).toHaveTextContent('Maria Silva')
+      // Sexo • idade • especialidade, na mesma linha, como na web.
+      expect(screen.getByTestId('header-patient-summary')).toHaveTextContent(
+        'Feminino • 36 anos • Ginecologia',
       )
-    })
-
-    it('hides the badge for a patient already seen', async () => {
-      mockGet.mockResolvedValue(detail() as never)
-
-      await renderWithProviders(<AppointmentDetailScreen />)
-      await screen.findByTestId('patient-card')
-
-      expect(screen.queryByTestId('first-visit-badge')).toBeNull()
-    })
-  })
-
-  describe('a consulta', () => {
-    it('shows when, who and the status', async () => {
-      mockGet.mockResolvedValue(detail() as never)
-
-      await renderWithProviders(<AppointmentDetailScreen />)
-
-      expect(await screen.findByTestId('appointment-when')).toHaveTextContent(/às 09:00$/)
-      expect(screen.getByTestId('appointment-professional')).toHaveTextContent('Dra. Ana')
-      expect(screen.getByTestId('appointment-specialty')).toHaveTextContent('Ginecologia')
+      // As iniciais no avatar, como no da sidebar.
+      expect(screen.getByText('MS')).toBeTruthy()
       expect(screen.getByTestId('appointment-status')).toHaveTextContent('Agendada')
     })
 
-    it('omits specialty, reason and cancellation when there is none', async () => {
-      mockGet.mockResolvedValue(detail({ specialtyName: null }) as never)
-
+    /**
+     * Os dados do atendimento vêm recolhidos.
+     *
+     * Quem abre esta tela já sabe que consulta é; o que quer ver primeiro é
+     * quem está na frente dele. No desktop os quatro campos cabem na faixa e
+     * ficam sempre à mostra — em celular, não.
+     */
+    it('esconde profissional, data e horário até alguém pedir', async () => {
       await renderWithProviders(<AppointmentDetailScreen />)
-      await screen.findByTestId('appointment-card')
+      await screen.findByTestId('appointment-header-card')
 
-      expect(screen.queryByTestId('appointment-specialty')).toBeNull()
-      expect(screen.queryByTestId('appointment-reason')).toBeNull()
-      expect(screen.queryByTestId('appointment-cancellation-reason')).toBeNull()
+      expect(screen.queryByTestId('appointment-details')).toBeNull()
+
+      fireEvent.press(screen.getByTestId('appointment-details-toggle'))
+
+      await screen.findByTestId('appointment-details')
+      expect(screen.getByTestId('detail-professional')).toHaveTextContent('Dra. Ana')
+      expect(screen.getByTestId('detail-specialty')).toHaveTextContent('Ginecologia')
+      expect(screen.getByTestId('detail-time')).toHaveTextContent('09:00 — 09:30')
     })
 
-    it('shows the reason and the cancellation reason when they exist', async () => {
+    it('recolhe de novo ao segundo toque', async () => {
+      await renderWithProviders(<AppointmentDetailScreen />)
+      fireEvent.press(await screen.findByTestId('appointment-details-toggle'))
+      await screen.findByTestId('appointment-details')
+
+      fireEvent.press(screen.getByTestId('appointment-details-toggle'))
+
+      await waitFor(() => expect(screen.queryByTestId('appointment-details')).toBeNull())
+    })
+
+    it('mostra o selo de primeira vez só na primeira vez', async () => {
+      mockGet.mockResolvedValue(detail({ isFirstVisitWithProfessional: true }))
+
+      await renderWithProviders(<AppointmentDetailScreen />)
+
+      expect(await screen.findByTestId('first-visit-badge')).toHaveTextContent('Primeira vez')
+    })
+
+    it('sem especialidade, a linha da paciente não fica com separador solto', async () => {
+      mockGet.mockResolvedValue(detail({ specialtyName: null, specialtyId: null }))
+
+      await renderWithProviders(<AppointmentDetailScreen />)
+
+      await screen.findByTestId('appointment-header-card')
+      expect(screen.getByTestId('header-patient-summary')).toHaveTextContent('Feminino • 36 anos')
+    })
+
+    it('volta ao ser tocado', async () => {
+      await renderWithProviders(<AppointmentDetailScreen />)
+      fireEvent.press(await screen.findByTestId('appointment-back'))
+
+      expect(mockBack).toHaveBeenCalled()
+    })
+  })
+
+  describe('as abas', () => {
+    it('abre no Resumo', async () => {
+      await renderWithProviders(<AppointmentDetailScreen />)
+
+      expect(await screen.findByTestId('resumo-tab')).toBeTruthy()
+    })
+
+    it('mostra as oito abas da web', async () => {
+      await renderWithProviders(<AppointmentDetailScreen />)
+      await screen.findByTestId('appointment-tabs')
+
+      const ids = ['resumo', 'prontuario', 'historico', 'receitas', 'atestados', 'exames', 'fotos', 'vacinas']
+      ids.forEach((id) => expect(screen.getByTestId(`appointment-tab-${id}`)).toBeTruthy())
+    })
+
+    // A fileira é o índice do atendimento: uma versão com três faria parecer
+    // que o app tem menos a oferecer do que o sistema tem.
+    it('apaga as abas ainda não portadas, sem escondê-las', async () => {
+      await renderWithProviders(<AppointmentDetailScreen />)
+      await screen.findByTestId('appointment-tabs')
+
+      expect(screen.getByTestId('appointment-tab-receitas')).toHaveStyle({ opacity: 0.4 })
+      expect(screen.getByTestId('appointment-tab-resumo')).toHaveStyle({ opacity: 1 })
+
+      fireEvent.press(screen.getByTestId('appointment-tab-receitas'))
+      expect(screen.getByTestId('resumo-tab')).toBeTruthy()
+    })
+
+    it('troca para o prontuário', async () => {
+      await renderWithProviders(<AppointmentDetailScreen />)
+      fireEvent.press(await screen.findByTestId('appointment-tab-prontuario'))
+
+      expect(await screen.findByTestId('medical-record-empty')).toBeTruthy()
+    })
+
+    it('troca para o histórico', async () => {
+      await renderWithProviders(<AppointmentDetailScreen />)
+      fireEvent.press(await screen.findByTestId('appointment-tab-historico'))
+
+      expect(await screen.findByTestId('appointment-history-section')).toBeTruthy()
+    })
+  })
+
+  describe('a aba Resumo', () => {
+    it('mostra os dados da paciente em coluna única', async () => {
+      await renderWithProviders(<AppointmentDetailScreen />)
+      await screen.findByTestId('resumo-tab')
+
+      expect(screen.getByTestId('patient-email')).toHaveTextContent('maria@exemplo.test')
+      expect(screen.getByTestId('patient-phone')).toHaveTextContent('(81) 99999-0000')
+      expect(screen.getByTestId('patient-document')).toHaveTextContent('902.741.017-41')
+      expect(screen.getByTestId('patient-gender')).toHaveTextContent('Feminino')
+      expect(screen.getByTestId('patient-birth-date')).toHaveTextContent('20/05/1990 (36 anos)')
+    })
+
+    // Dependente de outro paciente não tem CPF obrigatório — recém-nascido e
+    // menor sem documento emitido ainda.
+    it('aceita paciente sem CPF', async () => {
       mockGet.mockResolvedValue(
-        detail({
-          reason: 'Dor abdominal',
-          status: AppointmentStatus.CANCELLED,
-          cancellationReason: 'Paciente remarcou',
-        }) as never,
+        detail({ patient: { ...(detail() as never as { patient: object }).patient, documentNumber: null } }),
       )
 
       await renderWithProviders(<AppointmentDetailScreen />)
 
-      expect(await screen.findByTestId('appointment-reason')).toHaveTextContent('Dor abdominal')
-      expect(screen.getByTestId('appointment-cancellation-reason')).toHaveTextContent(
-        'Paciente remarcou',
-      )
+      expect(await screen.findByTestId('patient-document')).toHaveTextContent('—')
+    })
+
+    it('lista os documentos da consulta', async () => {
+      await renderWithProviders(<AppointmentDetailScreen />)
+      await screen.findByTestId('resumo-tab')
+
+      expect(screen.getByTestId('resumo-document-receitas')).toBeTruthy()
+      expect(screen.getByTestId('resumo-document-fotos')).toBeTruthy()
     })
   })
 
-  it('opens the medical record', async () => {
-    mockGet.mockResolvedValue(detail() as never)
+  describe('a aba Histórico', () => {
+    // Um nutricionista não lê o prontuário de ginecologia: o recorte por
+    // especialidade é do servidor, e o cliente tem de pedi-lo certo.
+    it('pede o histórico da mesma especialidade, sem a consulta atual', async () => {
+      await renderWithProviders(<AppointmentDetailScreen />)
+      fireEvent.press(await screen.findByTestId('appointment-tab-historico'))
 
-    await renderWithProviders(<AppointmentDetailScreen />)
-    fireEvent.press(await screen.findByTestId('open-medical-record'))
+      await waitFor(() =>
+        expect(mockHistory).toHaveBeenCalledWith('pat-1', {
+          specialtyId: 'spec-1',
+          excludeAppointmentId: 'appt-1',
+          limit: 20,
+        }),
+      )
+    })
 
-    expect(mockPush).toHaveBeenCalledWith('/(app)/appointments/appt-1/medical-record')
-  })
-
-  describe('concluir', () => {
-    it('completes the appointment', async () => {
-      mockGet.mockResolvedValue(detail() as never)
-      mockComplete.mockResolvedValue(detail() as never)
+    // `'null'` pede exatamente os sem especialidade; omitir significaria
+    // "todas", que é outra coisa.
+    it('pede os sem especialidade quando a consulta não tem', async () => {
+      mockGet.mockResolvedValue(detail({ specialtyId: null, specialtyName: null }))
 
       await renderWithProviders(<AppointmentDetailScreen />)
-      fireEvent.press(await screen.findByTestId('complete-appointment'))
+      fireEvent.press(await screen.findByTestId('appointment-tab-historico'))
+
+      await waitFor(() =>
+        expect(mockHistory).toHaveBeenCalledWith('pat-1', expect.objectContaining({ specialtyId: 'null' })),
+      )
+    })
+
+    it('diz quando não há atendimento anterior', async () => {
+      await renderWithProviders(<AppointmentDetailScreen />)
+      fireEvent.press(await screen.findByTestId('appointment-tab-historico'))
+
+      expect(await screen.findByTestId('appointment-history-empty')).toBeTruthy()
+    })
+
+    it('lista os atendimentos anteriores', async () => {
+      mockHistory.mockResolvedValue({
+        data: [
+          {
+            id: 'rec-1',
+            appointmentDate: '2026-02-10',
+            appointmentStartTime: '14:00',
+            professionalName: 'Dra. Ana',
+            specialtyName: 'Ginecologia',
+          },
+        ],
+        total: 1,
+        page: 1,
+        limit: 20,
+      } as never)
+
+      await renderWithProviders(<AppointmentDetailScreen />)
+      fireEvent.press(await screen.findByTestId('appointment-tab-historico'))
+
+      await screen.findByTestId('appointment-history-item-rec-1')
+      expect(screen.getByText('10/02/2026 às 14:00')).toBeTruthy()
+      expect(screen.getByText('Dra. Ana • Ginecologia')).toBeTruthy()
+    })
+
+    it('oferece tentar de novo quando o histórico falha', async () => {
+      mockHistory.mockRejectedValue(new Error('rede'))
+
+      await renderWithProviders(<AppointmentDetailScreen />)
+      fireEvent.press(await screen.findByTestId('appointment-tab-historico'))
+
+      expect(await screen.findByTestId('appointment-history-error')).toBeTruthy()
+    })
+  })
+
+  describe('a faixa de ações', () => {
+    it('conclui a consulta', async () => {
+      mockComplete.mockResolvedValue(detail())
+
+      await renderWithProviders(<AppointmentDetailScreen />)
+      fireEvent.press(await screen.findByTestId('action-complete'))
 
       await waitFor(() => expect(mockComplete).toHaveBeenCalledWith('appt-1'))
     })
 
-    // O backend recusa concluir consulta futura com 422; oferecer o botão
-    // seria oferecer um caminho que só termina em erro.
-    it('hides the button for an appointment still in the future', async () => {
-      mockGet.mockResolvedValue(detail({ date: addDays(todayIsoDate(), 1) }) as never)
+    it('esconde concluir para consulta futura', async () => {
+      mockGet.mockResolvedValue(detail({ date: addDays(todayIsoDate(), 1) }))
 
       await renderWithProviders(<AppointmentDetailScreen />)
-      await screen.findByTestId('appointment-card')
+      await screen.findByTestId('appointment-actions')
 
-      expect(screen.queryByTestId('complete-appointment')).toBeNull()
+      expect(screen.queryByTestId('action-complete')).toBeNull()
     })
 
     it.each([AppointmentStatus.CANCELLED, AppointmentStatus.COMPLETED])(
-      'hides both actions when the appointment is %s',
+      'esconde a faixa inteira quando a consulta está %s',
       async (status) => {
-        mockGet.mockResolvedValue(detail({ status }) as never)
+        mockGet.mockResolvedValue(detail({ status }))
 
         await renderWithProviders(<AppointmentDetailScreen />)
-        await screen.findByTestId('appointment-card')
+        await screen.findByTestId('appointment-header-card')
 
-        expect(screen.queryByTestId('complete-appointment')).toBeNull()
-        expect(screen.queryByTestId('start-cancel')).toBeNull()
+        expect(screen.queryByTestId('appointment-actions')).toBeNull()
       },
     )
 
-    it('says something when the action fails', async () => {
-      mockGet.mockResolvedValue(detail() as never)
-      mockComplete.mockRejectedValue({ status: 422, title: 'x', detail: 'y' })
-
-      await renderWithProviders(<AppointmentDetailScreen />)
-      fireEvent.press(await screen.findByTestId('complete-appointment'))
-
-      expect(await screen.findByTestId('action-error')).toBeTruthy()
-    })
-  })
-
-  describe('cancelar', () => {
     // Cancelar é irreversível e um toque acidental é barato num celular: o
     // motivo entra antes, no mesmo gesto que confirma.
-    it('asks for the reason before confirming', async () => {
-      mockGet.mockResolvedValue(detail() as never)
-      mockCancel.mockResolvedValue(detail() as never)
+    it('pede o motivo antes de cancelar', async () => {
+      mockCancel.mockResolvedValue(detail())
 
       await renderWithProviders(<AppointmentDetailScreen />)
-      fireEvent.press(await screen.findByTestId('start-cancel'))
+      fireEvent.press(await screen.findByTestId('action-cancel'))
 
       const reason = await screen.findByTestId('cancel-reason')
       fireEvent.changeText(reason, 'Paciente avisou que não vem')
-      // O React 19 agenda o estado; sem esperar, o toque confirma o valor antigo.
       await waitFor(() =>
-        expect(screen.getByTestId('cancel-reason').props.value).toBe(
-          'Paciente avisou que não vem',
-        ),
+        expect(screen.getByTestId('cancel-reason').props.value).toBe('Paciente avisou que não vem'),
       )
 
       fireEvent.press(screen.getByTestId('confirm-cancel'))
@@ -252,23 +369,115 @@ describe('AppointmentDetailScreen', () => {
       await waitFor(() =>
         expect(mockCancel).toHaveBeenCalledWith('appt-1', {
           cancellationReason: 'Paciente avisou que não vem',
-          // Só esta ocorrência: cancelar a série inteira do celular é fácil
-          // demais de fazer sem querer e exige reagendar uma por uma.
           scope: AppointmentCancellationScope.SINGLE_OCCURRENCE,
         }),
       )
     })
 
-    it('backs out without cancelling', async () => {
-      mockGet.mockResolvedValue(detail() as never)
-
+    it('desiste de cancelar', async () => {
       await renderWithProviders(<AppointmentDetailScreen />)
-      fireEvent.press(await screen.findByTestId('start-cancel'))
+      fireEvent.press(await screen.findByTestId('action-cancel'))
       fireEvent.press(await screen.findByTestId('abort-cancel'))
 
-      await waitFor(() => expect(screen.getByTestId('start-cancel')).toBeTruthy())
-      expect(screen.queryByTestId('cancel-card')).toBeNull()
+      await waitFor(() => expect(screen.queryByTestId('cancel-card')).toBeNull())
       expect(mockCancel).not.toHaveBeenCalled()
     })
+
+    it('avisa que trocar o profissional ainda não está no app', async () => {
+      await renderWithProviders(<AppointmentDetailScreen />)
+      fireEvent.press(await screen.findByTestId('action-reassign'))
+
+      expect(await screen.findByTestId('reassign-unavailable')).toBeTruthy()
+    })
+
+    it('diz algo quando a ação falha', async () => {
+      mockComplete.mockRejectedValue({ status: 422, title: 'x', detail: 'y' })
+
+      await renderWithProviders(<AppointmentDetailScreen />)
+      fireEvent.press(await screen.findByTestId('action-complete'))
+
+      expect(await screen.findByTestId('action-error')).toBeTruthy()
+    })
+  })
+
+  // Enquanto a requisição está em voo, um segundo toque criaria uma segunda
+  // chamada — e num celular o toque duplo é acidente comum.
+  it('apaga e trava as ações enquanto a requisição está em voo', async () => {
+    mockComplete.mockReturnValue(new Promise(() => {}))
+
+    await renderWithProviders(<AppointmentDetailScreen />)
+    fireEvent.press(await screen.findByTestId('action-complete'))
+
+    await waitFor(() => expect(screen.getByTestId('action-complete')).toHaveStyle({ opacity: 0.5 }))
+
+    fireEvent.press(screen.getByTestId('action-complete'))
+    expect(mockComplete).toHaveBeenCalledTimes(1)
+  })
+
+  it('trava o cancelar enquanto cancela', async () => {
+    mockCancel.mockReturnValue(new Promise(() => {}))
+
+    await renderWithProviders(<AppointmentDetailScreen />)
+    fireEvent.press(await screen.findByTestId('action-cancel'))
+    fireEvent.press(await screen.findByTestId('confirm-cancel'))
+
+    await waitFor(() => expect(screen.getByTestId('action-cancel')).toHaveStyle({ opacity: 0.5 }))
+  })
+
+  // Consulta de clínico geral não tem especialidade; o campo recolhido
+  // precisa dizer isso em vez de ficar vazio.
+  it('escreve um traço na especialidade quando não há', async () => {
+    mockGet.mockResolvedValue(detail({ specialtyId: null, specialtyName: null }))
+
+    await renderWithProviders(<AppointmentDetailScreen />)
+    fireEvent.press(await screen.findByTestId('appointment-details-toggle'))
+
+    expect(await screen.findByTestId('detail-specialty')).toHaveTextContent('—')
+  })
+
+  it('mostra o giro do histórico enquanto ele carrega', async () => {
+    mockHistory.mockReturnValue(new Promise(() => {}))
+
+    await renderWithProviders(<AppointmentDetailScreen />)
+    fireEvent.press(await screen.findByTestId('appointment-tab-historico'))
+
+    expect(await screen.findByTestId('appointment-history-loading')).toBeTruthy()
+  })
+
+  it('o histórico tenta de novo ao ser pedido', async () => {
+    mockHistory.mockRejectedValue(new Error('rede'))
+
+    await renderWithProviders(<AppointmentDetailScreen />)
+    fireEvent.press(await screen.findByTestId('appointment-tab-historico'))
+    await screen.findByTestId('appointment-history-error')
+
+    mockHistory.mockResolvedValue(emptyPage)
+    fireEvent.press(screen.getByTestId('appointment-history-error-retry'))
+
+    expect(await screen.findByTestId('appointment-history-empty')).toBeTruthy()
+  })
+
+  // Atendimento registrado sem especialidade não vira " • " solto na linha.
+  it('o item do histórico sem especialidade mostra só o profissional', async () => {
+    mockHistory.mockResolvedValue({
+      data: [
+        {
+          id: 'rec-2',
+          appointmentDate: '2026-02-10',
+          appointmentStartTime: '14:00',
+          professionalName: 'Dra. Ana',
+          specialtyName: null,
+        },
+      ],
+      total: 1,
+      page: 1,
+      limit: 20,
+    } as never)
+
+    await renderWithProviders(<AppointmentDetailScreen />)
+    fireEvent.press(await screen.findByTestId('appointment-tab-historico'))
+
+    await screen.findByTestId('appointment-history-item-rec-2')
+    expect(screen.getByText('Dra. Ana')).toBeTruthy()
   })
 })
