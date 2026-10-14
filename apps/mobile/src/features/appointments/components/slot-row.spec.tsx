@@ -31,9 +31,21 @@ beforeEach(() => {
 })
 
 describe('SlotRow — horário livre', () => {
-  it('mostra a hora e "Livre"', async () => {
+  // O texto é o da web: quem gerencia agenda lê o convite, quem não gerencia
+  // lê só o estado.
+  it('convida a agendar quem gerencia agenda', async () => {
     await renderWithProviders(
       <SlotRow slot={free} canManage isPast={false} onPress={onPress} />,
+    )
+
+    expect(screen.getByTestId('agenda-slot-free')).toHaveTextContent(
+      '08:00Livre — clique para agendar',
+    )
+  })
+
+  it('para a recepção, só informa que está livre', async () => {
+    await renderWithProviders(
+      <SlotRow slot={free} canManage={false} isPast={false} onPress={onPress} />,
     )
 
     expect(screen.getByTestId('agenda-slot-free')).toHaveTextContent('08:00Livre')

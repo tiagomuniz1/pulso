@@ -75,13 +75,13 @@ describe('agenda-date', () => {
     })
   })
 
-  // O formato da barra da web: "13 de out. de 2026". Abreviado à mão porque o
-  // Hermes nem sempre embarca os dados de locale, e um mês em inglês no meio
-  // da agenda é pior do que uma tabela de doze strings.
+  // O formato exato da barra da web: dia da semana e mês por extenso, com a
+  // inicial maiúscula que o `first-letter:uppercase` da classe produz.
   it.each([
-    ['2026-10-13', '13 de out. de 2026'],
-    ['2026-01-01', '1 de jan. de 2026'],
-    ['2026-12-31', '31 de dez. de 2026'],
+    ['2026-10-15', 'Quinta-feira, 15 de outubro de 2026'],
+    ['2026-10-14', 'Quarta-feira, 14 de outubro de 2026'],
+    ['2026-01-01', 'Quinta-feira, 1 de janeiro de 2026'],
+    ['2026-10-11', 'Domingo, 11 de outubro de 2026'],
   ])('formatToolbarDate(%s) = %s', (iso, expected) => {
     expect(formatToolbarDate(iso)).toBe(expected)
   })

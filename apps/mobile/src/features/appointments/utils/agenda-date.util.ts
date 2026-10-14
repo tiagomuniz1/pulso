@@ -13,9 +13,9 @@ const MONTHS = [
   'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
 ]
 
-const MONTHS_SHORT = [
-  'jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.',
-  'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.',
+const WEEKDAYS_LONG = [
+  'Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira',
+  'Quinta-feira', 'Sexta-feira', 'Sábado',
 ]
 
 const pad = (value: number): string => String(value).padStart(2, '0')
@@ -48,16 +48,17 @@ export function formatAgendaDate(isoDate: string): string {
 }
 
 /**
- * "13 de out. de 2026" — o rótulo da barra, no formato da web.
+ * "Quinta-feira, 15 de outubro de 2026" — o rótulo da barra, como na web.
  *
- * Mês abreviado com ponto, como o `toLocaleDateString('pt-BR', { month:
- * 'short' })` do navegador produz. Abreviar aqui em vez de usar `Intl` porque
- * o Hermes nem sempre embarca os dados de locale, e um mês em inglês no meio
- * da agenda é pior do que uma tabela de doze strings.
+ * Dia da semana por extenso com inicial maiúscula (`first-letter:uppercase` na
+ * classe da web) e mês por extenso. Escrito à mão em vez de `Intl` porque o
+ * Hermes nem sempre embarca os dados de locale, e um mês em inglês no meio da
+ * agenda é pior do que duas tabelas de strings.
  */
 export function formatToolbarDate(isoDate: string): string {
   const [year, month, day] = isoDate.split('-').map(Number)
-  return `${day} de ${MONTHS_SHORT[month - 1]} de ${year}`
+  const weekday = WEEKDAYS_LONG[new Date(year, month - 1, day).getDay()]
+  return `${weekday}, ${day} de ${MONTHS[month - 1]} de ${year}`
 }
 
 /** "10/03/2026", para onde a data aparece ao lado de outro dado. */

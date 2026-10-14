@@ -222,6 +222,7 @@ __metadata:
   dependencies:
     "@app/core": "npm:1.0.0"
     "@app/shared": "workspace:*"
+    "@expo/vector-icons": "npm:^15.0.2"
     "@react-native-async-storage/async-storage": "npm:2.2.0"
     "@react-native/jest-preset": "npm:^0.86.0"
     "@tanstack/react-query": "npm:^5.104.2"
@@ -3474,6 +3475,17 @@ __metadata:
     react-native-worklets:
       optional: true
   checksum: 10c0/8038071ecb9e553d6d326eddf582a2012c9bb949fb9341d6ba5f561e43a7e2caad9d1efdc3c31111e9fa174b1155911bdc3ea53ef41326ad097caaba74597973
+  languageName: node
+  linkType: hard
+
+"@expo/vector-icons@npm:^15.0.2":
+  version: 15.1.1
+  resolution: "@expo/vector-icons@npm:15.1.1"
+  peerDependencies:
+    expo-font: ">=14.0.4"
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/fdd50c90484934204b90d345904fa69ca788a5de704d62b3cb580c52aa4cf4bffe1c05c509d043cf2b6842f1bdad6b78585524f3c6ae5f77e36385d83c0aa577
   languageName: node
   linkType: hard
 

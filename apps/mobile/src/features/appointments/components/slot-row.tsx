@@ -74,8 +74,7 @@ export function SlotRow({
       >
         <Text style={[styles.time, { color: theme.textDim }]}>{slot.startTime}</Text>
         <Text style={[styles.freeLabel, { color: theme.textMute }]}>
-          {/* Agendar é fase 5; até lá o livre informa, não convida. */}
-          {isPast ? 'Passado' : 'Livre'}
+          {isPast ? 'Passado' : canManage ? 'Livre — clique para agendar' : 'Livre'}
         </Text>
       </View>
     )

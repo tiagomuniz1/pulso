@@ -1,6 +1,7 @@
+import { UserRole } from '@app/shared'
 import { useSessionStore } from './session.store'
 
-const USER = { id: 'u1', fullName: 'Dra. Ana', email: 'ana@pulso.test', role: 'admin', clinicId: 'c1' }
+const USER = { id: 'u1', fullName: 'Dra. Ana', email: 'ana@pulso.test', role: UserRole.ADMIN, clinicId: 'c1' }
 
 describe('session.store', () => {
   beforeEach(() => {

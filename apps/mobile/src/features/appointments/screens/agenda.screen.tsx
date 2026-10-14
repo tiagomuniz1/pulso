@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react'
-import { FlatList, StyleSheet } from 'react-native'
+import { FlatList, StyleSheet, Text } from 'react-native'
 import { useRouter } from 'expo-router'
 import { UserRole } from '@app/shared'
 import { EmptyState, ErrorState, LoadingState, Screen } from '../../../components/ui/screen'
 import { useSessionStore } from '../../auth/session.store'
+import { useTheme } from '../../../theme/theme-context'
 import { AgendaToolbar } from '../components/agenda-toolbar'
 import { SlotRow } from '../components/slot-row'
 import { useActiveAppointmentLabels, useAgendaProfessionals } from '../hooks/use-agenda-filters.hook'
 import { useDayAgenda } from '../hooks/use-day-agenda.hook'
-import { addDays, formatToolbarDate, isToday, todayIsoDate } from '../utils/agenda-date.util'
+import { addDays, formatToolbarDate, todayIsoDate } from '../utils/agenda-date.util'
 
 /**
  * A agenda do dia — a grade de horários da web, não uma lista de consultas.
@@ -23,8 +24,10 @@ export function AgendaScreen() {
   const [date, setDate] = useState(todayIsoDate())
   const [labelFilter, setLabelFilter] = useState<string | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
+  const [blocking, setBlocking] = useState(false)
 
   const router = useRouter()
+  const theme = useTheme()
   const user = useSessionStore((state) => state.user)
 
   const professionals = useAgendaProfessionals()
@@ -51,7 +54,6 @@ export function AgendaScreen() {
     <Screen testID="agenda-screen">
       <AgendaToolbar
         dateLabel={formatToolbarDate(date)}
-        isToday={isToday(date)}
         onPrevious={() => setDate(addDays(date, -1))}
         onToday={() => setDate(todayIsoDate())}
         onNext={() => setDate(addDays(date, 1))}
@@ -61,6 +63,7 @@ export function AgendaScreen() {
         labels={labels.data?.data ?? []}
         labelFilter={labelFilter}
         onLabelFilterChange={setLabelFilter}
+        onBlockTime={() => setBlocking(true)}
       />
 
       {waitingForProfessional || isLoading ? <LoadingState testID="agenda-loading" /> : null}
@@ -78,6 +81,12 @@ export function AgendaScreen() {
           message="Erro ao carregar a agenda. Tente novamente."
           onRetry={refetch}
         />
+      ) : null}
+
+      {blocking ? (
+        <Text style={[styles.notice, { color: theme.textDim }]} testID="block-time-unavailable">
+          Bloquear horário ainda não está disponível no app. Use o site.
+        </Text>
       ) : null}
 
       {professionalId !== null && !isLoading && !isError ? (
@@ -119,5 +128,6 @@ export function AgendaScreen() {
 }
 
 const styles = StyleSheet.create({
-  list: { paddingHorizontal: 16, paddingBottom: 24, gap: 6, flexGrow: 1 },
+  list: { paddingHorizontal: 24, paddingBottom: 24, gap: 6, flexGrow: 1 },
+  notice: { fontSize: 13, textAlign: 'center', paddingHorizontal: 24, paddingBottom: 8 },
 })

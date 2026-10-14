@@ -1,60 +1,35 @@
 import { Stack } from 'expo-router'
-import { Pressable, Text, View } from 'react-native'
-import { ThemeToggle } from '../../components/ui/theme-toggle'
-import { logout } from '../../features/auth/auth.service'
-import { useSessionStore } from '../../features/auth/session.store'
+import { View } from 'react-native'
+import { AppDrawer } from '../../features/navigation/app-drawer'
+import { AppHeader } from '../../features/navigation/app-header'
 import { useTheme } from '../../theme/theme-context'
 
-function LogoutButton() {
-  const theme = useTheme()
-  const setAnonymous = useSessionStore((state) => state.setAnonymous)
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={async () => {
-        await logout()
-        setAnonymous()
-      }}
-      testID="header-logout"
-      hitSlop={12}
-    >
-      <Text style={{ color: theme.accent, fontWeight: '600' }}>Sair</Text>
-    </Pressable>
-  )
-}
-
+/**
+ * A moldura que a web tem em celular: barra de topo com hamburger, e o menu
+ * como gaveta por cima.
+ *
+ * O cabeçalho é nosso e não o do `Stack` porque ele é o mesmo em todas as
+ * telas — como a barra fixa da web — enquanto o do `Stack` muda de título e
+ * ganha o botão de voltar. As telas internas usam o do `Stack`; a raiz, este.
+ */
 export default function AuthenticatedLayout() {
   const theme = useTheme()
 
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: theme.bg },
-        headerTintColor: theme.accent,
-        contentStyle: { backgroundColor: theme.bg },
-      }}
-    >
-      <Stack.Screen
-        name="index"
-        options={{
-          title: 'Agenda',
-          headerRight: () => (
-            <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
-              <ThemeToggle />
-              <LogoutButton />
-            </View>
-          ),
+    <View style={{ flex: 1, backgroundColor: theme.bg }}>
+      <AppHeader />
+      <AppDrawer activeId="appointments" />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: theme.bg },
+          headerTintColor: theme.accent,
+          contentStyle: { backgroundColor: theme.bg },
         }}
-      />
-      <Stack.Screen
-        name="appointments/[id]/index"
-        options={{ title: 'Consulta', headerRight: () => <ThemeToggle /> }}
-      />
-      <Stack.Screen
-        name="appointments/[id]/medical-record"
-        options={{ title: 'Prontuário', headerRight: () => <ThemeToggle /> }}
-      />
-    </Stack>
+      >
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="appointments/[id]/index" options={{ title: 'Consulta' }} />
+        <Stack.Screen name="appointments/[id]/medical-record" options={{ title: 'Prontuário' }} />
+      </Stack>
+    </View>
   )
 }

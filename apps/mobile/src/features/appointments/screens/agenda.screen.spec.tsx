@@ -233,6 +233,8 @@ describe('AgendaScreen', () => {
       expect(screen.queryByTestId('toolbar-professional-selector')).toBeNull()
     })
 
+    // Select, não pastilhas: a clínica tem dezenas de profissionais, e numa
+    // faixa rolável quem está fora da tela desaparece.
     it('switches the agenda to the chosen professional', async () => {
       mockProfessionals.mockResolvedValue([
         professional('prof-1', 'Dra. Ana'),
@@ -240,7 +242,8 @@ describe('AgendaScreen', () => {
       ])
 
       await renderWithProviders(<AgendaScreen />)
-      fireEvent.press(await screen.findByTestId('toolbar-professional-prof-2'))
+      fireEvent.press(await screen.findByTestId('toolbar-professional-select'))
+      fireEvent.press(await screen.findByTestId('toolbar-professional-select-option-prof-2'))
 
       await waitFor(() =>
         expect(mockAvailability).toHaveBeenCalledWith({ professionalId: 'prof-2', date: TODAY }),
@@ -270,26 +273,38 @@ describe('AgendaScreen', () => {
       })
     })
 
+    // As pastilhas coloridas são legenda; quem filtra é o select.
+    it('mostra a legenda de cores sem transformá-la em filtro', async () => {
+      await renderWithProviders(<AgendaScreen />)
+
+      const pill = await screen.findByTestId('agenda-label-legend-item-l1')
+      expect(pill).toHaveTextContent('Retorno')
+      expect(screen.queryByTestId('agenda-label-l1')).toBeNull()
+    })
+
     it('filters the grid by the chosen label', async () => {
       mockAvailability.mockResolvedValue([freeSlot('08:00')] as never)
       mockAppointments.mockResolvedValue(page([appointment()]))
 
       await renderWithProviders(<AgendaScreen />)
-      fireEvent.press(await screen.findByTestId('agenda-label-l1'))
+      fireEvent.press(await screen.findByTestId('toolbar-label-select'))
+      fireEvent.press(await screen.findByTestId('toolbar-label-select-option-l1'))
 
       // Sob filtro a mensagem padrão mentiria: há horários, só nenhum com o
       // rótulo escolhido.
       expect(await screen.findByTestId('agenda-day-empty-filtered')).toBeTruthy()
     })
 
-    it('tapping the chosen label again clears the filter', async () => {
+    it('"Todos os rótulos" limpa o filtro', async () => {
       mockAvailability.mockResolvedValue([freeSlot('08:00')] as never)
 
       await renderWithProviders(<AgendaScreen />)
-      fireEvent.press(await screen.findByTestId('agenda-label-l1'))
+      fireEvent.press(await screen.findByTestId('toolbar-label-select'))
+      fireEvent.press(await screen.findByTestId('toolbar-label-select-option-l1'))
       await screen.findByTestId('agenda-day-empty-filtered')
 
-      fireEvent.press(screen.getByTestId('agenda-label-l1'))
+      fireEvent.press(screen.getByTestId('toolbar-label-select'))
+      fireEvent.press(await screen.findByTestId('toolbar-label-select-option-all'))
 
       await waitFor(() => expect(screen.getByTestId('agenda-slot-free')).toBeTruthy())
     })
@@ -334,11 +349,22 @@ describe('AgendaScreen', () => {
     mockLabels.mockResolvedValue(page([label('l1', 'Retorno')]))
 
     await renderWithProviders(<AgendaScreen />)
-    const chip = await screen.findByTestId('agenda-label-l1')
+    const pill = await screen.findByTestId('agenda-label-legend-item-l1')
 
-    // #CBC076 é o mostarda do tema escuro.
-    expect(chip).toHaveStyle({ borderColor: '#CBC076' })
+    // #2D2807 é o fundo suave do mostarda no tema escuro.
+    expect(pill).toHaveStyle({ backgroundColor: '#2D2807' })
 
     useThemeStore.setState({ mode: 'light' })
+  })
+
+  // O botão existe porque existe na web; o diálogo depende de
+  // `schedule-exceptions`, ainda não portado. Dizer isso é melhor do que um
+  // botão que não responde ao toque.
+  it('avisa que bloquear horário ainda não está no app', async () => {
+    await renderWithProviders(<AgendaScreen />)
+
+    fireEvent.press(await screen.findByTestId('toolbar-block-time'))
+
+    expect(await screen.findByTestId('block-time-unavailable')).toBeTruthy()
   })
 })
