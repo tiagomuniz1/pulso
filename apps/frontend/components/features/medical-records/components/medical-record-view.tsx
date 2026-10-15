@@ -3,9 +3,9 @@
 import { useState } from 'react'
 import { MedicalRecordFieldType } from '@app/shared'
 import { Tabs } from '@/components/ui/atoms/tabs/tabs'
+import { formatFieldValue } from '@app/core'
 import type { IMedicalRecordModel, IRecordFieldModel } from '@app/core'
 import { groupFieldsBySection } from '../utils/group-fields-by-section.util'
-import { formatFieldValue } from '../utils/format-field-value.util'
 
 interface IViewSection {
   key: string

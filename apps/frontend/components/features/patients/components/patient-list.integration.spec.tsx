@@ -1,13 +1,12 @@
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
-jest.mock('../services/patients.service')
-jest.mock('../use-cases/delete-patient.use-case')
+jest.mock('@app/core/src/features/patients/services/patients.service')
+jest.mock('@app/core/src/features/patients/use-cases/delete-patient.use-case')
 
 import { screen, waitFor } from '@testing-library/react'
+import { deletePatientUseCase, patientsService } from '@app/core'
 import userEvent from '@testing-library/user-event'
 import { useRouter } from 'next/navigation'
 import { PatientGender, UserRole } from '@app/shared'
-import { patientsService } from '../services/patients.service'
-import { deletePatientUseCase } from '../use-cases/delete-patient.use-case'
 import { useAuthStore } from '@/stores/auth.store'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { PatientList } from './patient-list'

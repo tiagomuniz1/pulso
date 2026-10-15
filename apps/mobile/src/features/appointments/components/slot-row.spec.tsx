@@ -24,9 +24,11 @@ const booked = (overrides = {}): IAgendaSlot => ({
 })
 
 const onPress = jest.fn()
+const onBook = jest.fn()
 
 beforeEach(() => {
   onPress.mockClear()
+  onBook.mockClear()
   useThemeStore.setState({ mode: 'light' })
 })
 
@@ -35,50 +37,70 @@ describe('SlotRow — horário livre', () => {
   // lê só o estado.
   it('convida a agendar quem gerencia agenda', async () => {
     await renderWithProviders(
-      <SlotRow slot={free} canManage isPast={false} onPress={onPress} />,
+      <SlotRow slot={free} canManage isPast={false} onPress={onPress} onBook={onBook} />,
     )
 
-    expect(screen.getByTestId('agenda-slot-free')).toHaveTextContent(
+    expect(screen.getByTestId('agenda-slot-free-08:00')).toHaveTextContent(
       '08:00Livre — clique para agendar',
     )
   })
 
   it('para a recepção, só informa que está livre', async () => {
     await renderWithProviders(
-      <SlotRow slot={free} canManage={false} isPast={false} onPress={onPress} />,
+      <SlotRow slot={free} canManage={false} isPast={false} onPress={onPress} onBook={onBook} />,
     )
 
-    expect(screen.getByTestId('agenda-slot-free')).toHaveTextContent('08:00Livre')
+    expect(screen.getByTestId('agenda-slot-free-08:00')).toHaveTextContent('08:00Livre')
   })
 
   // Horário que já passou não é oferta: a web escreve "Passado" e apaga a linha.
   it('mostra "Passado" e apaga a linha quando a hora já passou', async () => {
-    await renderWithProviders(<SlotRow slot={free} canManage isPast onPress={onPress} />)
+    await renderWithProviders(<SlotRow slot={free} canManage isPast onPress={onPress} onBook={onBook} />)
 
-    expect(screen.getByTestId('agenda-slot-free')).toHaveTextContent('08:00Passado')
-    expect(screen.getByTestId('agenda-slot-free')).toHaveStyle({ opacity: 0.4 })
+    expect(screen.getByTestId('agenda-slot-free-08:00')).toHaveTextContent('08:00Passado')
+    expect(screen.getByTestId('agenda-slot-free-08:00')).toHaveStyle({ opacity: 0.4 })
   })
 
   // A recepção lê a agenda, mas não agenda — a linha fica apagada para ela.
   it('apaga a linha para quem não gerencia agenda', async () => {
     await renderWithProviders(
-      <SlotRow slot={free} canManage={false} isPast={false} onPress={onPress} />,
+      <SlotRow slot={free} canManage={false} isPast={false} onPress={onPress} onBook={onBook} />,
     )
 
-    expect(screen.getByTestId('agenda-slot-free')).toHaveStyle({ opacity: 0.4 })
+    expect(screen.getByTestId('agenda-slot-free-08:00')).toHaveStyle({ opacity: 0.4 })
   })
 
-  it('não leva a lugar nenhum', async () => {
-    await renderWithProviders(<SlotRow slot={free} canManage isPast={false} onPress={onPress} />)
+  it('abre o agendamento ao toque', async () => {
+    await renderWithProviders(
+      <SlotRow slot={free} canManage isPast={false} onPress={onPress} onBook={onBook} />,
+    )
 
-    expect(screen.queryByRole('button')).toBeNull()
+    fireEvent.press(screen.getByTestId('agenda-slot-free-08:00'))
+
+    expect(onBook).toHaveBeenCalled()
+    expect(onPress).not.toHaveBeenCalled()
+  })
+
+  // Não é só apagar: a linha não responde ao toque para quem não agenda, e
+  // para o horário que já passou.
+  it.each([
+    ['a recepção', { canManage: false, isPast: false }],
+    ['o horário passado', { canManage: true, isPast: true }],
+  ])('não abre o agendamento para %s', async (_caso, props) => {
+    await renderWithProviders(
+      <SlotRow slot={free} {...props} onPress={onPress} onBook={onBook} />,
+    )
+
+    fireEvent.press(screen.getByTestId('agenda-slot-free-08:00'))
+
+    expect(onBook).not.toHaveBeenCalled()
   })
 })
 
 describe('SlotRow — consulta', () => {
   it('mostra hora, paciente e situação', async () => {
     await renderWithProviders(
-      <SlotRow slot={booked()} canManage isPast={false} onPress={onPress} />,
+      <SlotRow slot={booked()} canManage isPast={false} onPress={onPress} onBook={onBook} />,
     )
 
     expect(screen.getByTestId('agenda-slot-booked-appt-1')).toHaveTextContent(
@@ -88,7 +110,7 @@ describe('SlotRow — consulta', () => {
 
   it('devolve o id ao ser tocada', async () => {
     await renderWithProviders(
-      <SlotRow slot={booked()} canManage isPast={false} onPress={onPress} />,
+      <SlotRow slot={booked()} canManage isPast={false} onPress={onPress} onBook={onBook} />,
     )
 
     fireEvent.press(screen.getByTestId('agenda-slot-booked-appt-1'))
@@ -122,8 +144,7 @@ describe('SlotRow — consulta', () => {
         slot={booked({ label: { id: 'l1', name: 'Retorno', color: AppointmentLabelColor.MUSTARD } })}
         canManage
         isPast={false}
-        onPress={onPress}
-      />,
+        onPress={onPress} onBook={onBook} />,
     )
 
     expect(screen.getByTestId('agenda-slot-label-appt-1')).toHaveStyle({
@@ -139,8 +160,7 @@ describe('SlotRow — consulta', () => {
         slot={booked({ label: { id: 'l1', name: 'Retorno', color: AppointmentLabelColor.MUSTARD } })}
         canManage
         isPast={false}
-        onPress={onPress}
-      />,
+        onPress={onPress} onBook={onBook} />,
     )
 
     expect(screen.getByTestId('agenda-slot-label-appt-1')).toHaveStyle({
@@ -150,7 +170,7 @@ describe('SlotRow — consulta', () => {
 
   it('sem rótulo não desenha faixa', async () => {
     await renderWithProviders(
-      <SlotRow slot={booked()} canManage isPast={false} onPress={onPress} />,
+      <SlotRow slot={booked()} canManage isPast={false} onPress={onPress} onBook={onBook} />,
     )
 
     expect(screen.queryByTestId('agenda-slot-label-appt-1')).toBeNull()
@@ -162,8 +182,7 @@ describe('SlotRow — consulta', () => {
         slot={booked({ seriesId: 's1', seriesSequence: 2, seriesTotalOccurrences: 6 })}
         canManage
         isPast={false}
-        onPress={onPress}
-      />,
+        onPress={onPress} onBook={onBook} />,
     )
 
     expect(screen.getByTestId('agenda-slot-recurring-appt-1')).toHaveTextContent('2/6')
@@ -176,7 +195,7 @@ describe('SlotRow — consulta', () => {
     [{ seriesId: null, seriesSequence: 2, seriesTotalOccurrences: 6 }],
   ])('esconde a posição quando falta algum dado da série', async (overrides) => {
     await renderWithProviders(
-      <SlotRow slot={booked(overrides)} canManage isPast={false} onPress={onPress} />,
+      <SlotRow slot={booked(overrides)} canManage isPast={false} onPress={onPress} onBook={onBook} />,
     )
 
     expect(screen.queryByTestId('agenda-slot-recurring-appt-1')).toBeNull()
@@ -184,5 +203,5 @@ describe('SlotRow — consulta', () => {
 })
 
 function ThemedRow({ status }: { status: AppointmentStatus }) {
-  return <SlotRow slot={booked({ status })} canManage isPast={false} onPress={onPress} />
+  return <SlotRow slot={booked({ status })} canManage isPast={false} onPress={onPress} onBook={onBook} />
 }

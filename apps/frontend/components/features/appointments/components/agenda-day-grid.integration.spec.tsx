@@ -1,6 +1,6 @@
 jest.mock('@app/core/src/features/appointments/services/appointments.service')
-jest.mock('@/components/features/patients/services/patients.service')
-jest.mock('@/components/features/schedule-exceptions/services/schedule-exceptions.service')
+jest.mock('@app/core/src/features/patients/services/patients.service')
+jest.mock('@app/core/src/features/schedule-exceptions/services/schedule-exceptions.service')
 jest.mock('@app/core/src/features/medical-records/services/medical-records.service')
 jest.mock('@app/core/src/features/medical-record-templates/services/medical-record-templates.service')
 jest.mock('next/navigation', () => ({ useRouter: jest.fn(() => ({ push: jest.fn() })) }))
@@ -8,9 +8,7 @@ jest.mock('next/navigation', () => ({ useRouter: jest.fn(() => ({ push: jest.fn(
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AppointmentStatus, UserRole, type AppointmentResponseDto } from '@app/shared'
-import { appointmentsService } from '@app/core'
-import { patientsService } from '@/components/features/patients/services/patients.service'
-import { scheduleExceptionsService } from '@/components/features/schedule-exceptions/services/schedule-exceptions.service'
+import { appointmentsService, patientsService, scheduleExceptionsService } from '@app/core'
 import { medicalRecordsService } from '@app/core'
 import { medicalRecordTemplatesService } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'

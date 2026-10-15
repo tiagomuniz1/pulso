@@ -1,4 +1,4 @@
-import { MedicalRecordFieldType } from '@app/shared'
+import { AppointmentStatus, MedicalRecordFieldType } from '@app/shared'
 import {
   createMedicalRecordUseCase,
   getMedicalRecordByAppointmentUseCase,
@@ -7,12 +7,14 @@ import {
 } from '@app/core'
 import { fireEvent, screen, waitFor } from '@testing-library/react-native'
 import { renderWithProviders } from '../../../tests/render-with-providers'
+import { downloadAndShareDocument } from '../../../lib/document-download'
 import { MedicalRecordTab } from './medical-record-tab'
 
 jest.mock('@app/core/src/features/medical-records/use-cases/get-medical-record-by-appointment.use-case')
 jest.mock('@app/core/src/features/medical-records/use-cases/create-medical-record.use-case')
 jest.mock('@app/core/src/features/medical-records/use-cases/update-medical-record.use-case')
 jest.mock('@app/core/src/features/medical-record-templates/use-cases/list-templates.use-case')
+jest.mock('../../../lib/document-download')
 
 const mockRecord = getMedicalRecordByAppointmentUseCase as jest.MockedFunction<
   typeof getMedicalRecordByAppointmentUseCase
@@ -75,8 +77,19 @@ const savedRecord = (overrides = {}) =>
     ...overrides,
   }) as never
 
-function render() {
-  return renderWithProviders(<MedicalRecordTab appointmentId="appt-1" specialtyId="spec-1" />)
+function render({
+  specialtyId = 'spec-1' as string | null,
+  status = AppointmentStatus.SCHEDULED,
+  canManage = true,
+} = {}) {
+  return renderWithProviders(
+    <MedicalRecordTab
+      appointmentId="appt-1"
+      specialtyId={specialtyId}
+      appointmentStatus={status}
+      canManage={canManage}
+    />,
+  )
 }
 
 describe('MedicalRecordTab', () => {
@@ -84,6 +97,7 @@ describe('MedicalRecordTab', () => {
     jest.clearAllMocks()
     mockRecord.mockResolvedValue(null)
     mockTemplates.mockResolvedValue(page([template()]))
+    ;(downloadAndShareDocument as jest.Mock).mockResolvedValue(undefined)
   })
 
   it('mostra o giro enquanto carrega', async () => {
@@ -144,7 +158,7 @@ describe('MedicalRecordTab', () => {
   })
 
   it('cai no generalista quando a consulta não tem especialidade', async () => {
-    await renderWithProviders(<MedicalRecordTab appointmentId="appt-1" specialtyId={null} />)
+    await render({ specialtyId: null })
     await screen.findByTestId('template-picker')
 
     expect(mockTemplates).toHaveBeenCalledWith({ isActive: true, limit: 100, generalist: true })
@@ -330,5 +344,80 @@ describe('MedicalRecordTab', () => {
 
       expect(await screen.findByTestId('field-0')).toBeTruthy()
     })
+  })
+
+  describe('o PDF e a trava de edição', () => {
+    beforeEach(() => {
+      mockRecord.mockResolvedValue(savedRecord())
+    })
+
+    /**
+     * Baixar é ler, não emitir: o PDF do prontuário sai sem bloco de
+     * assinatura e serve para arquivar e encaminhar. É a diferença dele
+     * para receita e atestado.
+     */
+    it('baixa o PDF do prontuário salvo', async () => {
+      await render()
+      fireEvent.press(await screen.findByTestId('download-medical-record'))
+
+      await waitFor(() =>
+        expect(downloadAndShareDocument).toHaveBeenCalledWith(
+          '/medical-records/rec-1/pdf',
+          'prontuario-rec-1.pdf',
+        ),
+      )
+    })
+
+    it('avisa quando o download falha', async () => {
+      ;(downloadAndShareDocument as jest.Mock).mockRejectedValue(new Error('sem espaço'))
+
+      await render()
+      fireEvent.press(await screen.findByTestId('download-medical-record'))
+
+      expect(await screen.findByTestId('download-error')).toBeTruthy()
+    })
+
+    // O backend recusa editar depois da consulta concluída (`422`);
+    // oferecer o formulário seria oferecer um caminho que só termina em erro.
+    it('consulta concluída mostra o prontuário só de leitura', async () => {
+      await render({ status: AppointmentStatus.COMPLETED })
+
+      expect(await screen.findByTestId('record-view')).toBeTruthy()
+      expect(screen.queryByTestId('save-medical-record')).toBeNull()
+      expect(screen.getByTestId('download-medical-record')).toBeTruthy()
+    })
+
+    it('quem não gerencia também só lê', async () => {
+      await render({ canManage: false })
+
+      expect(await screen.findByTestId('record-view')).toBeTruthy()
+      expect(screen.queryByTestId('save-medical-record')).toBeNull()
+    })
+
+    it('baixa o PDF da versão só de leitura', async () => {
+      await render({ status: AppointmentStatus.COMPLETED })
+      fireEvent.press(await screen.findByTestId('download-medical-record'))
+
+      await waitFor(() => expect(downloadAndShareDocument).toHaveBeenCalled())
+    })
+
+    it('avisa quando o download falha na versão só de leitura', async () => {
+      ;(downloadAndShareDocument as jest.Mock).mockRejectedValue(new Error('sem espaço'))
+
+      await render({ status: AppointmentStatus.COMPLETED })
+      fireEvent.press(await screen.findByTestId('download-medical-record'))
+
+      expect(await screen.findByTestId('download-error')).toBeTruthy()
+    })
+  })
+
+  // Sem prontuário e sem poder escrever, não há modelo a escolher — o que
+  // falta dizer é que ninguém preencheu, e nada mais.
+  it('quem não gerencia e não há prontuário vê só o vazio', async () => {
+    await render({ canManage: false })
+
+    expect(await screen.findByTestId('medical-record-empty')).toBeTruthy()
+    expect(screen.queryByTestId('template-picker')).toBeNull()
+    expect(screen.queryByTestId('medical-record-no-template')).toBeNull()
   })
 })

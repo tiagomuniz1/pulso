@@ -1,5 +1,5 @@
 import type { AddressDto, CreatePatientDto } from '@app/shared'
-import type { IAddressInput } from '@/types/address.types'
+import type { IAddressInput } from '../../../types/address.types'
 import type { ICreatePatientInput } from '../types/patient-input.types'
 
 export function toCreatePatientDto(input: ICreatePatientInput): CreatePatientDto {

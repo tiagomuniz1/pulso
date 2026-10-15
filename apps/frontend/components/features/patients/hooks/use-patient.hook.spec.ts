@@ -1,11 +1,11 @@
-jest.mock('../use-cases/get-patient.use-case')
+jest.mock('@app/core/src/features/patients/use-cases/get-patient.use-case')
 
 import React from 'react'
+import { getPatientUseCase } from '@app/core'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { PatientGender } from '@app/shared'
 import { createQueryClient } from '@/lib/react-query.config'
-import { getPatientUseCase } from '../use-cases/get-patient.use-case'
 import { usePatient } from './use-patient.hook'
 
 function wrapper({ children }: { children: React.ReactNode }) {

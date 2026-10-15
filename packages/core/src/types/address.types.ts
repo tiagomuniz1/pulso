@@ -1,7 +1,7 @@
 /**
- * Endereço no frontend. Vive fora de `components/features/*` porque duas
- * features o usam — clínica e paciente — e uma importar os types da outra
- * atravessaria a fronteira entre elas.
+ * Endereço. Vive fora de `features/*` porque duas features o usam — clínica e
+ * paciente — e uma importar os types da outra atravessaria a fronteira entre
+ * elas.
  */
 export interface IAddressModel {
   street: string

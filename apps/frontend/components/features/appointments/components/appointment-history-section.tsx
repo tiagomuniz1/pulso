@@ -4,10 +4,10 @@ import { useMemo, useState } from 'react'
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { Skeleton } from '@/components/ui/atoms/skeleton/skeleton'
 import { usePatientMedicalHistory } from '@/components/features/medical-records/hooks/use-patient-medical-history.hook'
-import { formatFieldValue } from '@/components/features/medical-records/utils/format-field-value.util'
-import type {
-  IMedicalRecordModel,
-  IRecordFieldModel,
+import {
+  formatFieldValue,
+  type IMedicalRecordModel,
+  type IRecordFieldModel,
 } from '@app/core'
 
 // Carrega uma página larga de propósito: a busca é local, e paginar em 10

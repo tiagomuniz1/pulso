@@ -1,5 +1,5 @@
 import type { SubscriptionPlan } from '@app/shared'
-import type { IAddressInput, IAddressModel } from '@/types/address.types'
+import type { IAddressInput, IAddressModel } from '@app/core'
 
 export type { IAddressInput, IAddressModel }
 

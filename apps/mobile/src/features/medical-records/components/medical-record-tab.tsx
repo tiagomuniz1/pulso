@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
+import { AppointmentStatus } from '@app/shared'
 import type { IRecordFieldModel } from '@app/core'
+import { Button } from '../../../components/ui/button'
 import { Card, CardTitle } from '../../../components/ui/card'
 import { ChoiceField } from '../../../components/ui/fields'
 import { ErrorState, LoadingState } from '../../../components/ui/screen'
 import { useTheme } from '../../../theme/theme-context'
 import { RecordForm } from './record-form'
+import { RecordView } from './record-view'
 import {
   useActiveTemplates,
+  useDownloadMedicalRecordPdf,
   useMedicalRecordByAppointment,
   useSaveMedicalRecord,
 } from '../hooks/use-medical-record.hook'
@@ -22,20 +26,29 @@ import {
 export function MedicalRecordTab({
   appointmentId,
   specialtyId,
+  appointmentStatus,
+  canManage,
 }: {
   appointmentId: string
   specialtyId: string | null
+  appointmentStatus: AppointmentStatus
+  /** Escrever é do ADMIN e do profissional desta consulta; ler é de quem chega aqui. */
+  canManage: boolean
 }) {
   const theme = useTheme()
   const record = useMedicalRecordByAppointment(appointmentId)
   const templates = useActiveTemplates(specialtyId)
   const save = useSaveMedicalRecord(appointmentId)
+  const download = useDownloadMedicalRecordPdf()
 
   const [templateId, setTemplateId] = useState<string | null>(null)
 
   const available = templates.data ?? []
   const saved = record.data ?? null
   const chosen = available.find((template) => template.id === templateId) ?? null
+  // O backend bloqueia a edição depois da consulta concluída (`422`).
+  const isCompleted = appointmentStatus === AppointmentStatus.COMPLETED
+  const canEdit = canManage && !isCompleted
 
   if (record.isLoading || templates.isLoading) {
     return <LoadingState testID="medical-record-loading" />
@@ -61,7 +74,7 @@ export function MedicalRecordTab({
    * preencheu ainda" e "não dá para preencher" — e a segunda tem destinatário,
    * que é o administrador da clínica.
    */
-  if (!saved && available.length === 0) {
+  if (!saved && (!canEdit || available.length === 0)) {
     return (
       <Card testID="medical-record-empty">
         <Text style={[styles.emptyTitle, { color: theme.text }]}>
@@ -70,11 +83,42 @@ export function MedicalRecordTab({
         <Text style={[styles.emptyText, { color: theme.textDim }]}>
           Registre evolução, hipótese diagnóstica e conduta da consulta.
         </Text>
-        <Text style={[styles.emptyText, { color: theme.textDim }]} testID="medical-record-no-template">
-          Nenhum modelo de prontuário cadastrado para esta especialidade. Peça ao administrador da
-          clínica para cadastrar um.
-        </Text>
+        {canEdit ? (
+          <Text
+            style={[styles.emptyText, { color: theme.textDim }]}
+            testID="medical-record-no-template"
+          >
+            Nenhum modelo de prontuário cadastrado para esta especialidade. Peça ao administrador
+            da clínica para cadastrar um.
+          </Text>
+        ) : null}
       </Card>
+    )
+  }
+
+  /**
+   * Prontuário existente e fechado para edição.
+   *
+   * Baixar continua: é leitura, e o PDF do prontuário sai sem bloco de
+   * assinatura — serve para arquivar e encaminhar.
+   */
+  if (saved && !canEdit) {
+    return (
+      <View style={styles.wrapper} testID="medical-record-tab">
+        <RecordView record={saved} />
+        <Button
+          label="Baixar PDF"
+          variant="outline"
+          loading={download.isPending}
+          onPress={() => download.mutate(saved.id)}
+          testID="download-medical-record"
+        />
+        {download.isError ? (
+          <Text style={[styles.notice, { color: theme.danger }]} testID="download-error">
+            Não foi possível baixar o PDF. Tente de novo.
+          </Text>
+        ) : null}
+      </View>
     )
   }
 
@@ -152,6 +196,23 @@ export function MedicalRecordTab({
         <Text style={[styles.notice, { color: theme.good }]} testID="save-success">
           Prontuário salvo.
         </Text>
+      ) : null}
+
+      {saved ? (
+        <>
+          <Button
+            label="Baixar PDF"
+            variant="outline"
+            loading={download.isPending}
+            onPress={() => download.mutate(saved.id)}
+            testID="download-medical-record"
+          />
+          {download.isError ? (
+            <Text style={[styles.notice, { color: theme.danger }]} testID="download-error">
+              Não foi possível baixar o PDF. Tente de novo.
+            </Text>
+          ) : null}
+        </>
       ) : null}
     </View>
   )

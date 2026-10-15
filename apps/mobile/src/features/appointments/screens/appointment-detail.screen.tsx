@@ -12,13 +12,20 @@ import { MedicalRecordTab } from '../../medical-records/components/medical-recor
 import { AppointmentActionsBar } from '../components/appointment-actions-bar'
 import { AppointmentHeaderCard } from '../components/appointment-header-card'
 import { AppointmentTabs, type AppointmentTabId } from '../components/appointment-tabs'
+import { ReassignSheet } from '../components/reassign-sheet'
+import { SeriesSheet } from '../components/series-sheet'
 import { DocumentSection } from '../../documents/components/document-section'
-import { useCanIssue, useHasProfessionalRecord } from '../../documents/hooks/use-can-issue.hook'
+import {
+  useCanIssue,
+  useHasProfessionalRecord,
+  useMyProfessional,
+} from '../../documents/hooks/use-can-issue.hook'
 import { PhotoSection } from '../../photos/components/photo-section'
 import { VaccineSection } from '../../vaccines/components/vaccine-section'
 import { HistoryTab } from '../components/history-tab'
 import { ResumoTab } from '../components/resumo-tab'
 import { useAppointment } from '../hooks/use-appointment.hook'
+import { useAppointmentTabs } from '../hooks/use-appointment-tabs.hook'
 import { useCancelAppointment, useCompleteAppointment } from '../hooks/use-appointment-actions.hook'
 import { todayIsoDate } from '../utils/agenda-date.util'
 
@@ -26,8 +33,9 @@ import { todayIsoDate } from '../utils/agenda-date.util'
  * A consulta, no desenho que a web usa em celular.
  *
  * Cartão-cabeçalho com a paciente em primeiro plano e os dados do atendimento
- * recolhidos, as oito abas, e a faixa de ações presa na base — fora da
- * rolagem, porque concluir não pode depender de rolar um prontuário inteiro.
+ * recolhidos, as abas que o papel desta pessoa alcança, e a faixa de ações
+ * presa na base — fora da rolagem, porque concluir não pode depender de rolar
+ * um prontuário inteiro.
  */
 export function AppointmentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -37,17 +45,41 @@ export function AppointmentDetailScreen() {
 
   const [tab, setTab] = useState<AppointmentTabId>('resumo')
   const [cancelling, setCancelling] = useState(false)
+  const [completing, setCompleting] = useState(false)
   const [reason, setReason] = useState('')
   const [reassigning, setReassigning] = useState(false)
+  const [viewingSeries, setViewingSeries] = useState(false)
 
   const { data: appointment, isLoading, isError, refetch } = useAppointment(id)
   const complete = useCompleteAppointment(id)
   const cancel = useCancelAppointment(id)
   // Antes de qualquer retorno antecipado: a contagem de hooks não pode mudar
   // entre o render que carrega e o que mostra.
+  const myProfessional = useMyProfessional()
   const canIssue = useCanIssue(appointment?.professionalId)
   // Registrar dose depende da ficha, não de ser o dono do atendimento.
   const hasFicha = useHasProfessionalRecord()
+
+  /**
+   * Os dois recortes que governam esta tela, e são o mesmo da web.
+   *
+   * `canManage` é quem responde pelo atendimento: o ADMIN em qualquer consulta
+   * da clínica, o profissional só na dele. A recepção não entra — ela lê a
+   * agenda e o resumo, e é tudo. Sem isto o app oferecia a aba Prontuário e os
+   * botões de cancelar a ela, e entregava `403` no lugar de ausência.
+   */
+  const canManage =
+    user?.role === UserRole.ADMIN ||
+    (user?.role === UserRole.PROFESSIONAL &&
+      appointment?.professionalId === myProfessional?.id)
+
+  const canSeeMedicalRecord = canManage
+
+  const tabs = useAppointmentTabs({
+    appointmentId: id,
+    canSeeMedicalRecord,
+    canManage,
+  })
 
   if (isLoading) {
     return (
@@ -69,29 +101,46 @@ export function AppointmentDetailScreen() {
     )
   }
 
-  // Excluir documento é administrativo: o ADMIN é irrestrito na clínica, e o
-  // profissional só nos próprios — e a listagem já lhe devolve apenas esses.
-  const canManage =
-    user?.role === UserRole.ADMIN || user?.role === UserRole.PROFESSIONAL
-
+  // O backend aceita concluir e cancelar em agendada **ou** confirmada.
   const isOpen =
     appointment.status === AppointmentStatus.SCHEDULED ||
     appointment.status === AppointmentStatus.CONFIRMED
 
+  const canAct = canManage && isOpen
+  const canReassign =
+    user?.role === UserRole.ADMIN &&
+    appointment.status === AppointmentStatus.SCHEDULED &&
+    !appointment.seriesId
+  // A aba aberta pode ter deixado de existir — acontece quando a consulta
+  // termina de carregar e o recorte de papel encolhe a fileira.
+  const activeTab = tabs.some((item) => item.id === tab) ? tab : 'resumo'
+
   return (
     <Screen testID="appointment-detail-screen" edges={['top']}>
       <ScreenScroll>
-        <AppointmentHeaderCard appointment={appointment} onBack={() => router.back()} />
+        <AppointmentHeaderCard
+          appointment={appointment}
+          canSetLabel={canManage}
+          onBack={() => router.back()}
+          onViewSeries={() => setViewingSeries(true)}
+        />
 
-        <AppointmentTabs activeId={tab} onChange={setTab} />
+        <AppointmentTabs tabs={tabs} activeId={activeTab} onChange={setTab} />
 
-        {tab === 'resumo' ? <ResumoTab appointment={appointment} /> : null}
-
-        {tab === 'prontuario' ? (
-          <MedicalRecordTab appointmentId={id} specialtyId={appointment.specialtyId} />
+        {activeTab === 'resumo' ? (
+          <ResumoTab appointment={appointment} tabs={tabs} onNavigate={setTab} />
         ) : null}
 
-        {tab === 'historico' ? (
+        {activeTab === 'prontuario' ? (
+          <MedicalRecordTab
+            appointmentId={id}
+            specialtyId={appointment.specialtyId}
+            appointmentStatus={appointment.status}
+            canManage={canManage}
+          />
+        ) : null}
+
+        {activeTab === 'historico' ? (
           <HistoryTab
             patientId={appointment.patientId}
             specialtyId={appointment.specialtyId}
@@ -99,23 +148,23 @@ export function AppointmentDetailScreen() {
           />
         ) : null}
 
-        {tab === 'receitas' ? (
+        {activeTab === 'receitas' ? (
           <DocumentSection kind="receita" appointmentId={id} canManage={canManage} canIssue={canIssue} />
         ) : null}
 
-        {tab === 'atestados' ? (
+        {activeTab === 'atestados' ? (
           <DocumentSection kind="atestado" appointmentId={id} canManage={canManage} canIssue={canIssue} />
         ) : null}
 
-        {tab === 'exames' ? (
+        {activeTab === 'exames' ? (
           <DocumentSection kind="exame" appointmentId={id} canManage={canManage} canIssue={canIssue} />
         ) : null}
 
-        {tab === 'fotos' ? (
+        {activeTab === 'fotos' ? (
           <PhotoSection appointmentId={id} canIssue={canIssue} />
         ) : null}
 
-        {tab === 'vacinas' ? (
+        {activeTab === 'vacinas' ? (
           <VaccineSection
             appointmentId={id}
             patientId={appointment.patientId}
@@ -151,10 +200,27 @@ export function AppointmentDetailScreen() {
           </Card>
         ) : null}
 
-        {reassigning ? (
-          <Text style={[styles.notice, { color: theme.textDim }]} testID="reassign-unavailable">
-            Trocar o profissional ainda não está disponível no app. Use o site.
-          </Text>
+        {/* Concluir pede confirmação como na web: não há como desfazer, e o
+            botão fica a um toque de distância na faixa inferior. */}
+        {completing ? (
+          <Card testID="complete-card">
+            <CardTitle>Concluir consulta</CardTitle>
+            <Text style={[styles.notice, { color: theme.textDim }]}>
+              Tem certeza que deseja concluir esta consulta? Esta ação não pode ser desfeita.
+            </Text>
+            <Button
+              label="Concluir consulta"
+              loading={complete.isPending}
+              onPress={() => complete.mutate(undefined, { onSuccess: () => setCompleting(false) })}
+              testID="confirm-complete"
+            />
+            <Button
+              label="Voltar"
+              variant="outline"
+              onPress={() => setCompleting(false)}
+              testID="abort-complete"
+            />
+          </Card>
         ) : null}
 
         {complete.isError || cancel.isError ? (
@@ -164,15 +230,38 @@ export function AppointmentDetailScreen() {
         ) : null}
       </ScreenScroll>
 
-      {isOpen ? (
+      {canAct ? (
         <AppointmentActionsBar
           // Concluir consulta futura o backend recusa com 422.
           canComplete={appointment.date <= todayIsoDate()}
           isCompleting={complete.isPending}
           isCancelling={cancel.isPending}
+          canReassign={canReassign}
           onReassign={() => setReassigning(true)}
           onCancel={() => setCancelling(true)}
-          onComplete={() => complete.mutate()}
+          onComplete={() => setCompleting(true)}
+        />
+      ) : null}
+
+      {/* A série tem um profissional só — a checagem de posse ao cancelar
+          "esta e as futuras" depende disso —, então o backend recusa trocar
+          uma ocorrência com 422. Oferecer o botão daria erro garantido. */}
+      <ReassignSheet
+        appointmentId={id}
+        isOpen={reassigning && canReassign}
+        onClose={() => setReassigning(false)}
+      />
+
+      {appointment.seriesId ? (
+        <SeriesSheet
+          seriesId={appointment.seriesId}
+          currentAppointmentId={id}
+          isOpen={viewingSeries}
+          onClose={() => setViewingSeries(false)}
+          onSelect={(appointmentId) => {
+            setViewingSeries(false)
+            router.push(`/(app)/appointments/${appointmentId}`)
+          }}
         />
       ) : null}
     </Screen>

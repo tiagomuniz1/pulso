@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createScheduleExceptionUseCase } from '../use-cases/create-schedule-exception.use-case'
-import type { ICreateScheduleExceptionInput } from '../types/schedule-exception-input.types'
-import type { IScheduleExceptionModel } from '../types/schedule-exception-model.types'
+import { createScheduleExceptionUseCase } from '@app/core'
+import type { ICreateScheduleExceptionInput, IScheduleExceptionModel } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export function useCreateScheduleException() {

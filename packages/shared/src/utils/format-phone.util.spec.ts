@@ -1,4 +1,4 @@
-import { applyPhoneMask, formatPhone } from './format-phone'
+import { applyPhoneMask, formatPhone } from './format-phone.util'
 
 describe('applyPhoneMask', () => {
   it('returns empty string for empty input', () => {

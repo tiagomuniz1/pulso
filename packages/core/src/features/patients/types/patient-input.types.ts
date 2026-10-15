@@ -1,5 +1,5 @@
 import { KinshipType, PatientGender } from '@app/shared'
-import type { IAddressInput } from '@/types/address.types'
+import type { IAddressInput } from '../../../types/address.types'
 
 export interface ICreatePatientInput {
   userId?: string

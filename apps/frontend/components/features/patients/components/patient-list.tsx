@@ -1,21 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import type { IPatientModel } from '@app/core'
 import Link from 'next/link'
 import { useBasePath } from '@/lib/slug-context'
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Input } from '@/components/ui/atoms/input/input'
-import { PATIENT_GENDER_LABELS, UserRole } from '@app/shared'
-import { formatPhone } from '@/lib/format-phone'
+import { PATIENT_GENDER_LABELS, UserRole, formatPhone } from '@app/shared'
 import { MobileListCard } from '@/components/ui/molecules/mobile-list-card/mobile-list-card'
 import { usePatients } from '../hooks/use-patients.hook'
 import { useDeletePatient } from '../hooks/use-delete-patient.hook'
 import { PatientListSkeleton } from './patient-list-skeleton'
 import { PatientDeleteDialog } from './patient-delete-dialog'
 import { useAuthStore } from '@/stores/auth.store'
-import type { IPatientModel } from '../types/patient-model.types'
-
 export function PatientList() {
   const basePath = useBasePath()
 

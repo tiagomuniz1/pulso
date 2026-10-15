@@ -1,5 +1,22 @@
 import { useQuery } from '@tanstack/react-query'
-import { getMyProfessionalUseCase } from '@app/core'
+import { getMyProfessionalUseCase, type IProfessionalModel } from '@app/core'
+
+/**
+ * A ficha de profissional desta pessoa, ou `null` se ela não atende.
+ *
+ * Uma consulta só, compartilhada: é a resposta de que dependem "posso
+ * emitir?", "posso registrar dose?" e "esta consulta é minha?". Perguntar
+ * três vezes seria três requisições para o mesmo fato.
+ */
+export function useMyProfessional(): IProfessionalModel | null {
+  const { data } = useQuery({
+    queryKey: ['professionals', 'me'],
+    queryFn: getMyProfessionalUseCase,
+    staleTime: 1000 * 60 * 30,
+  })
+
+  return data ?? null
+}
 
 /**
  * Se esta pessoa pode emitir documento **nesta** consulta.
@@ -13,11 +30,7 @@ import { getMyProfessionalUseCase } from '@app/core'
  * uma pessoa num documento que ela não redigiu.
  */
 export function useCanIssue(appointmentProfessionalId: string | undefined): boolean {
-  const { data: myProfessional } = useQuery({
-    queryKey: ['professionals', 'me'],
-    queryFn: getMyProfessionalUseCase,
-    staleTime: 1000 * 60 * 30,
-  })
+  const myProfessional = useMyProfessional()
 
   return Boolean(myProfessional?.id) && myProfessional?.id === appointmentProfessionalId
 }
@@ -31,11 +44,5 @@ export function useCanIssue(appointmentProfessionalId: string | undefined): bool
  * dono do atendimento não precisa ser você.
  */
 export function useHasProfessionalRecord(): boolean {
-  const { data: myProfessional } = useQuery({
-    queryKey: ['professionals', 'me'],
-    queryFn: getMyProfessionalUseCase,
-    staleTime: 1000 * 60 * 30,
-  })
-
-  return Boolean(myProfessional?.id)
+  return Boolean(useMyProfessional()?.id)
 }

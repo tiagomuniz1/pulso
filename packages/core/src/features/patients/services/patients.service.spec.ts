@@ -1,6 +1,6 @@
-jest.mock('@/lib/api-client')
+jest.mock('../../../api/api-client.registry')
 
-import { apiClient } from '@/lib/api-client'
+import { apiClient } from '../../../api/api-client.registry'
 import { PatientGender } from '@app/shared'
 import { patientsService } from './patients.service'
 

@@ -24,7 +24,8 @@ export function DocumentSheet({
   isOpen: boolean
   onClose: () => void
   children: ReactNode
-  footer: ReactNode
+  /** Ausente numa folha que só mostra — a faixa inferior não é desenhada. */
+  footer?: ReactNode
   testID: string
 }) {
   const theme = useTheme()
@@ -60,7 +61,9 @@ export function DocumentSheet({
             {children}
           </ScrollView>
 
-          <View style={[styles.footer, { borderColor: theme.line }]}>{footer}</View>
+          {footer ? (
+            <View style={[styles.footer, { borderColor: theme.line }]}>{footer}</View>
+          ) : null}
         </SafeAreaView>
       </KeyboardAvoidingView>
     </Modal>

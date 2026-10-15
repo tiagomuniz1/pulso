@@ -72,6 +72,12 @@ export function formatTime(time: string): string {
   return time.slice(0, 5)
 }
 
+/** "quinta-feira", minúsculo — entra no meio da frase "Toda quinta-feira". */
+export function weekdayName(isoDate: string): string {
+  const [year, month, day] = isoDate.split('-').map(Number)
+  return WEEKDAYS_LONG[new Date(year, month - 1, day).getDay()].toLowerCase()
+}
+
 export function isToday(isoDate: string): boolean {
   return isoDate === todayIsoDate()
 }

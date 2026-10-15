@@ -1,8 +1,6 @@
 'use client'
 
-import { PatientGender } from '@app/shared'
-import { formatPhone } from '@/lib/format-phone'
-import { formatCpf } from '@/lib/format-cpf'
+import { PatientGender, formatCpf, formatPhone } from '@app/shared'
 import type { IAppointmentPatientModel } from '@app/core'
 
 const genderLabel: Record<PatientGender, string> = {

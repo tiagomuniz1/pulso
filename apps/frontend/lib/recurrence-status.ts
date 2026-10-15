@@ -1,13 +1,6 @@
 import { RecurringOccurrenceAvailability } from '@app/shared'
 
-export const RECURRENCE_STATUS_LABELS: Record<RecurringOccurrenceAvailability, string> = {
-  [RecurringOccurrenceAvailability.AVAILABLE]: 'Disponível',
-  [RecurringOccurrenceAvailability.ALREADY_BOOKED]: 'Ocupado',
-  [RecurringOccurrenceAvailability.OUTSIDE_SCHEDULE]: 'Fora da agenda',
-  [RecurringOccurrenceAvailability.BLOCKED_BY_EXCEPTION]: 'Bloqueado',
-  [RecurringOccurrenceAvailability.IN_THE_PAST]: 'No passado',
-}
-
+/** Só as classes: os rótulos vivem no `@app/shared`, com o app. */
 export const RECURRENCE_STATUS_BADGE_CLASS: Record<RecurringOccurrenceAvailability, string> = {
   [RecurringOccurrenceAvailability.AVAILABLE]: 'bg-good/10 text-good',
   [RecurringOccurrenceAvailability.ALREADY_BOOKED]: 'bg-danger/10 text-danger',

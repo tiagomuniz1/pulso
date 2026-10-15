@@ -1,10 +1,19 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Feather from '@expo/vector-icons/Feather'
-import { PATIENT_GENDER_LABELS } from '@app/shared'
+import { PATIENT_GENDER_LABELS, formatCpf, formatPhone } from '@app/shared'
 import type { IAppointmentDetailModel } from '@app/core'
 import { useTheme } from '../../../theme/theme-context'
 import { formatShortDate } from '../utils/agenda-date.util'
 import { ageFrom } from '../utils/age.util'
+import type { AppointmentTab, AppointmentTabId } from './appointment-tabs'
+
+/** As linhas do índice de documentos, na ordem da web. */
+const DOCUMENT_ROWS: { tab: AppointmentTabId; label: string }[] = [
+  { tab: 'receitas', label: 'Receitas' },
+  { tab: 'atestados', label: 'Atestados' },
+  { tab: 'exames', label: 'Exames' },
+  { tab: 'fotos', label: 'Fotos' },
+]
 
 /**
  * A aba Resumo: quem é a paciente e o que a consulta já produziu.
@@ -12,10 +21,27 @@ import { ageFrom } from '../utils/age.util'
  * Em celular os dois cartões empilham e os campos ficam em coluna única — a
  * web usa `grid-cols-1 lg:grid-cols-3`, então esta é a forma dela aqui, não
  * uma simplificação nossa.
+ *
+ * O índice de documentos é atalho, não informação nova: cada linha leva à
+ * aba que a produz. Só aparecem as linhas cujas abas esta pessoa tem — para
+ * a recepção o cartão inteiro some, porque não sobraria nenhuma.
  */
-export function ResumoTab({ appointment }: { appointment: IAppointmentDetailModel }) {
+export function ResumoTab({
+  appointment,
+  tabs,
+  onNavigate,
+}: {
+  appointment: IAppointmentDetailModel
+  tabs: AppointmentTab[]
+  onNavigate: (tab: AppointmentTabId) => void
+}) {
   const theme = useTheme()
   const patient = appointment.patient
+
+  const rows = DOCUMENT_ROWS.map((row) => ({
+    ...row,
+    count: tabs.find((tab) => tab.id === row.tab)?.count,
+  })).filter((row) => row.count !== undefined)
 
   return (
     <View style={styles.wrapper} testID="resumo-tab">
@@ -30,13 +56,17 @@ export function ResumoTab({ appointment }: { appointment: IAppointmentDetailMode
         </View>
         <Field label="Nome" value={patient.fullName} testID="patient-name" />
         <Field label="E-mail" value={patient.email} testID="patient-email" />
-        <Field label="Telefone" value={patient.phoneNumber} testID="patient-phone" />
+        <Field label="Telefone" value={formatPhone(patient.phoneNumber)} testID="patient-phone" />
         <Field
           label="Data de nascimento"
           value={`${formatShortDate(toIsoDate(patient.birthDate))} (${ageFrom(patient.birthDate)} anos)`}
           testID="patient-birth-date"
         />
-        <Field label="CPF" value={patient.documentNumber ?? '—'} testID="patient-document" />
+        <Field
+          label="CPF"
+          value={formatCpf(patient.documentNumber) || '—'}
+          testID="patient-document"
+        />
         <Field
           label="Sexo"
           value={PATIENT_GENDER_LABELS[patient.gender]}
@@ -44,32 +74,39 @@ export function ResumoTab({ appointment }: { appointment: IAppointmentDetailMode
         />
       </View>
 
-      <View
-        style={[styles.card, { borderRadius: theme.radius.lg, borderColor: theme.line }]}
-        testID="resumo-tab-documents"
-      >
-        <Text style={[styles.cardTitle, { color: theme.text, marginBottom: 8 }]}>
-          Documentos da consulta
-        </Text>
-        {/* As contagens ficam em zero porque as abas que as produzem ainda
-            não foram portadas — mostrar as linhas mantém o índice honesto. */}
-        {(['Receitas', 'Atestados', 'Exames', 'Fotos'] as const).map((label, index) => (
-          <View
-            key={label}
-            style={[
-              styles.documentRow,
-              { borderColor: theme.line, borderTopWidth: index === 0 ? 0 : 1 },
-            ]}
-            testID={`resumo-document-${label.toLowerCase()}`}
-          >
-            <Text style={{ color: theme.text, fontSize: 14 }}>{label}</Text>
-            <View style={styles.documentRight}>
-              <Text style={{ color: theme.textDim, fontSize: 13, fontWeight: '600' }}>0</Text>
-              <Feather name="chevron-right" size={16} color={theme.textMute} />
-            </View>
-          </View>
-        ))}
-      </View>
+      {rows.length > 0 ? (
+        <View
+          style={[styles.card, { borderRadius: theme.radius.lg, borderColor: theme.line }]}
+          testID="resumo-tab-documents"
+        >
+          <Text style={[styles.cardTitle, { color: theme.text, marginBottom: 8 }]}>
+            Documentos da consulta
+          </Text>
+          {rows.map((row, index) => (
+            <Pressable
+              key={row.tab}
+              accessibilityRole="button"
+              onPress={() => onNavigate(row.tab)}
+              style={[
+                styles.documentRow,
+                { borderColor: theme.line, borderTopWidth: index === 0 ? 0 : 1 },
+              ]}
+              testID={`resumo-document-${row.tab}`}
+            >
+              <Text style={{ color: theme.text, fontSize: 14 }}>{row.label}</Text>
+              <View style={styles.documentRight}>
+                <Text
+                  style={{ color: theme.textDim, fontSize: 13, fontWeight: '600' }}
+                  testID={`resumo-document-${row.tab}-count`}
+                >
+                  {row.count}
+                </Text>
+                <Feather name="chevron-right" size={16} color={theme.textMute} />
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
     </View>
   )
 }

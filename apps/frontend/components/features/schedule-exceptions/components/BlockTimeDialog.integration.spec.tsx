@@ -1,9 +1,9 @@
-jest.mock('../services/schedule-exceptions.service')
+jest.mock('@app/core/src/features/schedule-exceptions/services/schedule-exceptions.service')
 
 import { screen, waitFor } from '@testing-library/react'
+import { scheduleExceptionsService } from '@app/core'
 import userEvent from '@testing-library/user-event'
 import { UserRole } from '@app/shared'
-import { scheduleExceptionsService } from '../services/schedule-exceptions.service'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { BlockTimeDialog } from './BlockTimeDialog'
 

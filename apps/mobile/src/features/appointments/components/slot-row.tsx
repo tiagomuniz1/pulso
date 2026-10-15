@@ -48,6 +48,7 @@ export function SlotRow({
   canManage,
   isPast,
   onPress,
+  onBook,
 }: {
   slot: IAgendaSlot
   canManage: boolean
@@ -57,6 +58,7 @@ export function SlotRow({
    * tela testar de novo se há consulta, num ramo que nunca é falso.
    */
   onPress: (appointmentId: string) => void
+  onBook: () => void
 }) {
   const theme = useTheme()
   const appointment = slot.appointment
@@ -64,19 +66,25 @@ export function SlotRow({
   if (!appointment) {
     const bookable = canManage && !isPast
     return (
-      <View
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={
+          bookable ? `Agendar ${slot.startTime}` : `Horário livre ${slot.startTime}`
+        }
+        disabled={!bookable}
+        onPress={onBook}
         style={[
           styles.row,
           styles.free,
           { borderRadius: theme.radius.md, borderColor: theme.line, opacity: bookable ? 1 : 0.4 },
         ]}
-        testID="agenda-slot-free"
+        testID={`agenda-slot-free-${slot.startTime}`}
       >
         <Text style={[styles.time, { color: theme.textDim }]}>{slot.startTime}</Text>
         <Text style={[styles.freeLabel, { color: theme.textMute }]}>
           {isPast ? 'Passado' : canManage ? 'Livre — clique para agendar' : 'Livre'}
         </Text>
-      </View>
+      </Pressable>
     )
   }
 

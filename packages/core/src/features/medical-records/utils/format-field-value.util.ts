@@ -1,5 +1,5 @@
 import { MedicalRecordFieldType } from '@app/shared'
-import type { IRecordFieldModel } from '@app/core'
+import type { IRecordFieldModel } from '../types/medical-record-model.types'
 
 const VAZIO = '—'
 

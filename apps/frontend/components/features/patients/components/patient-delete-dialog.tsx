@@ -1,10 +1,9 @@
 'use client'
 
 import { Modal } from '@/components/ui/organisms/modal/modal'
+import type { IPatientModel } from '@app/core'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Typography } from '@/components/ui/atoms/typography/typography'
-import type { IPatientModel } from '../types/patient-model.types'
-
 export interface PatientDeleteDialogProps {
   patient: IPatientModel | null
   isOpen: boolean

@@ -1,9 +1,12 @@
 import { AppointmentLabelColor, AppointmentStatus, CouncilType, UserRole } from '@app/shared'
 import {
   getAvailabilityUseCase,
+  getMyProfessionalUseCase,
   listAppointmentLabelsUseCase,
   listAppointmentsUseCase,
+  listPatientsUseCase,
   listProfessionalsUseCase,
+  listScheduleExceptionsUseCase,
 } from '@app/core'
 import { fireEvent, screen, waitFor } from '@testing-library/react-native'
 import { renderWithProviders } from '../../../tests/render-with-providers'
@@ -16,6 +19,9 @@ jest.mock('@app/core/src/features/appointments/use-cases/list-appointments.use-c
 jest.mock('@app/core/src/features/appointments/use-cases/get-availability.use-case')
 jest.mock('@app/core/src/features/professionals/use-cases/list-professionals.use-case')
 jest.mock('@app/core/src/features/appointment-labels/use-cases/list-appointment-labels.use-case')
+jest.mock('@app/core/src/features/schedule-exceptions/use-cases/list-schedule-exceptions.use-case')
+jest.mock('@app/core/src/features/professionals/use-cases/get-my-professional.use-case')
+jest.mock('@app/core/src/features/patients/use-cases/list-patients.use-case')
 
 const mockPush = jest.fn()
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }))
@@ -24,6 +30,9 @@ const mockAppointments = listAppointmentsUseCase as jest.MockedFunction<typeof l
 const mockAvailability = getAvailabilityUseCase as jest.MockedFunction<typeof getAvailabilityUseCase>
 const mockProfessionals = listProfessionalsUseCase as jest.MockedFunction<typeof listProfessionalsUseCase>
 const mockLabels = listAppointmentLabelsUseCase as jest.MockedFunction<typeof listAppointmentLabelsUseCase>
+const mockExceptions = listScheduleExceptionsUseCase as jest.MockedFunction<
+  typeof listScheduleExceptionsUseCase
+>
 
 const TODAY = todayIsoDate()
 
@@ -93,6 +102,11 @@ describe('AgendaScreen', () => {
     asRole(UserRole.ADMIN)
     mockProfessionals.mockResolvedValue([professional('prof-1', 'Dra. Ana')])
     mockLabels.mockResolvedValue(page([]))
+    mockExceptions.mockResolvedValue([])
+    // Sem ficha: é o ADMIN que administra sem atender. Quem precisa da
+    // própria agenda como padrão a concede explicitamente.
+    ;(getMyProfessionalUseCase as jest.Mock).mockResolvedValue(null)
+    ;(listPatientsUseCase as jest.Mock).mockResolvedValue([])
     mockAvailability.mockResolvedValue([])
     mockAppointments.mockResolvedValue(page([]))
   })
@@ -111,7 +125,7 @@ describe('AgendaScreen', () => {
 
       await renderWithProviders(<AgendaScreen />)
 
-      await waitFor(() => expect(screen.getAllByTestId('agenda-slot-free')).toHaveLength(2))
+      await waitFor(() => expect(screen.getAllByTestId(/^agenda-slot-free-/)).toHaveLength(2))
     })
 
     it('shows the appointment in its slot', async () => {
@@ -140,7 +154,7 @@ describe('AgendaScreen', () => {
       await renderWithProviders(<AgendaScreen />)
       await screen.findByTestId('agenda-slot-booked-appt-1')
 
-      expect(screen.queryAllByTestId('agenda-slot-free')).toHaveLength(0)
+      expect(screen.queryAllByTestId(/^agenda-slot-free-/)).toHaveLength(0)
     })
 
     it('says so when the day has no slots', async () => {
@@ -158,12 +172,18 @@ describe('AgendaScreen', () => {
       expect(mockPush).toHaveBeenCalledWith('/(app)/appointments/appt-1')
     })
 
-    it('a free slot leads nowhere — booking is a later phase', async () => {
+    // O horário livre agenda; não navega. Confundir os dois tiraria a pessoa
+    // da agenda para uma tela que ainda não existe.
+    it('o horário livre abre o agendamento, e não navega', async () => {
       mockAvailability.mockResolvedValue([freeSlot('08:00')] as never)
 
       await renderWithProviders(<AgendaScreen />)
-      await waitFor(() => expect(screen.getByTestId('agenda-slot-free')).toBeTruthy())
+      // Amanhã: às 08:00 de hoje a linha pode já estar no passado, e aí ela
+      // não responde ao toque de propósito.
+      fireEvent.press(await screen.findByTestId('toolbar-next'))
+      fireEvent.press(await screen.findByTestId('agenda-slot-free-08:00'))
 
+      expect(await screen.findByTestId('book-appointment-sheet')).toBeTruthy()
       expect(mockPush).not.toHaveBeenCalled()
     })
 
@@ -176,7 +196,7 @@ describe('AgendaScreen', () => {
       mockAvailability.mockResolvedValue([freeSlot('08:00')] as never)
       fireEvent.press(screen.getByTestId('agenda-error-retry'))
 
-      await waitFor(() => expect(screen.getByTestId('agenda-slot-free')).toBeTruthy())
+      await waitFor(() => expect(screen.getByTestId('agenda-slot-free-08:00')).toBeTruthy())
     })
   })
 
@@ -306,7 +326,7 @@ describe('AgendaScreen', () => {
       fireEvent.press(screen.getByTestId('toolbar-label-select'))
       fireEvent.press(await screen.findByTestId('toolbar-label-select-option-all'))
 
-      await waitFor(() => expect(screen.getByTestId('agenda-slot-free')).toBeTruthy())
+      await waitFor(() => expect(screen.getByTestId('agenda-slot-free-08:00')).toBeTruthy())
     })
   })
 
@@ -340,7 +360,7 @@ describe('AgendaScreen', () => {
     await renderWithProviders(<AgendaScreen />)
 
     await waitFor(() =>
-      expect(screen.getByTestId('agenda-slot-free')).toHaveStyle({ opacity: 0.4 }),
+      expect(screen.getByTestId('agenda-slot-free-08:00')).toHaveStyle({ opacity: 0.4 }),
     )
   })
 
@@ -357,14 +377,90 @@ describe('AgendaScreen', () => {
     useThemeStore.setState({ mode: 'light' })
   })
 
-  // O botão existe porque existe na web; o diálogo depende de
-  // `schedule-exceptions`, ainda não portado. Dizer isso é melhor do que um
-  // botão que não responde ao toque.
-  it('avisa que bloquear horário ainda não está no app', async () => {
+  it('abre e fecha a folha de bloquear horário', async () => {
     await renderWithProviders(<AgendaScreen />)
 
     fireEvent.press(await screen.findByTestId('toolbar-block-time'))
+    expect(await screen.findByTestId('block-time-sheet')).toBeTruthy()
 
-    expect(await screen.findByTestId('block-time-unavailable')).toBeTruthy()
+    fireEvent.press(screen.getByTestId('block-time-sheet-close'))
+
+    await waitFor(() => expect(screen.queryByTestId('block-time-sheet')).toBeNull())
+  })
+
+  it('fecha a folha de agendamento sem agendar', async () => {
+    mockAvailability.mockResolvedValue([freeSlot('08:00')] as never)
+
+    await renderWithProviders(<AgendaScreen />)
+    fireEvent.press(await screen.findByTestId('toolbar-next'))
+    fireEvent.press(await screen.findByTestId('agenda-slot-free-08:00'))
+    await screen.findByTestId('book-appointment-sheet')
+
+    fireEvent.press(screen.getByTestId('book-appointment-sheet-close'))
+
+    await waitFor(() => expect(screen.queryByTestId('book-appointment-sheet')).toBeNull())
+  })
+
+  // O ADMIN que também atende cai na própria agenda; sem ficha, no primeiro
+  // da lista. Qualquer escolha dele tem precedência.
+  it('o ADMIN com ficha abre na própria agenda', async () => {
+    ;(getMyProfessionalUseCase as jest.Mock).mockResolvedValue({ id: 'prof-2' })
+    mockProfessionals.mockResolvedValue([
+      professional('prof-1', 'Dra. Ana'),
+      professional('prof-2', 'Dr. Bruno'),
+    ])
+
+    await renderWithProviders(<AgendaScreen />)
+
+    await waitFor(() =>
+      expect(mockAvailability).toHaveBeenCalledWith({ professionalId: 'prof-2', date: TODAY }),
+    )
+  })
+
+  /**
+   * Sem a faixa, um dia de férias se parece com um dia sem agenda
+   * cadastrada — os horários simplesmente não vêm, e nada diz por quê.
+   */
+  it('mostra os bloqueios do dia no topo da grade', async () => {
+    mockExceptions.mockResolvedValue([
+      {
+        id: 'exc-1',
+        professionalId: 'prof-1',
+        date: todayIsoDate(),
+        startTime: '12:00',
+        endTime: '13:00',
+        reason: 'Almoço',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ] as never)
+
+    await renderWithProviders(<AgendaScreen />)
+
+    const banner = await screen.findByTestId('block-banner-exc-1')
+    expect(banner).toHaveTextContent(/12:00 – 13:00 · Bloqueado/)
+    expect(banner).toHaveTextContent(/Almoço/)
+  })
+
+  it('a recepção vê o bloqueio, mas não o remove', async () => {
+    asRole(UserRole.USER)
+    mockExceptions.mockResolvedValue([
+      {
+        id: 'exc-1',
+        professionalId: 'prof-1',
+        date: todayIsoDate(),
+        startTime: null,
+        endTime: null,
+        reason: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ] as never)
+
+    await renderWithProviders(<AgendaScreen />)
+    const banner = await screen.findByTestId('block-banner-exc-1')
+
+    expect(banner).toHaveTextContent(/Dia inteiro · Bloqueado/)
+    expect(screen.queryByTestId('block-banner-remove-exc-1')).toBeNull()
   })
 })

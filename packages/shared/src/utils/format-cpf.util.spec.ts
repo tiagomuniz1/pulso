@@ -1,4 +1,4 @@
-import { applyCpfMask, formatCpf } from './format-cpf'
+import { applyCpfMask, formatCpf } from './format-cpf.util'
 
 describe('applyCpfMask', () => {
   it('returns empty string for empty input', () => {

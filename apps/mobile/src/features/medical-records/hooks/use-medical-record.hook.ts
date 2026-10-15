@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { downloadAndShareDocument } from '../../../lib/document-download'
 import {
   createMedicalRecordUseCase,
   getMedicalRecordByAppointmentUseCase,
@@ -84,5 +85,18 @@ export function useSaveMedicalRecord(appointmentId: string) {
         queryKey: ['medical-record', 'by-appointment', appointmentId],
       })
     },
+  })
+}
+
+/**
+ * Baixa o PDF do prontuário e entrega à folha de compartilhamento.
+ *
+ * Baixar é ler, não emitir: segue a mesma regra de ver por ID e não exige
+ * ser o autor. É a diferença deste PDF para receita e atestado — ele sai sem
+ * bloco de assinatura, é cópia do registro.
+ */
+export function useDownloadMedicalRecordPdf() {
+  return useMutation<void, Error, string>({
+    mutationFn: (id) => downloadAndShareDocument(`/medical-records/${id}/pdf`, `prontuario-${id}.pdf`),
   })
 }

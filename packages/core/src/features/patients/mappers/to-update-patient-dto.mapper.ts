@@ -1,5 +1,5 @@
 import type { AddressDto, UpdatePatientDto } from '@app/shared'
-import type { IAddressInput } from '@/types/address.types'
+import type { IAddressInput } from '../../../types/address.types'
 import type { IUpdatePatientInput } from '../types/patient-input.types'
 
 export function toUpdatePatientDto(input: IUpdatePatientInput): UpdatePatientDto {

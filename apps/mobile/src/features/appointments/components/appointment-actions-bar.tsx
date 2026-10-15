@@ -11,6 +11,7 @@ import { useTheme } from '../../../theme/theme-context'
  */
 export function AppointmentActionsBar({
   canComplete,
+  canReassign,
   isCompleting,
   isCancelling,
   onReassign,
@@ -18,6 +19,8 @@ export function AppointmentActionsBar({
   onComplete,
 }: {
   canComplete: boolean
+  /** Só o ADMIN, só em consulta agendada e fora de série — como na web. */
+  canReassign: boolean
   isCompleting: boolean
   isCancelling: boolean
   onReassign: () => void
@@ -33,14 +36,16 @@ export function AppointmentActionsBar({
       testID="appointment-actions"
     >
       <View style={styles.row}>
-        <Pressable
-          accessibilityRole="button"
-          onPress={onReassign}
-          testID="action-reassign"
-          style={[styles.button, { borderRadius: theme.radius.md, borderColor: theme.line }]}
-        >
-          <Text style={{ color: theme.text, fontSize: 14 }}>Trocar</Text>
-        </Pressable>
+        {canReassign ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={onReassign}
+            testID="action-reassign"
+            style={[styles.button, { borderRadius: theme.radius.md, borderColor: theme.line }]}
+          >
+            <Text style={{ color: theme.text, fontSize: 14 }}>Trocar</Text>
+          </Pressable>
+        ) : null}
 
         <Pressable
           accessibilityRole="button"

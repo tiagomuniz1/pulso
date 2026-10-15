@@ -1,14 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { KINSHIP_TYPE_LABELS, PATIENT_GENDER_LABELS } from '@app/shared'
+import type { IPatientModel } from '@app/core'
+import { KINSHIP_TYPE_LABELS, PATIENT_GENDER_LABELS, formatCpf, formatPhone } from '@app/shared'
 import { useBasePath } from '@/lib/slug-context'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Typography } from '@/components/ui/atoms/typography/typography'
-import { formatPhone } from '@/lib/format-phone'
-import { formatCpf } from '@/lib/format-cpf'
-import type { IPatientModel } from '../types/patient-model.types'
-
 interface PatientDetailsProps {
   patient: IPatientModel
   /**

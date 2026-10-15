@@ -11,27 +11,28 @@ export type AppointmentTabId =
   | 'fotos'
   | 'vacinas'
 
-interface Tab {
+export interface AppointmentTab {
   id: AppointmentTabId
   label: string
+  /** Ausente quando a aba não conta nada — Resumo, Prontuário e Histórico. */
+  count?: number
 }
 
-/** As oito abas da web, na mesma ordem. */
-export const APPOINTMENT_TABS: Tab[] = [
-  { id: 'resumo', label: 'Resumo' },
-  { id: 'prontuario', label: 'Prontuário' },
-  { id: 'historico', label: 'Histórico' },
-  { id: 'receitas', label: 'Receitas' },
-  { id: 'atestados', label: 'Atestados' },
-  { id: 'exames', label: 'Exames' },
-  { id: 'fotos', label: 'Fotos' },
-  { id: 'vacinas', label: 'Vacinas' },
-]
-
+/**
+ * A fileira de abas da consulta.
+ *
+ * Quais aparecem é decisão de quem chama, porque depende do papel e da posse
+ * do atendimento: a recepção só tem Resumo, e o profissional que não atendeu
+ * esta consulta não tem as de documento. O backend recusa de qualquer forma,
+ * mas oferecer uma aba que só devolve 403 é entregar erro no lugar de
+ * ausência.
+ */
 export function AppointmentTabs({
+  tabs,
   activeId,
   onChange,
 }: {
+  tabs: AppointmentTab[]
   activeId: AppointmentTabId
   onChange: (id: AppointmentTabId) => void
 }) {
@@ -42,7 +43,7 @@ export function AppointmentTabs({
       style={[styles.card, { borderRadius: theme.radius.lg, borderColor: theme.line }]}
       testID="appointment-tabs"
     >
-      {APPOINTMENT_TABS.map((tab) => {
+      {tabs.map((tab) => {
         const isActive = tab.id === activeId
         return (
           <Pressable
@@ -68,6 +69,31 @@ export function AppointmentTabs({
             >
               {tab.label}
             </Text>
+            {/* Zero também aparece, como na web: "nenhuma receita" é
+                informação, e a contagem sumindo mudaria a largura da aba a
+                cada emissão. */}
+            {tab.count === undefined ? null : (
+              <View
+                style={[
+                  styles.badge,
+                  {
+                    borderRadius: theme.radius.xl,
+                    backgroundColor: isActive ? theme.accent : theme.surface2,
+                  },
+                ]}
+                testID={`appointment-tab-${tab.id}-count`}
+              >
+                <Text
+                  style={{
+                    color: isActive ? theme.surface : theme.textDim,
+                    fontSize: 11,
+                    fontWeight: '600',
+                  }}
+                >
+                  {tab.count}
+                </Text>
+              </View>
+            )}
           </Pressable>
         )
       })}
@@ -83,5 +109,13 @@ const styles = StyleSheet.create({
     gap: 4,
     padding: 8,
   },
-  tab: { paddingHorizontal: 12, paddingVertical: 8, minHeight: 36, justifyContent: 'center' },
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minHeight: 36,
+  },
+  badge: { minWidth: 18, paddingHorizontal: 5, paddingVertical: 1, alignItems: 'center' },
 })
