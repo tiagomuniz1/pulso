@@ -825,6 +825,32 @@ describe('AppointmentsController (integration)', () => {
       expect(body.status).toBe(AppointmentStatus.CANCELLED)
     })
 
+    /**
+     * O par do teste de concluir uma confirmada. A regra é a mesma para as
+     * duas transições, e as duas telas a leem do mesmo lugar — mas é aqui
+     * que ela precisa valer, porque é o servidor que decide.
+     */
+    it('returns 200 when cancelling a CONFIRMED appointment', async () => {
+      const { body: created } = await request(app.getHttpServer())
+        .post('/appointments')
+        .set('Cookie', `access_token=${doctorToken}`)
+        .send({ patientId, date: futureDate, startTime: '08:00' })
+        .expect(201)
+
+      await request(app.getHttpServer())
+        .patch(`/appointments/${created.id}/confirm`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .expect(200)
+
+      const { body } = await request(app.getHttpServer())
+        .patch(`/appointments/${created.id}/cancel`)
+        .set('Cookie', `access_token=${adminToken}`)
+        .send({ cancellationReason: 'Paciente desmarcou' })
+        .expect(200)
+
+      expect(body.status).toBe(AppointmentStatus.CANCELLED)
+    })
+
     it('returns 403 when DOCTOR cancels another doctor appointment', async () => {
       const { body: created } = await request(app.getHttpServer())
         .post('/appointments')

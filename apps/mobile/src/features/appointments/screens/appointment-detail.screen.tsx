@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { StyleSheet, Text } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { AppointmentStatus, UserRole } from '@app/shared'
+import { AppointmentStatus, UserRole, isAppointmentOpen } from '@app/shared'
 import { ErrorState, LoadingState, Screen, ScreenScroll } from '../../../components/ui/screen'
 import { TextField } from '../../../components/ui/fields'
 import { Button } from '../../../components/ui/button'
@@ -101,12 +101,8 @@ export function AppointmentDetailScreen() {
     )
   }
 
-  // O backend aceita concluir e cancelar em agendada **ou** confirmada.
-  const isOpen =
-    appointment.status === AppointmentStatus.SCHEDULED ||
-    appointment.status === AppointmentStatus.CONFIRMED
-
-  const canAct = canManage && isOpen
+  // O mesmo conjunto que o backend aceita concluir e cancelar.
+  const canAct = canManage && isAppointmentOpen(appointment.status)
   const canReassign =
     user?.role === UserRole.ADMIN &&
     appointment.status === AppointmentStatus.SCHEDULED &&

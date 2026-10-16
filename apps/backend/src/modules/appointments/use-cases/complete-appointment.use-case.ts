@@ -7,7 +7,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common'
 import { DataSource, OptimisticLockVersionMismatchError } from 'typeorm'
-import { AppointmentResponseDto, AppointmentStatus, UserRole } from '@app/shared'
+import { AppointmentResponseDto, AppointmentStatus, UserRole, isAppointmentOpen } from '@app/shared'
 import { BaseUseCase } from '../../../common/base.use-case'
 import { CacheService } from '../../../cache/cache.service'
 import { ICurrentUser } from '../../auth/types/current-user.type'
@@ -42,10 +42,8 @@ export class CompleteAppointmentUseCase extends BaseUseCase {
       }
     }
 
-    if (
-      appointment.status !== AppointmentStatus.SCHEDULED &&
-      appointment.status !== AppointmentStatus.CONFIRMED
-    ) {
+    // O mesmo conjunto que as telas usam para decidir se oferecem a ação.
+    if (!isAppointmentOpen(appointment.status)) {
       throw new UnprocessableEntityException('Only scheduled or confirmed appointments can be completed')
     }
 

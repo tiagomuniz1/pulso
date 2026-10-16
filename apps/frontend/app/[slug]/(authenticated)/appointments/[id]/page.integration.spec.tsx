@@ -192,6 +192,36 @@ describe('AppointmentDetailPage (integration)', () => {
     expect(screen.getByTestId('appointment-detail-complete-button')).toBeInTheDocument()
   })
 
+  /**
+   * Regressão: a tela exigia `SCHEDULED` e escondia as ações de uma consulta
+   * que a paciente já tinha confirmado — a recepção ligava, confirmava, e
+   * ninguém mais conseguia concluí-la pela web. O backend sempre aceitou as
+   * duas situações.
+   */
+  it('ADMIN sees cancel and complete buttons for CONFIRMED appointment', async () => {
+    mockAppointmentsService.getById.mockResolvedValue(
+      makeAppointmentDto({ status: AppointmentStatus.CONFIRMED }),
+    )
+    renderWithProviders(<AppointmentDetailPage />)
+    await waitFor(() => {
+      expect(screen.getByTestId('appointment-detail-cancel-button')).toBeInTheDocument()
+    })
+    expect(screen.getByTestId('appointment-detail-complete-button')).toBeInTheDocument()
+  })
+
+  it.each([AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW])(
+    'ADMIN does not see action buttons for %s appointment',
+    async (status) => {
+      mockAppointmentsService.getById.mockResolvedValue(makeAppointmentDto({ status }))
+      renderWithProviders(<AppointmentDetailPage />)
+      await waitFor(() => {
+        expect(screen.getByTestId('appointment-detail-page')).toBeInTheDocument()
+      })
+      expect(screen.queryByTestId('appointment-detail-cancel-button')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('appointment-detail-complete-button')).not.toBeInTheDocument()
+    },
+  )
+
   it('ADMIN does not see action buttons for COMPLETED appointment', async () => {
     mockAppointmentsService.getById.mockResolvedValue(
       makeAppointmentDto({ status: AppointmentStatus.COMPLETED }),

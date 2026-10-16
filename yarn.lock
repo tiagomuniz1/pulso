@@ -264,9 +264,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@app/shared@workspace:packages/shared"
   dependencies:
+    "@types/jest": "npm:^29.5.12"
     class-transformer: "npm:^0.5.1"
     class-validator: "npm:^0.14.1"
+    jest: "npm:^29.7.0"
     reflect-metadata: "npm:^0.2.2"
+    ts-jest: "npm:^29.2.3"
     typescript: "npm:^5.4.5"
   languageName: unknown
   linkType: soft
