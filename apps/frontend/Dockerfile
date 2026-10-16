@@ -18,6 +18,12 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 RUN corepack enable
 COPY --from=deps /app/node_modules ./node_modules
+# O `next` não hoista para a raiz: o `apps/mobile` fixa React 19 e os dois
+# apps Next fixam React 18, então cada um fica com a própria cópia aninhada.
+# Sem esta linha o build morre em `Cannot find module
+# '/app/apps/frontend/node_modules/next/dist/bin/next'` — foi o que aconteceu
+# quando o app entrou no monorepo, e só apareceu ao tentar subir a stack.
+COPY --from=deps /app/apps/frontend/node_modules ./apps/frontend/node_modules
 COPY --from=deps /app/package.json ./package.json
 COPY --from=deps /app/.yarnrc.yml ./.yarnrc.yml
 COPY . .

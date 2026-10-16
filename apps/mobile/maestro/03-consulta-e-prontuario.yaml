@@ -8,29 +8,46 @@ env:
 - runFlow: shared/login.yaml
 
 # A primeira consulta do dia. O fluxo pressupõe a clínica semeada com agenda.
+# A agenda é grade de horários: a linha com consulta é `agenda-slot-booked-`,
+# e a livre, `agenda-slot-free-`, que abre o agendamento.
 - tapOn:
-    id: ".*appointment-row-.*"
+    id: "agenda-slot-booked-.*"
 
 - assertVisible:
     id: "appointment-detail-screen"
 - assertVisible:
-    id: "patient-card"
-- assertVisible:
-    id: "appointment-when"
+    id: "appointment-header-card"
 - assertVisible:
     id: "appointment-status"
 
+# Profissional, especialidade, data e horário vêm recolhidos: quem abre esta
+# tela já sabe que consulta é, e quer ver quem está na frente dele.
 - tapOn:
-    id: "open-medical-record"
+    id: "appointment-details-toggle"
 - assertVisible:
-    id: "medical-record-screen"
+    id: "detail-date"
+- assertVisible:
+    id: "detail-time"
+
+# O Resumo é a aba inicial, com os dados da paciente.
+- assertVisible:
+    id: "resumo-tab"
+- assertVisible:
+    id: "patient-info-card"
+
+# O prontuário é a segunda aba, não uma tela à parte — sair da consulta para
+# preencher e voltar para concluir é caminho que o desenho da web não pede.
+- tapOn:
+    id: "appointment-tab-prontuario"
+- assertVisible:
+    id: "medical-record-tab"
 
 # Modelo primeiro: a clínica pode ter vários no mesmo escopo, e quem escolhe
 # é quem atende.
 - assertVisible:
     id: "template-picker"
 - tapOn:
-    id: ".*template-choice-.*"
+    id: "template-choice-.*"
 
 - assertVisible:
     id: "record-notes"
@@ -43,11 +60,11 @@ env:
 - assertVisible:
     id: "save-success"
 
-# Reabrir não oferece o seletor de novo: o schema ficou congelado no registro.
-- back
-- tapOn:
-    id: "open-medical-record"
-- assertVisible:
-    id: "record-notes"
+# Salvo, o seletor some: o schema ficou congelado no registro, e trocar de
+# modelo depois gravaria valor sob chave inexistente.
 - assertNotVisible:
     id: "template-picker"
+
+# E o PDF passa a estar disponível — baixar é ler, não emitir.
+- assertVisible:
+    id: "download-medical-record"

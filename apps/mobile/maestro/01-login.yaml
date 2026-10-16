@@ -30,7 +30,7 @@ env:
 - assertVisible:
     id: "agenda-screen"
 - assertVisible:
-    id: "agenda-date"
+    id: "toolbar-date-label"
 
 # A sessão sobrevive ao fechamento do app — está no Keychain, não em memória.
 - launchApp:
@@ -38,7 +38,9 @@ env:
 - assertVisible:
     id: "agenda-screen"
 
+# Sair é o avatar do cabeçalho: na web o menu tem "Meu perfil" e "Sair", e
+# aqui só o segundo existe porque a tela de perfil ainda não foi portada.
 - tapOn:
-    id: "header-logout"
+    id: "header-user"
 - assertVisible:
     id: "login-submit"

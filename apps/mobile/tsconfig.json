@@ -5,7 +5,7 @@
     // Explícito porque o `@types` do monorepo é compartilhado: sem isto o app
     // herdaria os tipos de `express`, `bcrypt` e companhia, que são do backend
     // e não existem em runtime nenhum do celular.
-    "types": ["jest"]
+    "types": ["jest", "node"]
   },
   // `include` é escrito pelo `expo start` — não editar à mão.
   "include": [

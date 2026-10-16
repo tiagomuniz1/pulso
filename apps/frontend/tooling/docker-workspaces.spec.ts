@@ -27,6 +27,19 @@ function workspaceDirs(): string[] {
 
 const DOCKERFILES = ['apps/backend/Dockerfile', 'apps/frontend/Dockerfile', 'apps/website/Dockerfile']
 
+/**
+ * Os apps cujo binário de build **não** hoista para a raiz.
+ *
+ * `next` fica aninhado em cada app porque o `apps/mobile` fixa React 19 e os
+ * dois apps Next fixam React 18 — o yarn não consegue uma cópia só que sirva
+ * aos dois mundos. Copiar apenas `/app/node_modules` deixa o builder sem o
+ * `next`, e o build morre em `Cannot find module .../next/dist/bin/next`.
+ *
+ * Aconteceu, e ficou duas semanas sem aparecer: a imagem em uso era anterior
+ * ao app, e ninguém tinha reconstruído.
+ */
+const NESTED_MODULES = ['apps/frontend', 'apps/website']
+
 describe('Dockerfiles e os workspaces do monorepo', () => {
   const dirs = workspaceDirs()
 
@@ -44,6 +57,21 @@ describe('Dockerfiles e os workspaces do monorepo', () => {
 
     it.each(workspaceDirs())('copia o package.json de %s', (dir) => {
       expect(content).toContain(`COPY ${dir}/package.json ./${dir}/`)
+    })
+  })
+
+  describe.each(NESTED_MODULES)('%s — node_modules aninhado', (app) => {
+    const content = readFileSync(join(ROOT, app, 'Dockerfile'), 'utf8')
+
+    it('tem mesmo o `next` aninhado, e não na raiz', () => {
+      expect(existsSync(join(ROOT, app, 'node_modules', 'next'))).toBe(true)
+      expect(existsSync(join(ROOT, 'node_modules', 'next'))).toBe(false)
+    })
+
+    it('copia o node_modules do próprio app para o builder', () => {
+      expect(content).toContain(
+        `COPY --from=deps /app/${app}/node_modules ./${app}/node_modules`,
+      )
     })
   })
 })
