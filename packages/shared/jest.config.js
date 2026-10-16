@@ -18,22 +18,15 @@ module.exports = {
   // e roda cada suíte duas vezes.
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
   collectCoverageFrom: [
-    // Só onde há comportamento. DTOs, enums e types são contrato — quem os
-    // verifica é o compilador —, e `config/` é, fora um arquivo, tabela de
-    // consulta sem ramo nenhum.
+    // Tudo que tem comportamento, e nada além. DTOs, enums e types são
+    // contrato — quem os verifica é o compilador —, e `config/` é, fora
+    // dois arquivos, tabela de consulta sem ramo nenhum: os valores delas
+    // são guardados por quem os consome (ver
+    // `apps/frontend/app/globals-label-palette.spec.ts`).
     'src/utils/**/*.ts',
     '!src/utils/index.ts',
     'src/config/appointment-status.config.ts',
     'src/config/recurrence-status.config.ts',
-    // Estes três vivem aqui mas são provados por quem os consome, e o teste
-    // está lá porque é lá que o significado deles aparece:
-    //   clinic-theme          → apps/frontend/hooks/use-apply-clinic-theme.hook.spec.ts
-    //   get-primary-council-type → apps/backend/.../professionals/utils/*.spec.ts
-    //   format-date           → usado só na formatação do dashboard
-    // Trazê-los para cá é trabalho à parte, e está anotado.
-    '!src/utils/clinic-theme.util.ts',
-    '!src/utils/get-primary-council-type.util.ts',
-    '!src/utils/format-date.util.ts',
   ],
   coverageThreshold: {
     global: { branches: 100, functions: 100, lines: 100, statements: 100 },
