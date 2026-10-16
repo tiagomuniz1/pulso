@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { listAppointmentPhotosUseCase } from '../use-cases/list-appointment-photos.use-case'
+import { listAppointmentPhotosUseCase } from '@app/core'
 
 export function useAppointmentPhotos(appointmentId: string) {
   return useQuery({

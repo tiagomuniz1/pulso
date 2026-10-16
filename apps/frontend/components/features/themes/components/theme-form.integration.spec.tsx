@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ThemeBorderRadius } from '@app/shared'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { ThemeForm } from './theme-form'
-import type { IThemeModel } from '../types/theme-model.types'
+import type { IThemeModel } from '@app/core'
 
 const mockPush = jest.fn()
 

@@ -73,8 +73,18 @@ yarn test  # todos os testes do monorepo
 ### Testes E2E
 
 ```bash
+# O limitador precisa estar desligado no backend que a suíte vai usar.
+THROTTLE_DISABLED=true docker compose up -d backend
 yarn workspace @app/frontend cypress:run   # headless (CI/CD)
 ```
+
+> **Sem `THROTTLE_DISABLED=true` a suíte inteira não roda.** Cada spec `-real`
+> faz login por `cy.request`, e os 129 specs estouram os `10/60s` do login
+> muito antes do fim — medido: 62 falhas, **todas** `429`, nenhuma funcional.
+> O `ThrottlerGuard` é global desde que o app nativo passou a ter endpoint de
+> token próprio; antes disso ele estava registrado mas inerte, e a suíte
+> passava sem ninguém notar. O padrão do compose é o limitador **ligado**,
+> como em produção — quem o desliga é o comando acima.
 
 ---
 

@@ -1,0 +1,43 @@
+appId: center.pulso.app
+name: Navegar pela agenda do dia
+env:
+  EMAIL: ${MAESTRO_EMAIL}
+  PASSWORD: ${MAESTRO_PASSWORD}
+  CLINIC: ${MAESTRO_CLINIC}
+---
+- runFlow: shared/login.yaml
+
+- assertVisible:
+    id: "agenda-toolbar"
+- assertVisible:
+    id: "toolbar-date-label"
+
+# ‹ Hoje › existem sempre, como na web — "Hoje" não some quando já se está
+# nele, porque a barra é a mesma em qualquer data.
+- tapOn:
+    id: "toolbar-next"
+- tapOn:
+    id: "toolbar-prev"
+- tapOn:
+    id: "toolbar-today"
+
+- assertVisible:
+    id: "agenda-day-grid"
+
+# O menu lateral tem os nove itens da sidebar da web, recortados por papel.
+- tapOn:
+    id: "header-menu"
+- assertVisible:
+    id: "drawer-items"
+- assertVisible:
+    id: "drawer-item-appointments"
+- tapOn:
+    id: "drawer-backdrop"
+- assertVisible:
+    id: "agenda-screen"
+
+# O tema acompanha o sistema e o botão o sobrepõe — é a mesma escolha da web.
+- tapOn:
+    id: "header-theme-toggle"
+- assertVisible:
+    id: "agenda-screen"

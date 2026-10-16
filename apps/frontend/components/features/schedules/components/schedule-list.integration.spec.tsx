@@ -2,7 +2,7 @@ jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
 jest.mock('@/stores/auth.store')
 jest.mock('../services/schedules.service')
 jest.mock('../use-cases/delete-schedule.use-case')
-jest.mock('@/components/features/professionals/services/professionals.service')
+jest.mock('@app/core/src/features/professionals/services/professionals.service')
 
 import { screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -11,7 +11,7 @@ import { UserRole, DayOfWeek, CouncilType } from '@app/shared'
 import { useAuthStore } from '@/stores/auth.store'
 import { schedulesService } from '../services/schedules.service'
 import { deleteScheduleUseCase } from '../use-cases/delete-schedule.use-case'
-import { professionalsService } from '@/components/features/professionals/services/professionals.service'
+import { professionalsService } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { ScheduleList } from './schedule-list'
 

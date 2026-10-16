@@ -10,7 +10,7 @@ import { formatDateToBR, getWeekdayNamePtBR } from '@/lib/format-date'
 import { useBasePath } from '@/lib/slug-context'
 import { cn } from '@/lib/cn'
 import { useAppointmentSeries } from '../hooks/use-appointment-series.hook'
-import { APPOINTMENT_STATUS_LABELS } from '../types/appointment-model.types'
+import { APPOINTMENT_STATUS_LABELS } from '@app/core'
 
 interface SeriesOccurrencesDialogProps {
   seriesId: string | null

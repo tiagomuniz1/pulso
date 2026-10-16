@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { fetchConsultationPhotoBlobUseCase } from '../use-cases/fetch-consultation-photo-blob.use-case'
+import { fetchConsultationPhotoBlobUseCase } from '@app/core'
 
 export interface IPhotoThumbnail {
   url: string | null

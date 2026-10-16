@@ -3,10 +3,11 @@
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Skeleton } from '@/components/ui/atoms/skeleton/skeleton'
-import { RECURRENCE_STATUS_BADGE_CLASS, RECURRENCE_STATUS_LABELS } from '@/lib/recurrence-status'
+import { RECURRENCE_STATUS_LABELS } from '@app/shared'
+import { RECURRENCE_STATUS_BADGE_CLASS } from '@/lib/recurrence-status'
 import { formatDateToBR } from '@/lib/format-date'
 import { cn } from '@/lib/cn'
-import type { IRecurrencePreviewModel } from '../types/appointment-model.types'
+import type { IRecurrencePreviewModel } from '@app/core'
 
 interface RecurrencePreviewListProps {
   preview?: IRecurrencePreviewModel

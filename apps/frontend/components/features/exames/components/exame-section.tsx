@@ -17,8 +17,8 @@ import { ExameListSkeleton } from './exame-list-skeleton'
 import { ExameDeleteDialog } from './exame-delete-dialog'
 import { ExameResultDeleteDialog } from './exame-result-delete-dialog'
 import { ExamePreviewModal } from './exame-preview-modal'
-import type { IExamRequestModel } from '../types/exam-request-model.types'
-import type { ICreateExamRequestInput } from '../types/exam-request-input.types'
+import type { IExamRequestModel } from '@app/core'
+import type { ICreateExamRequestInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export interface ExameSectionProps {

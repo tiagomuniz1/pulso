@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getAppointmentSeriesUseCase } from '../use-cases/get-appointment-series.use-case'
+import { getAppointmentSeriesUseCase } from '@app/core'
 
 export function useAppointmentSeries(seriesId: string | null) {
   return useQuery({

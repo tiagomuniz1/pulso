@@ -1,13 +1,13 @@
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
 jest.mock('@/lib/slug-context', () => ({ useSlug: jest.fn(() => 'backoffice'), useBasePath: () => '/backoffice' }))
-jest.mock('../use-cases/create-medication.use-case')
+jest.mock('@app/core/src/features/medications/use-cases/create-medication.use-case')
 
 import React from 'react'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { createQueryClient } from '@/lib/react-query.config'
-import { createMedicationUseCase } from '../use-cases/create-medication.use-case'
+import { createMedicationUseCase } from '@app/core'
 import { useCreateMedication } from './use-create-medication.hook'
 
 const mockPush = jest.fn()

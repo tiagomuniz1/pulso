@@ -126,6 +126,17 @@ describe('api-client', () => {
     expect(await call()).toEqual({ ok: verb })
   })
 
+  // O PDF e o anexo não passam pelo desembrulho de JSON — mas passam pelo
+  // mesmo Bearer e pela mesma renovação, que é o motivo de estar aqui dentro.
+  it('getBlob pede o corpo como binário', async () => {
+    mock.onGet('/medical-records/1/pdf').reply((config) => {
+      expect(config.responseType).toBe('blob')
+      return [200, 'conteudo-do-pdf']
+    })
+
+    await expect(apiClient.getBlob('/medical-records/1/pdf')).resolves.toBe('conteudo-do-pdf')
+  })
+
   describe('renovação de sessão', () => {
     it('renova no 401 e repete a requisição original', async () => {
       mock.onGet('/patients').replyOnce(401).onGet('/patients').replyOnce(200, { data: ['ok'] })

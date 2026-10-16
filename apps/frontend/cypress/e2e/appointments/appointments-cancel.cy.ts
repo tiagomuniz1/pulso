@@ -142,6 +142,28 @@ describe('Appointments — cancel', () => {
     cy.get('[data-testid="cancel-appointment-dialog"]').should('not.exist')
   })
 
+  // O par do mesmo defeito em concluir: a consulta que a paciente confirmou
+  // ficava sem botão de cancelar, e o backend sempre aceitou cancelá-la.
+  it('PROFESSIONAL cancels a CONFIRMED appointment', () => {
+    cy.intercept('GET', `${Cypress.env('API_URL')}/appointments/${APPT_UUID}`, {
+      statusCode: 200,
+      body: { ...mockScheduledAppointment, status: 'confirmed' },
+    })
+    cy.intercept('PATCH', `${Cypress.env('API_URL')}/appointments/${APPT_UUID}/cancel`, {
+      statusCode: 200,
+      body: mockCancelledAppointment,
+    }).as('cancelConfirmed')
+
+    visitClinic(`/appointments/${APPT_UUID}`, mockProfessionalUser)
+    cy.get('[data-testid="appointment-detail-status"]').should('contain', 'Confirmada')
+
+    cy.get('[data-testid="appointment-detail-cancel-button"]').click()
+    cy.get('[data-testid="cancel-dialog-confirm"]').click()
+
+    cy.wait('@cancelConfirmed')
+    cy.get('[data-testid="cancel-appointment-dialog"]').should('not.exist')
+  })
+
   it('aborts cancellation when clicking close on cancel dialog', () => {
     visitClinic(`/appointments/${APPT_UUID}`, mockProfessionalUser)
 

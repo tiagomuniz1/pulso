@@ -3,7 +3,7 @@
 import { useAppointmentLabels } from '../hooks/use-appointment-labels.hook'
 import { cn } from '@/lib/cn'
 import { LABEL_STRIP_CLASS } from '../constants/label-color-classes'
-import type { IAppointmentLabelRefModel } from '@/components/features/appointments/types/appointment-model.types'
+import type { IAppointmentLabelRefModel } from '@app/core'
 
 interface AppointmentLabelSelectProps {
   value: IAppointmentLabelRefModel | null

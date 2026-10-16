@@ -7,7 +7,7 @@ import { Typography } from '@/components/ui/atoms/typography/typography'
 import { ThemeForm } from '@/components/features/themes/components/theme-form'
 import { useCreateTheme } from '@/components/features/themes/hooks/use-create-theme.hook'
 import { useBasePath } from '@/lib/slug-context'
-import type { ICreateThemeInput } from '@/components/features/themes/types/theme-input.types'
+import type { ICreateThemeInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export default function NewThemePage() {

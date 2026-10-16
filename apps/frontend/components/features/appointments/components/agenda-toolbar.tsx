@@ -1,11 +1,11 @@
 'use client'
 
 import { UserRole } from '@app/shared'
-import type { IAppointmentLabelModel } from '@/components/features/appointment-labels/types/appointment-label-model.types'
+import type { IAppointmentLabelModel } from '@app/core'
 import { AppointmentLabelPill } from '@/components/features/appointment-labels/components/appointment-label-pill'
 import { Button } from '@/components/ui/atoms/button/button'
 import { getWeekStart } from '@/lib/format-date'
-import type { IProfessionalModel } from '@/components/features/professionals/types/professional-model.types'
+import type { IProfessionalModel } from '@app/core'
 
 type AgendaView = 'day' | 'week'
 

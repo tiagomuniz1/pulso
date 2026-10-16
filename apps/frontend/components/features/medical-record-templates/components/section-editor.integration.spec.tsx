@@ -1,6 +1,6 @@
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
 jest.mock('@/lib/slug-context', () => ({ useSlug: jest.fn(() => 'clinic-slug'), useBasePath: () => '/clinic-slug' }))
-jest.mock('../services/canonical-fields.service')
+jest.mock('@app/core/src/features/medical-record-templates/services/canonical-fields.service')
 
 jest.mock('@/components/ui/molecules/sortable-list/sortable-list', () => ({
   SortableList: ({ onReorder, children }: any) => (
@@ -16,7 +16,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import { canonicalFieldsService } from '../services/canonical-fields.service'
+import { canonicalFieldsService } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { SectionEditor } from './section-editor'
 import type { ITemplateFormValues } from './template-form'

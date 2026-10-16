@@ -29,9 +29,14 @@ describe('Schedules — happy path real', () => {
 
         expectClinicPath('/schedules')
 
+        // `includeExpired`: a agenda criada aqui vale só até 2020 — a janela
+        // no passado é de propósito, para não ocupar horário de verdade na
+        // clínica semeada. Desde que a listagem passou a esconder expiradas
+        // por padrão, conferir sem este parâmetro procura algo que o servidor
+        // não devolve mais.
         cy.request({
           method: 'GET',
-          url: `${Cypress.env('API_URL')}/schedules?professionalId=${professional.professionalId}`,
+          url: `${Cypress.env('API_URL')}/schedules?professionalId=${professional.professionalId}&includeExpired=true`,
           headers: { Authorization: `Bearer ${professionalToken}` },
         }).then((listResponse) => {
           const created = listResponse.body.data[0]

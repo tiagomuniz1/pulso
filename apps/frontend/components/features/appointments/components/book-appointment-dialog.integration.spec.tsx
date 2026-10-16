@@ -1,6 +1,6 @@
-jest.mock('../services/appointments.service')
-jest.mock('@/components/features/patients/services/patients.service')
-jest.mock('@/components/features/professionals/services/professionals.service')
+jest.mock('@app/core/src/features/appointments/services/appointments.service')
+jest.mock('@app/core/src/features/patients/services/patients.service')
+jest.mock('@app/core/src/features/professionals/services/professionals.service')
 jest.mock('next/navigation', () => ({ useRouter: jest.fn(() => ({ push: jest.fn() })) }))
 
 import { fireEvent, screen, waitFor } from '@testing-library/react'
@@ -11,9 +11,8 @@ import { AppointmentStatus,
   MINIMUM_RECURRING_OCCURRENCES,
   RecurrenceInterval,
   RecurringOccurrenceAvailability, CouncilType, PatientGender } from '@app/shared'
-import { appointmentsService } from '../services/appointments.service'
-import { patientsService } from '@/components/features/patients/services/patients.service'
-import { professionalsService } from '@/components/features/professionals/services/professionals.service'
+import { appointmentsService, patientsService } from '@app/core'
+import { professionalsService } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { BookAppointmentDialog } from './book-appointment-dialog'
 

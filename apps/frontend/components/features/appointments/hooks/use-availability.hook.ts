@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { getAvailabilityUseCase } from '../use-cases/get-availability.use-case'
-import type { IAvailabilityParams } from '../types/appointment-input.types'
+import { getAvailabilityUseCase } from '@app/core'
+import type { IAvailabilityParams } from '@app/core'
 
 export function useAvailability(params: (IAvailabilityParams & { professionalIdKey: string }) | null) {
   return useQuery({

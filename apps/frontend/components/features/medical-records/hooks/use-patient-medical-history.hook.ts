@@ -1,8 +1,8 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { listPatientMedicalHistoryUseCase } from '../use-cases/list-patient-medical-history.use-case'
-import type { IPatientHistoryParams } from '../services/medical-records.service'
+import { listPatientMedicalHistoryUseCase } from '@app/core'
+import type { IPatientHistoryParams } from '@app/core'
 
 export function usePatientMedicalHistory(patientId: string, params?: IPatientHistoryParams) {
   return useQuery({

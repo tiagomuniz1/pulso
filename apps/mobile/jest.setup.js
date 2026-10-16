@@ -22,3 +22,24 @@ jest.mock('expo-constants', () => ({
   __esModule: true,
   default: { expoConfig: { extra: { apiUrl: 'http://api.test' } } },
 }))
+
+/**
+ * `AsyncStorage` também é módulo nativo. A biblioteca publica o próprio mock,
+ * que é preferível a um escrito à mão: ele acompanha a API quando ela muda, e
+ * qualquer tela que renderize o tema passa por aqui.
+ */
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+)
+
+/**
+ * `expo-image-picker` é módulo nativo e, sem mock, deixa um handle aberto que
+ * impede o jest de encerrar — o run passa e depois pendura. Cada spec que
+ * precisa de um resultado específico sobrescreve o retorno.
+ */
+jest.mock('expo-image-picker', () => ({
+  requestCameraPermissionsAsync: jest.fn(async () => ({ granted: true })),
+  requestMediaLibraryPermissionsAsync: jest.fn(async () => ({ granted: true })),
+  launchCameraAsync: jest.fn(async () => ({ canceled: true, assets: null })),
+  launchImageLibraryAsync: jest.fn(async () => ({ canceled: true, assets: null })),
+}))

@@ -1,10 +1,10 @@
-jest.mock('../use-cases/list-professionals.use-case')
+jest.mock('@app/core/src/features/professionals/use-cases/list-professionals.use-case')
 
 import React from 'react'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createQueryClient } from '@/lib/react-query.config'
-import { listProfessionalsUseCase } from '../use-cases/list-professionals.use-case'
+import { listProfessionalsUseCase } from '@app/core'
 import { useProfessionals } from './use-professionals.hook'
 
 function wrapper({ children }: { children: React.ReactNode }) {

@@ -1,4 +1,4 @@
-import { atestadosService } from '../services/atestados.service'
+import { atestadosService } from '@app/core'
 import { downloadBlob } from '@/lib/download-blob'
 
 export async function downloadAtestadoPdfUseCase(id: string, fileName?: string): Promise<void> {

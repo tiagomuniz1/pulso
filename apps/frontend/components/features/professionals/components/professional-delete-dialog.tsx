@@ -3,7 +3,7 @@
 import { Modal } from '@/components/ui/organisms/modal/modal'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Typography } from '@/components/ui/atoms/typography/typography'
-import type { IProfessionalModel } from '../types/professional-model.types'
+import type { IProfessionalModel } from '@app/core'
 
 export interface ProfessionalDeleteDialogProps {
   professional: IProfessionalModel | null

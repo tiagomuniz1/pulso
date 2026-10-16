@@ -1,0 +1,17 @@
+appId: center.pulso.app
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: "login-slug"
+- inputText: ${CLINIC}
+- tapOn:
+    id: "login-email"
+- inputText: ${EMAIL}
+- tapOn:
+    id: "login-password"
+- inputText: ${PASSWORD}
+- tapOn:
+    id: "login-submit"
+- assertVisible:
+    id: "agenda-screen"

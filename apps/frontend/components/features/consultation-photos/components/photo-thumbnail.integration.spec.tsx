@@ -1,7 +1,7 @@
-jest.mock('../use-cases/fetch-consultation-photo-blob.use-case')
+jest.mock('@app/core/src/features/consultation-photos/use-cases/fetch-consultation-photo-blob.use-case')
 
 import { screen, waitFor } from '@testing-library/react'
-import { fetchConsultationPhotoBlobUseCase } from '../use-cases/fetch-consultation-photo-blob.use-case'
+import { fetchConsultationPhotoBlobUseCase } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { PhotoThumbnail } from './photo-thumbnail'
 

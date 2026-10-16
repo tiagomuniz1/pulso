@@ -1,5 +1,5 @@
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
-jest.mock('../services/professionals.service')
+jest.mock('@app/core/src/features/professionals/services/professionals.service')
 jest.mock('@/components/features/users/services/users.service')
 jest.mock('@/components/features/clinic-specialties/services/clinic-specialties.service')
 jest.mock('@/stores/auth.store')
@@ -13,7 +13,7 @@ import { clinicSpecialtiesService } from '@/components/features/clinic-specialti
 import { useAuthStore } from '@/stores/auth.store'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { ProfessionalForm } from './professional-form'
-import type { IProfessionalModel } from '../types/professional-model.types'
+import type { IProfessionalModel } from '@app/core'
 
 const mockPush = jest.fn()
 

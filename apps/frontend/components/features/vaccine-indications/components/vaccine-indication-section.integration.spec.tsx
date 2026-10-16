@@ -1,11 +1,11 @@
-jest.mock('../services/vaccine-indications.service')
-jest.mock('@/components/features/vaccines/services/vaccines.service')
+jest.mock('@app/core/src/features/vaccine-indications/services/vaccine-indications.service')
+jest.mock('@app/core/src/features/vaccines/services/vaccines.service')
 
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
-import { vaccineIndicationsService } from '../services/vaccine-indications.service'
-import { vaccinesService } from '@/components/features/vaccines/services/vaccines.service'
+import { vaccineIndicationsService } from '@app/core'
+import { vaccinesService } from '@app/core'
 import { VaccineIndicationSection } from './vaccine-indication-section'
 
 const mockService = vaccineIndicationsService as jest.Mocked<typeof vaccineIndicationsService>

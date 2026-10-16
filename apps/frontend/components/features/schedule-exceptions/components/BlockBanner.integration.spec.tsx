@@ -1,13 +1,12 @@
-jest.mock('../services/schedule-exceptions.service')
+jest.mock('@app/core/src/features/schedule-exceptions/services/schedule-exceptions.service')
 
 import { screen, waitFor } from '@testing-library/react'
+import { scheduleExceptionsService } from '@app/core'
+import type { IScheduleExceptionModel } from '@app/core'
 import userEvent from '@testing-library/user-event'
 import { UserRole } from '@app/shared'
-import { scheduleExceptionsService } from '../services/schedule-exceptions.service'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { BlockBanner } from './BlockBanner'
-import type { IScheduleExceptionModel } from '../types/schedule-exception-model.types'
-
 const mockService = scheduleExceptionsService as jest.Mocked<typeof scheduleExceptionsService>
 
 const makeException = (overrides: Partial<IScheduleExceptionModel> = {}): IScheduleExceptionModel => ({

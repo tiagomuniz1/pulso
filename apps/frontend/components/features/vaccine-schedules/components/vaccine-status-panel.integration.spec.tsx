@@ -1,11 +1,11 @@
 jest.mock('../services/vaccine-schedules.service')
-jest.mock('@/components/features/professionals/services/professionals.service')
+jest.mock('@app/core/src/features/professionals/services/professionals.service')
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { CouncilType, VaccineDecision, VaccineScheduleStatus } from '@app/shared'
 import { vaccineSchedulesService } from '../services/vaccine-schedules.service'
-import { professionalsService } from '@/components/features/professionals/services/professionals.service'
+import { professionalsService } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { VaccineStatusPanel } from './vaccine-status-panel'
 

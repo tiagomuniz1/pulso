@@ -1,3 +1,4 @@
+import type { UserRole } from '@app/shared'
 import { apiClient } from '../../lib/api-client'
 import { clearSession, readSession, writeSession } from '../../lib/token-storage'
 
@@ -5,7 +6,7 @@ export interface SessionUser {
   id: string
   fullName: string
   email: string
-  role: string
+  role: UserRole
   clinicId: string | null
 }
 

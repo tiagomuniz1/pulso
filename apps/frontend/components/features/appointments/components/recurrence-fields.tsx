@@ -8,7 +8,7 @@ import {
   RecurrenceInterval,
 } from '@app/shared'
 import { getWeekdayNamePtBR } from '@/lib/format-date'
-import type { IBookFormValues } from '../types/book-form.types'
+import type { IBookFormValues } from '@app/core'
 
 const INPUT_CLASS =
   'w-full rounded-md border border-line bg-surface-2 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent'

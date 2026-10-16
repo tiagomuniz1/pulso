@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { PrescriptionPreviewModal } from './prescription-preview-modal'
-import type { IPrescriptionModel } from '../types/prescription-model.types'
+import type { IPrescriptionModel } from '@app/core'
 
 function makePrescription(overrides: Partial<IPrescriptionModel> = {}): IPrescriptionModel {
   return {

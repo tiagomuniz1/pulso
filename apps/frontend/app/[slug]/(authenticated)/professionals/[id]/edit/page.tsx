@@ -11,7 +11,7 @@ import { Typography } from '@/components/ui/atoms/typography/typography'
 import { ProfessionalForm } from '@/components/features/professionals/components/professional-form'
 import { useProfessional } from '@/components/features/professionals/hooks/use-professional.hook'
 import { useUpdateProfessional } from '@/components/features/professionals/hooks/use-update-professional.hook'
-import type { IUpdateProfessionalInput } from '@/components/features/professionals/types/professional-input.types'
+import type { IUpdateProfessionalInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export default function EditProfessionalPage() {

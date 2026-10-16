@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import type { IUpdatePatientInput } from '@app/core'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useBasePath } from '@/lib/slug-context'
@@ -11,7 +12,6 @@ import { Typography } from '@/components/ui/atoms/typography/typography'
 import { PatientForm } from '@/components/features/patients/components/patient-form'
 import { usePatient } from '@/components/features/patients/hooks/use-patient.hook'
 import { useUpdatePatient } from '@/components/features/patients/hooks/use-update-patient.hook'
-import type { IUpdatePatientInput } from '@/components/features/patients/types/patient-input.types'
 import type { IApiError } from '@/types/api.types'
 
 export default function EditPatientPage() {

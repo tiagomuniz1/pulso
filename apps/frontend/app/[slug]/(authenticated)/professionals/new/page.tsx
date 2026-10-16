@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/atoms/button/button'
 import { Typography } from '@/components/ui/atoms/typography/typography'
 import { ProfessionalForm } from '@/components/features/professionals/components/professional-form'
 import { useCreateProfessional } from '@/components/features/professionals/hooks/use-create-professional.hook'
-import type { ICreateProfessionalInput } from '@/components/features/professionals/types/professional-input.types'
+import type { ICreateProfessionalInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export default function NewProfessionalPage() {

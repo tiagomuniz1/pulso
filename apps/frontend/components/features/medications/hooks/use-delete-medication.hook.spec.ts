@@ -1,10 +1,10 @@
-jest.mock('../use-cases/delete-medication.use-case')
+jest.mock('@app/core/src/features/medications/use-cases/delete-medication.use-case')
 
 import React from 'react'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createQueryClient } from '@/lib/react-query.config'
-import { deleteMedicationUseCase } from '../use-cases/delete-medication.use-case'
+import { deleteMedicationUseCase } from '@app/core'
 import { useDeleteMedication } from './use-delete-medication.hook'
 
 let queryClient: QueryClient

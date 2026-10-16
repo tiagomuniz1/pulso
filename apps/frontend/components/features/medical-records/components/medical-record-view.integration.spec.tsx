@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MedicalRecordFieldType } from '@app/shared'
 import { MedicalRecordView } from './medical-record-view'
-import type { IMedicalRecordModel, IRecordFieldModel } from '../types/medical-record-model.types'
+import type { IMedicalRecordModel, IRecordFieldModel } from '@app/core'
 
 function makeField(overrides: Partial<IRecordFieldModel> = {}): IRecordFieldModel {
   return {

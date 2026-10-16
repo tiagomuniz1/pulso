@@ -1,12 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { PatientGender } from '@app/shared'
+import { PatientGender, formatCpf, formatPhone } from '@app/shared'
 import { useBasePath } from '@/lib/slug-context'
-import { formatPhone } from '@/lib/format-phone'
-import { formatCpf } from '@/lib/format-cpf'
 import { calculateAge } from '@/lib/calculate-age'
-import type { IAppointmentPatientModel } from '../types/appointment-model.types'
+import type { IAppointmentPatientModel } from '@app/core'
 
 const genderLabel: Record<PatientGender, string> = {
   [PatientGender.MALE]: 'Masculino',

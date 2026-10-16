@@ -3,9 +3,9 @@
 import { cn } from '@/lib/cn'
 import { LABEL_STRIP_CLASS } from '@/components/features/appointment-labels/constants/label-color-classes'
 import { AppointmentStatus } from '@app/shared'
-import { APPOINTMENT_STATUS_LABELS } from '../types/appointment-model.types'
+import { APPOINTMENT_STATUS_LABELS } from '@app/core'
 import { RecurrenceBadge } from './recurrence-badge'
-import type { IAgendaSlot } from '../types/appointment-model.types'
+import type { IAgendaSlot } from '@app/core'
 
 interface AppointmentSlotCellProps {
   slot: IAgendaSlot

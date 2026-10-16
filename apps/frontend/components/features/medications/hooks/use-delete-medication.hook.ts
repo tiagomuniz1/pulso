@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { deleteMedicationUseCase } from '../use-cases/delete-medication.use-case'
+import { deleteMedicationUseCase } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export function useDeleteMedication() {

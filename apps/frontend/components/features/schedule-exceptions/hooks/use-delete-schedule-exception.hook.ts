@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { deleteScheduleExceptionUseCase } from '../use-cases/delete-schedule-exception.use-case'
+import { deleteScheduleExceptionUseCase } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export function useDeleteScheduleException() {

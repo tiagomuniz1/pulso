@@ -1,4 +1,4 @@
-jest.mock('../use-cases/create-theme.use-case')
+jest.mock('@app/core/src/features/themes/use-cases/create-theme.use-case')
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
 jest.mock('@/lib/slug-context', () => ({ useSlug: () => 'test-clinic', useBasePath: () => '/test-clinic' }))
 
@@ -8,9 +8,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { ThemeBorderRadius } from '@app/shared'
 import { createQueryClient } from '@/lib/react-query.config'
-import { createThemeUseCase } from '../use-cases/create-theme.use-case'
+import { createThemeUseCase } from '@app/core'
 import { useCreateTheme } from './use-create-theme.hook'
-import type { IThemeModel } from '../types/theme-model.types'
+import type { IThemeModel } from '@app/core'
 
 const mockPush = jest.fn()
 

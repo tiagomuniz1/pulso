@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { listExamRequestsUseCase } from '../use-cases/list-exam-requests.use-case'
+import { listExamRequestsUseCase } from '@app/core'
 
 export function useExamRequests(appointmentId: string) {
   return useQuery({

@@ -1,10 +1,10 @@
-jest.mock('../use-cases/delete-patient.use-case')
+jest.mock('@app/core/src/features/patients/use-cases/delete-patient.use-case')
 
 import React from 'react'
+import { deletePatientUseCase } from '@app/core'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createQueryClient } from '@/lib/react-query.config'
-import { deletePatientUseCase } from '../use-cases/delete-patient.use-case'
 import { useDeletePatient } from './use-delete-patient.hook'
 
 function makeWrapper(client: QueryClient) {

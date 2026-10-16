@@ -1,5 +1,5 @@
 import { COUNCIL_TYPE_LABELS, COUNCIL_TYPE_OCCUPATION_LABELS, COUNCIL_TYPE_PROFESSION_LABELS } from '@app/shared'
-import type { IProfessionalRegistrationModel } from '../types/professional-model.types'
+import type { IProfessionalRegistrationModel } from '@app/core'
 
 export function primaryRegistration(
   registrations: IProfessionalRegistrationModel[],

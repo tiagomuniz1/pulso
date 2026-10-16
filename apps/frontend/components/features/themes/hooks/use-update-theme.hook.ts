@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useBasePath } from '@/lib/slug-context'
-import { updateThemeUseCase } from '../use-cases/update-theme.use-case'
-import type { IUpdateThemeInput } from '../types/theme-input.types'
+import { updateThemeUseCase } from '@app/core'
+import type { IUpdateThemeInput } from '@app/core'
 
 export function useUpdateTheme(id: string) {
   const queryClient = useQueryClient()

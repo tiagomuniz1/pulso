@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { previewRecurrenceUseCase } from '../use-cases/preview-recurrence.use-case'
-import type { IRecurrencePreviewInput } from '../types/appointment-input.types'
+import { previewRecurrenceUseCase } from '@app/core'
+import type { IRecurrencePreviewInput } from '@app/core'
 
 /**
  * A read, so useQuery rather than useMutation: going back and forth between the

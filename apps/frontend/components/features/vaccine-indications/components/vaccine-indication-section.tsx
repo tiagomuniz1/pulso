@@ -11,8 +11,8 @@ import { useDownloadVaccineIndicationPdf } from '../hooks/use-download-vaccine-i
 import { VaccineIndicationForm } from './vaccine-indication-form'
 import { VaccineIndicationListSkeleton } from './vaccine-indication-list-skeleton'
 import { VaccineIndicationDeleteDialog } from './vaccine-indication-delete-dialog'
-import type { IVaccineIndicationModel } from '../types/vaccine-indication-model.types'
-import type { ICreateVaccineIndicationInput } from '../types/vaccine-indication-input.types'
+import type { IVaccineIndicationModel } from '@app/core'
+import type { ICreateVaccineIndicationInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export interface VaccineIndicationSectionProps {

@@ -1,10 +1,10 @@
-jest.mock('../use-cases/delete-professional.use-case')
+jest.mock('@app/core/src/features/professionals/use-cases/delete-professional.use-case')
 
 import React from 'react'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createQueryClient } from '@/lib/react-query.config'
-import { deleteProfessionalUseCase } from '../use-cases/delete-professional.use-case'
+import { deleteProfessionalUseCase } from '@app/core'
 import { useDeleteProfessional } from './use-delete-professional.hook'
 
 function makeWrapper(client: QueryClient) {

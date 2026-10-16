@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, type UseFormRegisterReturn } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { SUBSCRIPTION_PLANS, SubscriptionPlan } from '@app/shared'
@@ -323,8 +323,9 @@ function ClinicFormEdit({ defaultValues, isPending, globalError, onSubmit }: Cli
 }
 
 interface PlanSelectProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  register: any
+  // O retorno de `register('plan')`, não a função: quem chama já escolheu o
+  // campo, e o componente só espalha o resultado no <select>.
+  register: UseFormRegisterReturn
 }
 
 // No error UI: the field is a native <select> over z.nativeEnum(SubscriptionPlan),

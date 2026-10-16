@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getReassignCandidatesUseCase } from '../use-cases/get-reassign-candidates.use-case'
+import { getReassignCandidatesUseCase } from '@app/core'
 
 export function useReassignCandidates(id: string, enabled: boolean) {
   return useQuery({

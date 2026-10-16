@@ -1,7 +1,7 @@
 'use client'
 
 import { Modal } from '@/components/ui/organisms/modal/modal'
-import type { IPrescriptionModel } from '../types/prescription-model.types'
+import type { IPrescriptionModel } from '@app/core'
 
 interface PrescriptionPreviewModalProps {
   prescription: IPrescriptionModel | null

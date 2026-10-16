@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { deleteConsultationPhotoUseCase } from '../use-cases/delete-consultation-photo.use-case'
+import { deleteConsultationPhotoUseCase } from '@app/core'
 
 export function useDeleteConsultationPhoto(appointmentId: string) {
   const queryClient = useQueryClient()

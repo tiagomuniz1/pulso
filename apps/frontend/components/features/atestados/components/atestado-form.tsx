@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/atoms/button/button'
 import { ModalFormActions } from '@/components/ui/molecules/modal-form-actions/modal-form-actions'
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { ProfessionalSignatureSelect } from '@/components/features/professionals/components/professional-signature-select'
-import type { ICreateAtestadoInput } from '../types/atestado-input.types'
+import type { ICreateAtestadoInput } from '@app/core'
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/
 

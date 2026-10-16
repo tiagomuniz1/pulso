@@ -1,11 +1,11 @@
 import { CouncilType } from '@app/shared'
-jest.mock('@/components/features/medications/services/medications.service')
+jest.mock('@app/core/src/features/medications/services/medications.service')
 jest.mock('@/components/features/prescription-templates/services/prescription-templates.service')
 jest.mock('@/components/features/professionals/hooks/use-professional.hook')
 
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { medicationsService } from '@/components/features/medications/services/medications.service'
+import { medicationsService } from '@app/core'
 import { prescriptionTemplatesService } from '@/components/features/prescription-templates/services/prescription-templates.service'
 import { useProfessional } from '@/components/features/professionals/hooks/use-professional.hook'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'

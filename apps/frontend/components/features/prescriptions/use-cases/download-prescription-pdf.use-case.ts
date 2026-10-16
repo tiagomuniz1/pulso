@@ -1,4 +1,4 @@
-import { prescriptionsService } from '../services/prescriptions.service'
+import { prescriptionsService } from '@app/core'
 import { downloadBlob } from '@/lib/download-blob'
 
 export async function downloadPrescriptionPdfUseCase(id: string, fileName?: string): Promise<void> {

@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react'
 import { MedicationSource } from '@app/shared'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { MedicationToggleDialog } from './medication-toggle-dialog'
-import type { IMedicationModel } from '../types/medication-model.types'
+import type { IMedicationModel } from '@app/core'
 
 const medication: IMedicationModel = {
   id: 'm1',

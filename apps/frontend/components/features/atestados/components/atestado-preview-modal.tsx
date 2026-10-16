@@ -3,7 +3,7 @@
 import { MedicalCertificateType } from '@app/shared'
 import { Modal } from '@/components/ui/organisms/modal/modal'
 import { formatDateToBR } from '@/lib/format-date'
-import type { IAtestadoModel } from '../types/atestado-model.types'
+import type { IAtestadoModel } from '@app/core'
 
 interface AtestadoPreviewModalProps {
   atestado: IAtestadoModel | null

@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getPatientUseCase } from '../use-cases/get-patient.use-case'
-
+import { getPatientUseCase } from '@app/core'
 export function usePatient(id: string) {
   return useQuery({
     queryKey: ['patients', id],

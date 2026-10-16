@@ -122,6 +122,48 @@ describe('Appointments — complete', () => {
     cy.get('[data-testid="appointment-detail-status"]').should('contain', 'Agendada')
   })
 
+  /**
+   * Regressão. A tela exigia `scheduled` e escondia as ações de uma consulta
+   * já **confirmada** — a recepção ligava, confirmava, e a partir dali
+   * ninguém fechava aquela consulta pelo site. O backend sempre aceitou as
+   * duas situações, e a regra agora é uma só: `isAppointmentOpen`, no
+   * `@app/shared`, lida pelo servidor e pelas duas telas.
+   */
+  it('ADMIN completes a CONFIRMED appointment', () => {
+    cy.intercept('GET', `${Cypress.env('API_URL')}/appointments/${APPT_UUID}`, {
+      statusCode: 200,
+      body: { ...mockPastScheduledAppointment, status: 'confirmed' },
+    }).as('getConfirmed')
+    cy.intercept('PATCH', `${Cypress.env('API_URL')}/appointments/${APPT_UUID}/complete`, {
+      statusCode: 200,
+      body: { ...mockPastScheduledAppointment, status: 'completed' },
+    }).as('completeAppointment')
+
+    visitClinic(`/appointments/${APPT_UUID}`, mockAdminUser)
+    cy.get('[data-testid="appointment-detail-status"]').should('contain', 'Confirmada')
+
+    cy.get('[data-testid="appointment-detail-complete-button"]').click()
+    cy.get('[data-testid="complete-dialog-confirm"]').click()
+
+    cy.wait('@completeAppointment')
+    cy.get('[data-testid="complete-appointment-dialog"]').should('not.exist')
+  })
+
+  // O outro lado da mesma regra: encerrada é encerrada, e oferecer o botão
+  // seria oferecer um caminho que termina em 422.
+  it('ADMIN does not see the complete button on a NO_SHOW appointment', () => {
+    cy.intercept('GET', `${Cypress.env('API_URL')}/appointments/${APPT_UUID}`, {
+      statusCode: 200,
+      body: { ...mockPastScheduledAppointment, status: 'no_show' },
+    })
+
+    visitClinic(`/appointments/${APPT_UUID}`, mockAdminUser)
+    cy.get('[data-testid="appointment-detail-status"]').should('contain', 'Faltou')
+
+    cy.get('[data-testid="appointment-detail-complete-button"]').should('not.exist')
+    cy.get('[data-testid="appointment-detail-cancel-button"]').should('not.exist')
+  })
+
   // Real-backend happy path (completes a real past appointment, rejects a
   // real future one with 422) lives in appointments-happy-path-real.cy.ts.
 })

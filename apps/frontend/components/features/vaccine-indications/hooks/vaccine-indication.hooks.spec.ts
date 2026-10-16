@@ -1,14 +1,14 @@
-jest.mock('../use-cases/list-vaccine-indications.use-case')
-jest.mock('../use-cases/create-vaccine-indication.use-case')
-jest.mock('../use-cases/delete-vaccine-indication.use-case')
+jest.mock('@app/core/src/features/vaccine-indications/use-cases/list-vaccine-indications.use-case')
+jest.mock('@app/core/src/features/vaccine-indications/use-cases/create-vaccine-indication.use-case')
+jest.mock('@app/core/src/features/vaccine-indications/use-cases/delete-vaccine-indication.use-case')
 jest.mock('../use-cases/download-vaccine-indication-pdf.use-case')
 
 import React from 'react'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { listVaccineIndicationsUseCase } from '../use-cases/list-vaccine-indications.use-case'
-import { createVaccineIndicationUseCase } from '../use-cases/create-vaccine-indication.use-case'
-import { deleteVaccineIndicationUseCase } from '../use-cases/delete-vaccine-indication.use-case'
+import { listVaccineIndicationsUseCase } from '@app/core'
+import { createVaccineIndicationUseCase } from '@app/core'
+import { deleteVaccineIndicationUseCase } from '@app/core'
 import { downloadVaccineIndicationPdfUseCase } from '../use-cases/download-vaccine-indication-pdf.use-case'
 import { useVaccineIndications } from './use-vaccine-indications.hook'
 import { useCreateVaccineIndication } from './use-create-vaccine-indication.hook'

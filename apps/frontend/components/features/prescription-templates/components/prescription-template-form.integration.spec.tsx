@@ -1,8 +1,8 @@
-jest.mock('@/components/features/medications/services/medications.service')
+jest.mock('@app/core/src/features/medications/services/medications.service')
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { medicationsService } from '@/components/features/medications/services/medications.service'
+import { medicationsService } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { PrescriptionTemplateForm } from './prescription-template-form'
 

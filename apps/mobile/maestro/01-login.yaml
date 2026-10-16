@@ -1,0 +1,46 @@
+appId: center.pulso.app
+name: Login e sessão
+env:
+  EMAIL: ${MAESTRO_EMAIL}
+  PASSWORD: ${MAESTRO_PASSWORD}
+  CLINIC: ${MAESTRO_CLINIC}
+---
+- launchApp:
+    clearState: true
+
+- assertVisible:
+    id: "login-slug"
+
+- tapOn:
+    id: "login-slug"
+- inputText: ${CLINIC}
+
+- tapOn:
+    id: "login-email"
+- inputText: ${EMAIL}
+
+- tapOn:
+    id: "login-password"
+- inputText: ${PASSWORD}
+
+- tapOn:
+    id: "login-submit"
+
+# A agenda é a tela inicial: é a pergunta que se faz ao desbloquear o celular.
+- assertVisible:
+    id: "agenda-screen"
+- assertVisible:
+    id: "toolbar-date-label"
+
+# A sessão sobrevive ao fechamento do app — está no Keychain, não em memória.
+- launchApp:
+    clearState: false
+- assertVisible:
+    id: "agenda-screen"
+
+# Sair é o avatar do cabeçalho: na web o menu tem "Meu perfil" e "Sair", e
+# aqui só o segundo existe porque a tela de perfil ainda não foi portada.
+- tapOn:
+    id: "header-user"
+- assertVisible:
+    id: "login-submit"

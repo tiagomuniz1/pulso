@@ -1,8 +1,8 @@
-jest.mock('../services/medical-records.service')
+jest.mock('@app/core/src/features/medical-records/services/medical-records.service')
 jest.mock('@/lib/download-blob')
 
 import { downloadBlob } from '@/lib/download-blob'
-import { medicalRecordsService } from '../services/medical-records.service'
+import { medicalRecordsService } from '@app/core'
 import { downloadMedicalRecordPdfUseCase } from './download-medical-record-pdf.use-case'
 
 const mockService = medicalRecordsService as jest.Mocked<typeof medicalRecordsService>

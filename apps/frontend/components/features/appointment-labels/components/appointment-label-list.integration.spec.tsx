@@ -1,12 +1,12 @@
 jest.mock('@/stores/auth.store')
-jest.mock('../services/appointment-labels.service')
+jest.mock('@app/core/src/features/appointment-labels/services/appointment-labels.service')
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AppointmentLabelColor, UserRole } from '@app/shared'
 import { useAuthStore } from '@/stores/auth.store'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
-import { appointmentLabelsService } from '../services/appointment-labels.service'
+import { appointmentLabelsService } from '@app/core'
 import { AppointmentLabelList } from './appointment-label-list'
 
 const mockService = appointmentLabelsService as jest.Mocked<typeof appointmentLabelsService>

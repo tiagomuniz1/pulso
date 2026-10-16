@@ -71,6 +71,13 @@ services:
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
       SMTP_FROM: noreply@pulso.center
+      # Repassada, não fixada: o padrão é o limitador **ligado**, como em
+      # produção. A suíte Cypress é quem a liga — cada spec `-real` faz login
+      # pelo `cy.request`, e os 129 specs estouram os 10/60s do login muito
+      # antes do fim (medido: 62 falhas, todas 429, nenhuma funcional).
+      #
+      #   THROTTLE_DISABLED=true docker compose up -d backend
+      THROTTLE_DISABLED: ${THROTTLE_DISABLED:-}
     depends_on:
       postgres:
         condition: service_healthy

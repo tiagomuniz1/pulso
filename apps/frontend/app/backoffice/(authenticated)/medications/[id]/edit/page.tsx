@@ -11,7 +11,7 @@ import { Typography } from '@/components/ui/atoms/typography/typography'
 import { MedicationForm } from '@/components/features/medications/components/medication-form'
 import { useMedication } from '@/components/features/medications/hooks/use-medication.hook'
 import { useUpdateMedication } from '@/components/features/medications/hooks/use-update-medication.hook'
-import type { IUpdateMedicationInput } from '@/components/features/medications/types/medication-input.types'
+import type { IUpdateMedicationInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export default function EditMedicationPage() {

@@ -12,8 +12,8 @@ import { PrescriptionForm } from './prescription-form'
 import { PrescriptionListSkeleton } from './prescription-list-skeleton'
 import { PrescriptionDeleteDialog } from './prescription-delete-dialog'
 import { PrescriptionPreviewModal } from './prescription-preview-modal'
-import type { IPrescriptionModel } from '../types/prescription-model.types'
-import type { ICreatePrescriptionInput } from '../types/prescription-input.types'
+import type { IPrescriptionModel } from '@app/core'
+import type { ICreatePrescriptionInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export interface PrescriptionSectionProps {

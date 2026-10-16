@@ -1,6 +1,6 @@
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
 jest.mock('@/lib/slug-context', () => ({ useSlug: jest.fn(() => 'clinic-slug'), useBasePath: () => '/clinic-slug' }))
-jest.mock('../services/canonical-fields.service')
+jest.mock('@app/core/src/features/medical-record-templates/services/canonical-fields.service')
 jest.mock('../../specialties/services/specialties.service')
 
 interface CapturedList { onReorder: (from: number, to: number) => void; idsLength: number }
@@ -19,7 +19,7 @@ jest.mock('@/components/ui/molecules/sortable-list/sortable-list', () => ({
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useRouter } from 'next/navigation'
-import { canonicalFieldsService } from '../services/canonical-fields.service'
+import { canonicalFieldsService } from '@app/core'
 import { specialtiesService } from '../../specialties/services/specialties.service'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { TemplateForm } from './template-form'

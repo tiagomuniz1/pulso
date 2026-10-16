@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { AppointmentStatus, PatientGender } from '@app/shared'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { AppointmentHeaderCard } from './appointment-header-card'
-import type { IAppointmentDetailModel } from '../types/appointment-model.types'
+import type { IAppointmentDetailModel } from '@app/core'
 
 function makeAppointment(overrides: Partial<IAppointmentDetailModel> = {}): IAppointmentDetailModel {
   return {

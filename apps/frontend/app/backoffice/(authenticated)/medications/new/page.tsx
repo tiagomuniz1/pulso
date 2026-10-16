@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/atoms/button/button'
 import { Typography } from '@/components/ui/atoms/typography/typography'
 import { MedicationForm } from '@/components/features/medications/components/medication-form'
 import { useCreateMedication } from '@/components/features/medications/hooks/use-create-medication.hook'
-import type { ICreateMedicationInput } from '@/components/features/medications/types/medication-input.types'
+import type { ICreateMedicationInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export default function NewMedicationPage() {

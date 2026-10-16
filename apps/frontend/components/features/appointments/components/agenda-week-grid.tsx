@@ -11,7 +11,7 @@ import { AgendaSkeleton } from './agenda-skeleton'
 import { AppointmentSlotCell } from './appointment-slot-cell'
 import { BookAppointmentDialog } from './book-appointment-dialog'
 import { AppointmentDetailsDialog } from './appointment-details-dialog'
-import type { IAgendaSlot } from '../types/appointment-model.types'
+import type { IAgendaSlot } from '@app/core'
 
 const WEEK_DAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 

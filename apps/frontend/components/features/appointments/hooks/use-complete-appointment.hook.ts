@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { completeAppointmentUseCase } from '../use-cases/complete-appointment.use-case'
-import type { IAppointmentModel } from '../types/appointment-model.types'
+import { completeAppointmentUseCase } from '@app/core'
+import type { IAppointmentModel } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export function useCompleteAppointment() {

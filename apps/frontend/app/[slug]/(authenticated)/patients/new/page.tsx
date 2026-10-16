@@ -1,13 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import type { ICreatePatientInput } from '@app/core'
 import Link from 'next/link'
 import { useBasePath } from '@/lib/slug-context'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Typography } from '@/components/ui/atoms/typography/typography'
 import { PatientForm } from '@/components/features/patients/components/patient-form'
 import { useCreatePatient } from '@/components/features/patients/hooks/use-create-patient.hook'
-import type { ICreatePatientInput } from '@/components/features/patients/types/patient-input.types'
 import type { IApiError } from '@/types/api.types'
 
 export default function NewPatientPage() {

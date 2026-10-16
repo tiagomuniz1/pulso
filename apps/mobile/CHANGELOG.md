@@ -1,5 +1,54 @@
 # Changelog — Mobile
 
+## [0.2.0] - 2026-10-13
+
+O dia de atendimento: agenda, consulta e prontuário. Com isto o app deixa de
+provar o caminho e passa a servir ao profissional entre uma paciente e outra —
+ainda sem câmera e ainda fora das lojas.
+
+### Added
+- **Agenda do dia**, com navegação por dia e atalho de volta para hoje. Lista
+  as consultas, não os horários livres: quem está de pé entre pacientes quer a
+  fila, e vinte linhas de "Livre" seriam ruído numa tela de seis polegadas. O
+  recorte por profissional é do servidor, como na web
+- **Faixa colorida do rótulo** em cada linha, com a mesma paleta da web — os
+  dezesseis hexadecimais saíram do `globals.css` para o `@app/shared`, e um
+  spec do frontend compara os dois para a divergência falhar em teste. Um
+  "Mostarda" diferente de cada lado derrubaria justamente o que o rótulo faz,
+  que é ser reconhecido de relance
+- **Consulta cancelada continua na lista**, esmaecida e riscada. Sumir sem
+  rastro faz procurar o horário que se lembra de ter visto
+- **Detalhe da consulta**: paciente (com idade calculada, não data de
+  nascimento), dados do atendimento, selo de primeira vez, concluir e cancelar
+- **Prontuário**: escolher o modelo, preencher os campos do schema, corrigir
+  depois. Campos de escolha como pastilhas à vista, não como picker nativo —
+  as listas são curtas e marcar vira um toque só
+- Fluxos **Maestro** para os três caminhos (`maestro/`)
+
+### Changed
+- A camada de dados de consultas, prontuários e modelos passou a vir do
+  **`@app/core`**, compartilhada com a web. O app não reimplementa service,
+  use-case nem mapper
+- `PATIENT_GENDER_LABELS` saiu de dois componentes da web para o `@app/shared`
+
+### Notes
+- **Concluir não aparece em consulta futura.** O backend recusa com `422`, e
+  oferecer o botão seria oferecer um caminho que só termina em erro
+- **Cancelar atinge só esta ocorrência**, nunca a série. Do celular é fácil
+  demais fazer sem querer, e desfazer exige reagendar uma por uma
+- **Campo de data é texto com o formato no placeholder.** O seletor nativo é
+  fase 3; uma máscara fingindo um date picker seria pior
+- **Os fluxos Maestro nunca foram executados** — exigem simulador ou aparelho
+  com o app instalado. São revisáveis, não verdes. Quem prova o comportamento
+  hoje é a suíte de unidade e integração
+
+### Testing
+- 171 testes, 100% de linha, ramo e função, com o limiar travado no jest
+- Seis defeitos injetados e cada um pego pelo teste pretendido: data da agenda
+  em UTC, agenda sem ordenação, campo em branco gravando string vazia,
+  cancelamento atingindo a série, seletor de modelo reaparecendo em prontuário
+  salvo, e o bootstrap esquecendo de registrar o cliente HTTP
+
 ## [0.1.0] - 2026-10-13
 
 Fundação do app. Ainda não vai para loja nenhuma: o que esta versão entrega é a

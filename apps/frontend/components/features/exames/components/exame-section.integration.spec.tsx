@@ -1,4 +1,4 @@
-jest.mock('../services/exams.service')
+jest.mock('@app/core/src/features/exames/services/exams.service')
 jest.mock('../use-cases/download-exam-request-pdf.use-case')
 jest.mock('../use-cases/download-exam-result-file.use-case')
 jest.mock('@/components/features/professionals/hooks/use-professional.hook')
@@ -6,7 +6,7 @@ jest.mock('@/components/features/professionals/hooks/use-professional.hook')
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ExamRequestStatus, UserRole } from '@app/shared'
-import { examsService } from '../services/exams.service'
+import { examsService } from '@app/core'
 import { downloadExamRequestPdfUseCase } from '../use-cases/download-exam-request-pdf.use-case'
 import { downloadExamResultFileUseCase } from '../use-cases/download-exam-result-file.use-case'
 import { useProfessional } from '@/components/features/professionals/hooks/use-professional.hook'

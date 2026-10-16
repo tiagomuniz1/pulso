@@ -1,9 +1,9 @@
-jest.mock('../use-cases/create-atestado.use-case')
+jest.mock('@app/core/src/features/atestados/use-cases/create-atestado.use-case')
 
 import React from 'react'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { createAtestadoUseCase } from '../use-cases/create-atestado.use-case'
+import { createAtestadoUseCase } from '@app/core'
 import { useCreateAtestado } from './use-create-atestado.hook'
 
 function makeWrapper(client: QueryClient) {

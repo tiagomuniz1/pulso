@@ -1,9 +1,9 @@
-jest.mock('../use-cases/delete-atestado.use-case')
+jest.mock('@app/core/src/features/atestados/use-cases/delete-atestado.use-case')
 
 import React from 'react'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { deleteAtestadoUseCase } from '../use-cases/delete-atestado.use-case'
+import { deleteAtestadoUseCase } from '@app/core'
 import { useDeleteAtestado } from './use-delete-atestado.hook'
 
 function makeWrapper(client: QueryClient) {

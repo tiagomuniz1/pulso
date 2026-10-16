@@ -1,11 +1,11 @@
-jest.mock('@/components/features/appointments/services/appointments.service')
-jest.mock('@/components/features/professionals/services/professionals.service')
-jest.mock('@/components/features/medical-records/services/medical-records.service')
-jest.mock('@/components/features/medical-record-templates/services/medical-record-templates.service')
-jest.mock('@/components/features/prescriptions/services/prescriptions.service')
-jest.mock('@/components/features/atestados/services/atestados.service')
-jest.mock('@/components/features/exames/services/exams.service')
-jest.mock('@/components/features/consultation-photos/services/consultation-photos.service')
+jest.mock('@app/core/src/features/appointments/services/appointments.service')
+jest.mock('@app/core/src/features/professionals/services/professionals.service')
+jest.mock('@app/core/src/features/medical-records/services/medical-records.service')
+jest.mock('@app/core/src/features/medical-record-templates/services/medical-record-templates.service')
+jest.mock('@app/core/src/features/prescriptions/services/prescriptions.service')
+jest.mock('@app/core/src/features/atestados/services/atestados.service')
+jest.mock('@app/core/src/features/exames/services/exams.service')
+jest.mock('@app/core/src/features/consultation-photos/services/consultation-photos.service')
 jest.mock('@/stores/auth.store')
 jest.mock('@/lib/slug-context', () => ({ useSlug: jest.fn(() => 'clinic-slug'), useBasePath: () => '/clinic-slug' }))
 jest.mock('next/navigation', () => ({
@@ -17,14 +17,14 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AppointmentStatus, PatientGender, UserRole, CouncilType } from '@app/shared'
 import { useRouter } from 'next/navigation'
-import { appointmentsService } from '@/components/features/appointments/services/appointments.service'
-import { professionalsService } from '@/components/features/professionals/services/professionals.service'
-import { medicalRecordsService } from '@/components/features/medical-records/services/medical-records.service'
-import { medicalRecordTemplatesService } from '@/components/features/medical-record-templates/services/medical-record-templates.service'
-import { prescriptionsService } from '@/components/features/prescriptions/services/prescriptions.service'
-import { atestadosService } from '@/components/features/atestados/services/atestados.service'
-import { examsService } from '@/components/features/exames/services/exams.service'
-import { consultationPhotosService } from '@/components/features/consultation-photos/services/consultation-photos.service'
+import { appointmentsService } from '@app/core'
+import { professionalsService } from '@app/core'
+import { medicalRecordsService } from '@app/core'
+import { medicalRecordTemplatesService } from '@app/core'
+import { prescriptionsService } from '@app/core'
+import { atestadosService } from '@app/core'
+import { examsService } from '@app/core'
+import { consultationPhotosService } from '@app/core'
 import { useAuthStore } from '@/stores/auth.store'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import AppointmentDetailPage from './page'
@@ -191,6 +191,36 @@ describe('AppointmentDetailPage (integration)', () => {
     })
     expect(screen.getByTestId('appointment-detail-complete-button')).toBeInTheDocument()
   })
+
+  /**
+   * Regressão: a tela exigia `SCHEDULED` e escondia as ações de uma consulta
+   * que a paciente já tinha confirmado — a recepção ligava, confirmava, e
+   * ninguém mais conseguia concluí-la pela web. O backend sempre aceitou as
+   * duas situações.
+   */
+  it('ADMIN sees cancel and complete buttons for CONFIRMED appointment', async () => {
+    mockAppointmentsService.getById.mockResolvedValue(
+      makeAppointmentDto({ status: AppointmentStatus.CONFIRMED }),
+    )
+    renderWithProviders(<AppointmentDetailPage />)
+    await waitFor(() => {
+      expect(screen.getByTestId('appointment-detail-cancel-button')).toBeInTheDocument()
+    })
+    expect(screen.getByTestId('appointment-detail-complete-button')).toBeInTheDocument()
+  })
+
+  it.each([AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW])(
+    'ADMIN does not see action buttons for %s appointment',
+    async (status) => {
+      mockAppointmentsService.getById.mockResolvedValue(makeAppointmentDto({ status }))
+      renderWithProviders(<AppointmentDetailPage />)
+      await waitFor(() => {
+        expect(screen.getByTestId('appointment-detail-page')).toBeInTheDocument()
+      })
+      expect(screen.queryByTestId('appointment-detail-cancel-button')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('appointment-detail-complete-button')).not.toBeInTheDocument()
+    },
+  )
 
   it('ADMIN does not see action buttons for COMPLETED appointment', async () => {
     mockAppointmentsService.getById.mockResolvedValue(

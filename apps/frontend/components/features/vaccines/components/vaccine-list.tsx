@@ -11,7 +11,7 @@ import { MobileListCard } from '@/components/ui/molecules/mobile-list-card/mobil
 import { useVaccines } from '../hooks/use-vaccines.hook'
 import { useUpdateVaccine } from '../hooks/use-update-vaccine.hook'
 import { useDeleteVaccine } from '../hooks/use-delete-vaccine.hook'
-import type { IVaccineModel } from '../types/vaccine-model.types'
+import type { IVaccineModel } from '@app/core'
 
 const PAGE_SIZE = 20
 

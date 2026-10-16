@@ -1,9 +1,9 @@
-jest.mock('../use-cases/delete-consultation-photo.use-case')
+jest.mock('@app/core/src/features/consultation-photos/use-cases/delete-consultation-photo.use-case')
 
 import React from 'react'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { deleteConsultationPhotoUseCase } from '../use-cases/delete-consultation-photo.use-case'
+import { deleteConsultationPhotoUseCase } from '@app/core'
 import { useDeleteConsultationPhoto } from './use-delete-consultation-photo.hook'
 
 function makeWrapper(client: QueryClient) {

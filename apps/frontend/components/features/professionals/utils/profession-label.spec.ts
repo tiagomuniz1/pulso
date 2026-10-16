@@ -1,6 +1,6 @@
 import { CouncilType } from '@app/shared'
 import { primaryRegistration, primaryProfessionLabel, primaryOccupationLabel, primaryRegistrationLabel } from './profession-label'
-import type { IProfessionalRegistrationModel } from '../types/professional-model.types'
+import type { IProfessionalRegistrationModel } from '@app/core'
 
 function buildRegistration(overrides: Partial<IProfessionalRegistrationModel> = {}): IProfessionalRegistrationModel {
   return {

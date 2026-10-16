@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MedicationSource } from '@app/shared'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { MedicationForm } from './medication-form'
-import type { IMedicationModel } from '../types/medication-model.types'
+import type { IMedicationModel } from '@app/core'
 
 const editDefaults: IMedicationModel = {
   id: 'm1',

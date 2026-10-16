@@ -10,7 +10,7 @@ import { useThemes } from '@/components/features/themes/hooks/use-themes.hook'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { ClinicForm } from './clinic-form'
 import type { IClinicModel } from '../types/clinic.types'
-import type { IThemeModel } from '@/components/features/themes/types/theme-model.types'
+import type { IThemeModel } from '@app/core'
 
 const mockPush = jest.fn()
 const mockUseThemes = useThemes as jest.MockedFunction<typeof useThemes>

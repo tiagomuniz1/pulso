@@ -3,9 +3,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useBasePath } from '@/lib/slug-context'
-import { createMedicationUseCase } from '../use-cases/create-medication.use-case'
-import type { IMedicationModel } from '../types/medication-model.types'
-import type { ICreateMedicationInput } from '../types/medication-input.types'
+import { createMedicationUseCase } from '@app/core'
+import type { IMedicationModel } from '@app/core'
+import type { ICreateMedicationInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export function useCreateMedication() {
