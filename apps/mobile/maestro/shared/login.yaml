@@ -11,7 +11,14 @@ appId: center.pulso.app
 - tapOn:
     id: "login-password"
 - inputText: ${PASSWORD}
+# Sem isto o teclado cobre o botão e o toque cai nele — o `tapOn` reporta
+# sucesso, o login nunca acontece, e a falha aparece três passos depois.
+- hideKeyboard
 - tapOn:
     id: "login-submit"
-- assertVisible:
-    id: "agenda-screen"
+# Espera estendida: o primeiro login faz a ida ao servidor, lê o Keychain e
+# ainda busca o tema da clínica antes de a agenda montar.
+- extendedWaitUntil:
+    visible:
+      id: "agenda-screen"
+    timeout: 20000

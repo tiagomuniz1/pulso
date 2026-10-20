@@ -64,10 +64,19 @@ function isExposed(prefix: string): boolean {
   const trimmed = prefix.replace(/-$/, '')
   if (SOURCE.includes(`testID="${trimmed}"`)) return true
   // `agenda-slot-booked-.*` chega aqui já como o próprio pai.
-  if (SOURCE.includes(`testID={\`${trimmed}-\${`)) return true
+  if (interpolates(trimmed)) return true
 
   const parent = trimmed.slice(0, trimmed.lastIndexOf('-'))
-  return parent.length > 0 && SOURCE.includes(`testID={\`${parent}-\${`)
+  return parent.length > 0 && interpolates(parent)
+}
+
+/**
+ * O id é montado, e não escrito: `testID={\`x-${id}\`}` no JSX, ou numa
+ * variável antes dele — é como o campo dinâmico do prontuário nomeia cada
+ * linha do schema. Só o prefixo literal pode ser verificado.
+ */
+function interpolates(prefix: string): boolean {
+  return SOURCE.includes(`testID={\`${prefix}-\${`) || SOURCE.includes(`= \`${prefix}-\${`)
 }
 
 function referencedIds(): { file: string; id: string }[] {

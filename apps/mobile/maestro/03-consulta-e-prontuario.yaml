@@ -7,7 +7,15 @@ env:
 ---
 - runFlow: shared/login.yaml
 
-# A primeira consulta do dia. O fluxo pressupõe a clínica semeada com agenda.
+# Entra como o profissional que o `seed-fixture.sh` criou: a agenda dele é a
+# própria, sem seletor. Depender do banco de desenvolvimento seria depender
+# de dados que as suítes `-real` do Cypress reescrevem a cada rodada.
+#
+# Amanhã, porque o backend recusa agendar no passado e o fixture precisa
+# valer a qualquer hora do dia.
+- tapOn:
+    id: "toolbar-next"
+
 # A agenda é grade de horários: a linha com consulta é `agenda-slot-booked-`,
 # e a livre, `agenda-slot-free-`, que abre o agendamento.
 - tapOn:
@@ -29,6 +37,11 @@ env:
 - assertVisible:
     id: "detail-time"
 
+# Fecha de novo: aberto, o painel empurra as abas e o conteúdo para fora da
+# tela, e tudo depois disto vira rolagem.
+- tapOn:
+    id: "appointment-details-toggle"
+
 # O Resumo é a aba inicial, com os dados da paciente.
 - assertVisible:
     id: "resumo-tab"
@@ -49,16 +62,38 @@ env:
 - tapOn:
     id: "template-choice-.*"
 
-- assertVisible:
-    id: "record-notes"
+# Espera o formulário montar: escolher o modelo monta os campos a partir do
+# schema, e rolar atrás de um elemento que ainda não existe falha por tempo.
+#
+# `field-.*` e não a chave escrita à mão: o backend deriva a chave do rótulo
+# ("Queixa principal" vira `queixa_principal_leqm`), então o id exato só se
+# conhece depois de criar o modelo.
+- extendedWaitUntil:
+    visible:
+      id: "field-.*"
+    timeout: 20000
+
+# O formulário é mais alto que a tela: observações e o botão de salvar ficam
+# abaixo da dobra, e `assertVisible` só enxerga o que está na tela.
+- scrollUntilVisible:
+    element:
+      id: "record-notes"
+    direction: DOWN
 - tapOn:
     id: "record-notes"
 - inputText: "Observação registrada pelo fluxo E2E."
+- hideKeyboard
 
+- scrollUntilVisible:
+    element:
+      id: "save-medical-record"
+    direction: DOWN
 - tapOn:
     id: "save-medical-record"
-- assertVisible:
-    id: "save-success"
+- extendedWaitUntil:
+    visible:
+      id: "save-success"
+    timeout: 20000
 
 # Salvo, o seletor some: o schema ficou congelado no registro, e trocar de
 # modelo depois gravaria valor sob chave inexistente.
@@ -66,5 +101,7 @@ env:
     id: "template-picker"
 
 # E o PDF passa a estar disponível — baixar é ler, não emitir.
-- assertVisible:
-    id: "download-medical-record"
+- scrollUntilVisible:
+    element:
+      id: "download-medical-record"
+    direction: DOWN

@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Feather from '@expo/vector-icons/Feather'
 import { logout } from '../auth/auth.service'
 import { useSessionStore } from '../auth/session.store'
@@ -14,6 +15,10 @@ import { useNavigationStore } from './navigation.store'
  * O avatar sai da conta ao ser tocado. Na web ele abre um menu com "Meu
  * perfil" e "Sair"; aqui só o segundo existe, porque a tela de perfil ainda
  * não foi portada — um menu de um item só seria toque a mais pelo mesmo fim.
+ *
+ * O recuo de topo é a área segura, e não um número: sem ele a barra encosta
+ * no relógio do sistema e o avatar fica **metade sob a barra de status** —
+ * no Android o toque cai nela e o botão de sair simplesmente não responde.
  */
 export function AppHeader() {
   const theme = useTheme()
@@ -22,9 +27,13 @@ export function AppHeader() {
   const openDrawer = useNavigationStore((state) => state.openDrawer)
   const mode = useThemeStore((state) => state.mode)
   const toggleMode = useThemeStore((state) => state.toggleMode)
+  const insets = useSafeAreaInsets()
 
   return (
-    <View style={[styles.header, { borderColor: theme.line }]} testID="app-header">
+    <View
+      style={[styles.header, { borderColor: theme.line, paddingTop: insets.top }]}
+      testID="app-header"
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Abrir menu"
@@ -75,7 +84,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    height: 56,
+    // Altura mínima, não fixa: o recuo da área segura entra por cima dela.
+    minHeight: 56,
+    paddingVertical: 12,
     borderBottomWidth: 1,
   },
   right: { flexDirection: 'row', alignItems: 'center', gap: 12 },
