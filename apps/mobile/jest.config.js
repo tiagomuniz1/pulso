@@ -18,4 +18,17 @@ module.exports = {
   coverageThreshold: {
     global: { branches: 100, functions: 100, lines: 100, statements: 100 },
   },
+  /**
+   * Sem isto o comando não termina.
+   *
+   * Qualquer spec que **renderize** deixa um handle aberto que o próprio
+   * `--detectOpenHandles` não consegue atribuir — vem do runtime que o
+   * `jest-expo` monta, não do código do app: um spec puro, como o do tema,
+   * sai sozinho. Na prática `yarn workspace @app/mobile test` ficava
+   * pendurado depois de imprimir o resultado, e numa rodada que falha ficava
+   * pendurado para sempre, o que esconde o próprio erro que se foi procurar.
+   *
+   * Os testes já terminaram quando isto age, e a cobertura já foi escrita.
+   */
+  forceExit: true,
 }

@@ -15,7 +15,12 @@ import { httpClient } from './api-client'
  * `Bearer` e a renovação de voo único — baixar com o token vencido é comum,
  * porque o documento se baixa no fim do atendimento.
  */
-export async function downloadAndShareDocument(path: string, fileName: string): Promise<void> {
+export async function downloadAndShareDocument(
+  path: string,
+  fileName: string,
+  // O anexo de exame pode ser imagem; o resto do app só emite PDF.
+  mimeType: string = 'application/pdf',
+): Promise<void> {
   const bytes = (await httpClient.get(path, { responseType: 'arraybuffer' })) as unknown as ArrayBuffer
 
   const file = new File(Paths.cache, fileName)
@@ -30,8 +35,10 @@ export async function downloadAndShareDocument(path: string, fileName: string): 
   }
 
   await Sharing.shareAsync(file.uri, {
-    mimeType: 'application/pdf',
-    UTI: 'com.adobe.pdf',
+    mimeType,
+    // O UTI é o equivalente do iOS, e só o PDF tem um que vale a pena fixar;
+    // para imagem o sistema resolve pelo próprio tipo.
+    UTI: mimeType === 'application/pdf' ? 'com.adobe.pdf' : undefined,
     dialogTitle: fileName,
   })
 }

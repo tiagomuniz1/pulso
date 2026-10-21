@@ -13,6 +13,9 @@ const PRODUCT_LINKS: readonly IFooterLink[] = [
 const SUPPORT_LINKS: readonly IFooterLink[] = [
   { href: '#perguntas', label: 'Perguntas frequentes' },
   { href: 'mailto:contato@pulso.center', label: 'Contato' },
+  // As lojas exigem uma URL pública de política de privacidade, e a
+  // alcançam pelo rodapé — não só pelo link colado no formulário delas.
+  { href: '/privacidade', label: 'Política de Privacidade' },
 ]
 
 function FooterColumn({ title, links }: { title: string; links: readonly IFooterLink[] }) {

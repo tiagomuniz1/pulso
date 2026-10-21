@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { ErrorState, LoadingState } from '../../../components/ui/screen'
 import { useTheme } from '../../../theme/theme-context'
+import { ExamResults } from '../../exames/components/exam-results'
 import {
   createErrorMessage,
   DOCUMENT_KINDS,
@@ -117,6 +118,16 @@ export function DocumentSection({
             </Text>
           </Text>
           <Text style={[styles.itemSummary, { color: theme.textMute }]}>{document.summary}</Text>
+
+          {/* Só o pedido de exames tem caminho de volta — ver `IDocumentRow`. */}
+          {kind === 'exame' ? (
+            <ExamResults
+              examRequestId={document.id}
+              appointmentId={appointmentId}
+              results={document.results}
+              canIssue={canIssue}
+            />
+          ) : null}
 
           <View style={styles.actions}>
             <Pressable

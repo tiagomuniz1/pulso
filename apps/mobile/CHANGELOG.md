@@ -1,5 +1,84 @@
 # Changelog — Mobile
 
+## [0.3.0] - 2026-10-21
+
+Câmera, arquivos e a porta das lojas. Com isto os dois motivos declarados do
+app estão atendidos: usar a câmera no atendimento, e estar publicável.
+
+### Added
+- **Foto pela câmera.** Na web o botão abre um seletor de arquivo; aqui abre a
+  câmera, com o pedido de permissão no momento do uso — o sistema mostra o
+  motivo junto do pedido, que é o que faz a pessoa aceitar. Desistir e ter a
+  permissão negada são coisas diferentes, e a tela as separa: a primeira não
+  diz nada, a segunda explica onde liberar
+- **Receita, atestado, pedido de exame e indicação de vacina**: emitir, ler,
+  baixar e excluir. O PDF já era gerado pelo backend — o que mudou é a
+  entrega, de `createObjectURL` para `expo-file-system` mais `expo-sharing`
+- **Resultado de exame**: anexar arquivo do aparelho, baixar e remover. Tipo
+  e tamanho são conferidos **antes** do envio, como na web: o backend
+  recusaria depois, e 10 MB por rede de celular é caro para descobrir isso no
+  fim. O anexo é baixado com o tipo que tem, não sempre como PDF — entregar
+  uma foto anunciando `application/pdf` faz o aparelho oferecer o aplicativo
+  errado para abri-la
+- **Caderneta de vacinação e indicação de vacina**, que seguem eixos
+  diferentes de permissão e por isso são duas seções, não uma
+- **Agendar, bloquear horário e trocar profissional** pela agenda
+- **Rótulo da consulta**, marcado no cartão do topo, com amostra de cor
+- **Histórico de prontuários** que expande e busca por conteúdo
+- **PDF do prontuário**, que é leitura e sai sem bloco de assinatura
+- **Política de privacidade** publicada em `pulso.center/privacidade`, com a
+  seção de exclusão de dados que a Apple pede
+- **Tela de abertura com fundo nos dois temas.** Antes o app abria num branco
+  fixo e só então pintava a interface, que no modo escuro é azul-marinho — o
+  pulo aparecia em todo lançamento
+- **`eas.json`** com os três perfis de build, e
+  `docs/MOBILE_STORE_RUNBOOK.md` com o que depende de conta e não de código
+- **As permissões, os textos de uso e a tela de abertura têm teste**
+  (`src/tests/app-config.spec.ts`). O manifesto gerado é `.gitignore`: se um
+  bloco sumir do `app.config.ts`, só o teste avisa — e o custo de descobrir na
+  submissão é um ciclo de revisão
+- **Os scripts `android` e `ios` também têm teste.** `expo prebuild` e
+  `expo install --fix` os reescrevem para `expo run:*` sem avisar, e isso
+  troca "servir pelo Metro para o Expo Go" por "compilar nativamente", que
+  exige Xcode ou o SDK do Android
+
+### Changed
+- **Permissão de papel na tela de detalhe.** O app mostrava as oito abas e os
+  botões de cancelar e concluir a **qualquer** papel; uma recepcionista via
+  Prontuário, Receitas e Fotos e colhia `403`. Agora a fileira de abas só
+  monta o que a pessoa alcança
+- **O app pede três permissões no Android** — internet, câmera e leitura de
+  imagens. Eram nove: o seletor de imagem do Expo pede gravação de áudio (para
+  vídeo) e as de armazenamento legado por padrão, e nada no app faz isso. Num
+  app de saúde cada permissão vira uma linha no formulário de Segurança dos
+  Dados do Google; declarar gravação de áudio que não existe é, na melhor
+  hipótese, risco de reprovação
+- **Os textos de permissão do iOS passaram a existir.** Sem eles a Apple
+  rejeita — e, pior, o app **encerra** no instante em que a câmera abre
+
+### Fixed
+- **O cabeçalho ficava sob a barra de status no Android**, e o avatar de sair
+  não recebia toque. Achado rodando os fluxos Maestro num emulador, não em
+  teste de unidade
+- **Concluir e cancelar voltaram a funcionar em consulta confirmada.** O
+  backend sempre aceitou os dois estados; a web exigia "agendada" e escondia
+  as ações. A regra virou uma função só, no `@app/shared`, lida pelos dois
+  use-cases do backend, pela web e pelo app
+
+### Tooling
+- `yarn workspace @app/mobile test` **terminava**. Qualquer spec que renderiza
+  deixa um handle que nem `--detectOpenHandles` atribui — vem do runtime do
+  `jest-expo`, não do app. O comando ficava pendurado depois de imprimir o
+  resultado, e numa rodada que falha ficava pendurado para sempre, escondendo
+  justamente o erro que se foi procurar
+- `yarn workspace @app/mobile doctor` chamava um binário que não existe
+
+### Notes
+- Ainda **não submetido**. O que falta exige conta de desenvolvedor, cartão e
+  aceite de contrato — está listado em `docs/MOBILE_STORE_RUNBOOK.md`
+- **A assinatura de release não mora no repositório** e não deve morar: a EAS
+  gera e guarda o keystore no primeiro build de produção
+
 ## [0.2.0] - 2026-10-13
 
 O dia de atendimento: agenda, consulta e prontuário. Com isto o app deixa de

@@ -1,5 +1,6 @@
 import { apiClient } from '../../../api/api-client.registry'
 import type { CreateExamRequestDto, ExamRequestResponseDto } from '@app/shared'
+import type { UploadFile } from '../../../types/upload-file.types'
 
 export const examsService = {
   getByAppointment: (appointmentId: string) =>
@@ -17,9 +18,9 @@ export const examsService = {
   downloadPdf: (id: string) =>
     apiClient.getBlob(`/exam-requests/${id}/pdf`),
 
-  addResult: (examRequestId: string, files: File[]) => {
+  addResult: (examRequestId: string, files: UploadFile[]) => {
     const formData = new FormData()
-    files.forEach((file) => formData.append('files', file))
+    files.forEach((file) => formData.append('files', file as Blob))
     return apiClient.post<ExamRequestResponseDto>(`/exam-requests/${examRequestId}/results`, formData)
   },
 

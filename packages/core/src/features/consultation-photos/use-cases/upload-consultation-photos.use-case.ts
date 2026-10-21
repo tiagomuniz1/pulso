@@ -1,4 +1,5 @@
-import { consultationPhotosService, type UploadFile } from '../services/consultation-photos.service'
+import { consultationPhotosService } from '../services/consultation-photos.service'
+import type { UploadFile } from '../../../types/upload-file.types'
 import { toConsultationPhotoModel } from '../mappers/to-consultation-photo-model.mapper'
 import type { IConsultationPhotoModel } from '../types/consultation-photo-model.types'
 

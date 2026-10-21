@@ -10,6 +10,7 @@ import {
   listExamRequestsUseCase,
   listPrescriptionsUseCase,
   type IApiError,
+  type IExamResultModel,
 } from '@app/core'
 import { downloadAndShareDocument } from '../../../lib/document-download'
 
@@ -75,8 +76,13 @@ export const DOCUMENT_KINDS: Record<DocumentKind, DocumentKindConfig> = {
     subtitle: 'Exames solicitados nesta consulta.',
     empty: 'Nenhum exame solicitado.',
     summary: (document: never) => {
-      const items = (document as { items: unknown[] }).items
-      return `${items.length} ${items.length === 1 ? 'exame' : 'exames'}`
+      const { items, results } = document as { items: unknown[]; results: unknown[] }
+      const exams = `${items.length} ${items.length === 1 ? 'exame' : 'exames'}`
+      const attached =
+        results.length > 0
+          ? `${results.length} ${results.length === 1 ? 'resultado anexado' : 'resultados anexados'}`
+          : 'nenhum resultado anexado'
+      return `${exams} · ${attached}`
     },
     list: listExamRequestsUseCase,
     remove: deleteExamRequestUseCase,
@@ -91,6 +97,14 @@ export interface IDocumentRow {
   id: string
   issuedAt: Date
   summary: string
+  /**
+   * Os anexos, só para o pedido de exames.
+   *
+   * Receita e atestado são de mão única — saem assinados e acabou. O pedido
+   * tem caminho de volta: o laudo que o laboratório devolve, ou a foto do
+   * papel que a paciente traz.
+   */
+  results: IExamResultModel[]
 }
 
 export function useDocuments(kind: DocumentKind, appointmentId: string) {
@@ -104,6 +118,9 @@ export function useDocuments(kind: DocumentKind, appointmentId: string) {
         id: (document as { id: string }).id,
         issuedAt: (document as { issuedAt: Date }).issuedAt,
         summary: config.summary(document as never),
+        // Só o pedido de exames traz anexo; nos outros a lista é vazia e a
+        // seção nem desenha o painel.
+        results: (document as { results?: IExamResultModel[] }).results ?? [],
       }))
     },
   })

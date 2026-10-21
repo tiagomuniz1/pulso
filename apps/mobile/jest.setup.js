@@ -43,3 +43,13 @@ jest.mock('expo-image-picker', () => ({
   launchCameraAsync: jest.fn(async () => ({ canceled: true, assets: null })),
   launchImageLibraryAsync: jest.fn(async () => ({ canceled: true, assets: null })),
 }))
+
+/**
+ * `expo-document-picker` é módulo nativo e segue o mesmo caminho do
+ * `expo-image-picker`: sem mock o import quebra a suíte inteira que toca na
+ * seção de exames. Cada spec que precisa de um resultado específico
+ * sobrescreve o retorno.
+ */
+jest.mock('expo-document-picker', () => ({
+  getDocumentAsync: jest.fn(async () => ({ canceled: true, assets: null })),
+}))

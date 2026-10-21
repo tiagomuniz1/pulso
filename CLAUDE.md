@@ -100,7 +100,7 @@ yarn workspace @app/frontend cypress:run   # headless (CI/CD)
 ## Versionamento
 
 * Padrão: **Semantic Versioning** — `vMAJOR.MINOR.PATCH`
-* Frontend e backend versionados de forma **independente**
+* Frontend, backend e mobile versionados de forma **independente**
 * Versão registrada em dois lugares: **tag git** + **`package.json`** de cada app
 
 | Tipo | Quando incrementar |
@@ -109,11 +109,14 @@ yarn workspace @app/frontend cypress:run   # headless (CI/CD)
 | `MINOR` | Nova funcionalidade compatível |
 | `PATCH` | Correção de bug compatível |
 
-Tags nomeadas com prefixo do projeto: `frontend/vMAJOR.MINOR.PATCH` e `backend/vMAJOR.MINOR.PATCH`
+Tags nomeadas com prefixo do projeto: `frontend/vMAJOR.MINOR.PATCH`, `backend/vMAJOR.MINOR.PATCH` e `mobile/vMAJOR.MINOR.PATCH`
+
+> O mobile não registra número de build no repositório: ele é remoto (`cli.appVersionSource: "remote"` no `eas.json`) e o perfil de produção o incrementa sozinho. O que fica no `app.config.ts` é só a versão que a pessoa vê — ver `docs/MOBILE_STORE_RUNBOOK.md`.
 
 ```bash
 git tag frontend/v1.2.0 && git push origin frontend/v1.2.0
 git tag backend/v2.0.1  && git push origin backend/v2.0.1
+git tag mobile/v0.3.0   && git push origin mobile/v0.3.0
 ```
 
 #### Fluxo de release

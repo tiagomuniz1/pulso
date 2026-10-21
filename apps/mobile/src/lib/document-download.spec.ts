@@ -57,7 +57,23 @@ describe('downloadAndShareDocument', () => {
     expect(mockWritten[0]?.bytes).toEqual(new Uint8Array([37, 80, 68, 70]))
     expect(Sharing.shareAsync).toHaveBeenCalledWith(
       'file:///cache/receita-rx-1.pdf',
-      expect.objectContaining({ mimeType: 'application/pdf' }),
+      expect.objectContaining({ mimeType: 'application/pdf', UTI: 'com.adobe.pdf' }),
+    )
+  })
+
+  /**
+   * O anexo de resultado de exame pode ser imagem, e o `UTI` é o tipo no
+   * vocabulário do iOS: anunciar `com.adobe.pdf` para um JPEG faria o
+   * sistema oferecer o aplicativo errado para abrir.
+   */
+  it('o anexo de imagem vai com o próprio tipo, e sem UTI de PDF', async () => {
+    mock.onGet('/exam-results/res-1/file').reply(200, new Uint8Array([255, 216]).buffer)
+
+    await downloadAndShareDocument('/exam-results/res-1/file', 'laudo.jpg', 'image/jpeg')
+
+    expect(Sharing.shareAsync).toHaveBeenCalledWith(
+      'file:///cache/laudo.jpg',
+      expect.objectContaining({ mimeType: 'image/jpeg', UTI: undefined }),
     )
   })
 

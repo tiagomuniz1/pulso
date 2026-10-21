@@ -211,15 +211,41 @@ describe('DocumentSection', () => {
     })
 
     it('o pedido de exame conta os exames', async () => {
-      mockExames.mockResolvedValue([{ id: 'ex-1', issuedAt: ISSUED_AT, items: [{}, {}, {}] }] as never)
+      mockExames.mockResolvedValue([{ id: 'ex-1', issuedAt: ISSUED_AT, items: [{}, {}, {}], results: [] }] as never)
 
       await renderWithProviders(<DocumentSection kind="exame" appointmentId="appt-1" canManage canIssue={false} />)
 
       expect(await screen.findByTestId('document-item-ex-1')).toHaveTextContent(/3\ exames/)
     })
 
+    // A web escreve a contagem de anexos ao lado da de exames: é o que diz
+    // se o pedido já teve retorno do laboratório.
+    const examResult = (id: string) => ({
+      id,
+      fileName: `${id}.pdf`,
+      mimeType: 'application/pdf',
+      fileSizeBytes: 1024,
+      createdAt: ISSUED_AT,
+    })
+
+    it.each([
+      [[examResult('r1'), examResult('r2')], /2 resultados anexados/],
+      [[examResult('r1')], /1 resultado anexado/],
+      [[], /nenhum resultado anexado/],
+    ])('o pedido conta os resultados anexados', async (results, message) => {
+      mockExames.mockResolvedValue([
+        { id: 'ex-1', issuedAt: ISSUED_AT, items: [{}], results },
+      ] as never)
+
+      await renderWithProviders(
+        <DocumentSection kind="exame" appointmentId="appt-1" canManage canIssue={false} />,
+      )
+
+      expect(await screen.findByTestId('document-item-ex-1')).toHaveTextContent(message)
+    })
+
     it('um exame é singular', async () => {
-      mockExames.mockResolvedValue([{ id: 'ex-1', issuedAt: ISSUED_AT, items: [{}] }] as never)
+      mockExames.mockResolvedValue([{ id: 'ex-1', issuedAt: ISSUED_AT, items: [{}], results: [] }] as never)
 
       await renderWithProviders(<DocumentSection kind="exame" appointmentId="appt-1" canManage canIssue={false} />)
 
@@ -229,7 +255,7 @@ describe('DocumentSection', () => {
 
   it('cada tipo baixa do seu endereço', async () => {
     mockAtestados.mockResolvedValue([{ id: 'at-1', issuedAt: ISSUED_AT, daysOff: 1 }] as never)
-    mockExames.mockResolvedValue([{ id: 'ex-1', issuedAt: ISSUED_AT, items: [{}] }] as never)
+    mockExames.mockResolvedValue([{ id: 'ex-1', issuedAt: ISSUED_AT, items: [{}], results: [] }] as never)
 
     await renderWithProviders(<DocumentSection kind="atestado" appointmentId="a" canManage canIssue={false} />)
     fireEvent.press(await screen.findByTestId('document-download-at-1'))
@@ -246,7 +272,7 @@ describe('DocumentSection', () => {
 
   it('cada tipo exclui pelo seu use-case', async () => {
     mockAtestados.mockResolvedValue([{ id: 'at-1', issuedAt: ISSUED_AT, daysOff: 1 }] as never)
-    mockExames.mockResolvedValue([{ id: 'ex-1', issuedAt: ISSUED_AT, items: [{}] }] as never)
+    mockExames.mockResolvedValue([{ id: 'ex-1', issuedAt: ISSUED_AT, items: [{}], results: [] }] as never)
     mockDeleteAtestado.mockResolvedValue(undefined)
     mockDeleteExame.mockResolvedValue(undefined)
 
