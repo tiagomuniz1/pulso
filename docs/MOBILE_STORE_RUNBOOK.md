@@ -108,6 +108,58 @@ Precisa ser produzido fora do repositório:
 - URL de suporte e URL da política (`https://pulso.center/privacidade`)
 - Classificação indicativa — questionário em cada console
 
+#### Texto da listagem, para copiar
+
+**Nome:** Pulso
+**Subtítulo (Apple, até 30 caracteres):** A clínica no seu bolso
+**Descrição curta (Play, até 80 caracteres):**
+
+```
+Agenda, prontuário e receita para a equipe da clínica, no celular.
+```
+
+**Descrição longa:**
+
+```
+O Pulso é o aplicativo da equipe da clínica — profissionais de saúde,
+administração e recepção. Ele acompanha o atendimento de ponta a ponta, do
+horário marcado ao documento assinado.
+
+Para usar é preciso ter conta criada pela clínica. O aplicativo não faz
+cadastro e não atende pacientes.
+
+• Agenda do dia, com o que foi marcado, confirmado, concluído e cancelado
+• Detalhe da consulta, com os dados da paciente e o histórico dela
+• Prontuário pelos modelos da clínica, preenchido no atendimento
+• Receita, atestado, pedido de exame e indicação de vacina, com PDF para
+  compartilhar na hora
+• Receita com QR Code, que a farmácia confere contra a fonte
+• Caderneta de vacinação e o que o calendário aponta como pendente
+• Imagem clínica pela câmera, anexada à consulta
+• Resultado de exame anexado do próprio aparelho
+
+O que cada pessoa vê depende do cargo: quem administra enxerga a clínica,
+quem atende enxerga a própria agenda, a recepção consulta sem alterar.
+
+Dado de saúde é tratado como categoria sensível, conforme a LGPD. A política
+de privacidade está em pulso.center/privacidade.
+```
+
+**Palavras-chave (Apple, 100 caracteres):**
+
+```
+clínica,consultório,agenda,prontuário,receita,médico,saúde,atendimento,paciente
+```
+
+**Categoria:** Medicina (Apple) · Medicina (Play)
+**Classificação indicativa:** Livre — o conteúdo é o dado da própria clínica,
+sem conteúdo gerado por usuário visível a terceiros
+
+> O texto diz, logo no segundo parágrafo, que a conta é criada pela clínica.
+> Não é formalidade: o revisor que não enxerga como entrar reprova por
+> "não foi possível avaliar a funcionalidade", e esse é o motivo de
+> reprovação mais comum em app com login fechado.
+
 > **O app é de uso interno da clínica e exige login.** As duas lojas pedem
 > credencial de teste para o revisor. Criar um usuário de demonstração numa
 > clínica de demonstração, com dados fictícios, e informar e-mail e senha no
