@@ -1,8 +1,10 @@
 appId: center.pulso.app
 name: Percorrer os cadastros pelo menu
 env:
-  EMAIL: ${MAESTRO_EMAIL}
-  PASSWORD: ${MAESTRO_PASSWORD}
+  # Entra como ADMIN: pacientes, usuários e rótulos não estão no menu de
+  # quem só atende, e o backend recusaria de todo jeito.
+  EMAIL: ${MAESTRO_ADMIN_EMAIL}
+  PASSWORD: ${MAESTRO_ADMIN_PASSWORD}
   CLINIC: ${MAESTRO_CLINIC}
 ---
 - runFlow: shared/login.yaml

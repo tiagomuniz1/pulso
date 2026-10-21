@@ -84,3 +84,17 @@ post "medical-record-templates" "$ADMIN" \
 echo "export MAESTRO_EMAIL='$EMAIL'"
 echo "export MAESTRO_PASSWORD='$PASSWORD'"
 echo "export MAESTRO_CLINIC='$CLINIC_SLUG'"
+
+# Os fluxos de cadastro entram como ADMIN: pacientes, usuários e rótulos não
+# estão no menu de quem só atende, e o backend recusaria de todo jeito.
+echo "export MAESTRO_ADMIN_EMAIL='admin@pulso.center'"
+echo "export MAESTRO_ADMIN_PASSWORD='123123123'"
+
+# Dados do paciente que o fluxo 05 cria. Únicos por rodada: o e-mail e o
+# documento têm unicidade no banco, e um fluxo que reusasse os mesmos
+# passaria uma vez e tomaria 409 na segunda.
+echo "export MAESTRO_PATIENT_NAME='Paciente Maestro $TS'"
+echo "export MAESTRO_PATIENT_EMAIL='paciente.maestro.$TS@e2e.test'"
+# O backend exige exatamente onze dígitos (sem conferir o verificador); o
+# epoch tem dez, então o nove da frente completa.
+echo "export MAESTRO_PATIENT_CPF='9$TS'"
