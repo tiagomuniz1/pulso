@@ -76,14 +76,18 @@ describe('AppDrawer', () => {
 
   // A tela ainda não portada aparece apagada, não escondida: a lista é o mapa
   // do sistema, e esconder metade dela faria o app parecer outro produto.
-  it('o item sem tela fica apagado e não navega', async () => {
+  /**
+   * O estado apagado existia enquanto a porta estava em curso: item sem
+   * tela ficava visível e inerte. Com a última tela portada não sobrou
+   * nenhum — e `NAVIGATION_ITEMS` passou a exigir rota, então o caso
+   * deixou de existir no tipo, não só na tela.
+   */
+  it('o dashboard, que já foi item sem tela, navega', async () => {
     await renderWithProviders(<AppDrawer activeId="appointments" />)
 
-    const dashboard = screen.getByTestId('drawer-item-dashboard')
-    expect(dashboard).toHaveStyle({ opacity: 0.4 })
+    fireEvent.press(screen.getByTestId('drawer-item-dashboard'))
 
-    fireEvent.press(dashboard)
-    expect(mockReplace).not.toHaveBeenCalled()
+    expect(mockReplace).toHaveBeenCalledWith('/(app)/dashboard')
   })
 
   it('fecha ao tocar fora', async () => {

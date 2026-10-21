@@ -5,8 +5,7 @@ export interface INavigationItem {
   label: string
   /** Ícone do Feather — o conjunto mais próximo do que a web usa. */
   icon: string
-  /** Rota do app. `null` enquanto a tela não existe. */
-  route: string | null
+  route: string
   roles: UserRole[]
 }
 
@@ -15,16 +14,18 @@ export interface INavigationItem {
  * perfil (`NAVIGATION_ITEMS` em `lib/constants.tsx`).
  *
  * Os itens cuja tela ainda não foi portada aparecem **apagados**, não
- * escondidos: a lista é o mapa do sistema, e esconder metade dela faria o app
- * parecer outro produto — que é exatamente o problema que estamos corrigindo.
- * O horário passado da própria agenda usa o mesmo recurso.
+ * Todos levam a uma tela. Durante a porta, os que ainda não tinham ficavam
+ * apagados em vez de escondidos — a lista é o mapa do sistema, e esconder
+ * metade dela faria o app parecer outro produto. Com a última tela portada
+ * não sobrou nenhum, e o estado apagado saiu junto: um item que não navega
+ * virou um caso que não existe mais.
  */
 export const NAVIGATION_ITEMS: INavigationItem[] = [
   {
     id: 'dashboard',
     label: 'Dashboard',
     icon: 'grid',
-    route: null,
+    route: '/(app)/dashboard',
     roles: [UserRole.ADMIN, UserRole.PROFESSIONAL, UserRole.USER],
   },
   { id: 'users', label: 'Usuários', icon: 'users', route: '/(app)/users', roles: [UserRole.ADMIN] },

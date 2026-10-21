@@ -15,6 +15,18 @@ describe('NAVIGATION_ITEMS', () => {
     })
   })
 
+  /**
+   * **Todo item leva a uma tela.** Durante a porta havia itens sem rota,
+   * que apareciam apagados — a lista é o mapa do sistema e esconder metade
+   * dela faria o app parecer outro produto. Com a última tela portada não
+   * sobrou nenhum, e um item novo que entre sem rota reprova aqui.
+   */
+  it('todo item aponta para uma rota do app', () => {
+    NAVIGATION_ITEMS.forEach((item) => {
+      expect(item.route).toMatch(/^\/\(app\)/)
+    })
+  })
+
   // A ordem é a da sidebar da web; trocá-la faria o mesmo sistema ter dois
   // mapas diferentes.
   it('mantém a ordem da web', () => {

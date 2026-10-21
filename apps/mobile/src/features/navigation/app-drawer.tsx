@@ -34,32 +34,21 @@ export function AppDrawer({ activeId }: { activeId: string }) {
           <ScrollView contentContainerStyle={styles.items} testID="drawer-items">
             {items.map((item) => {
               const isActive = item.id === activeId
-              const isAvailable = item.route !== null
               return (
                 <Pressable
                   key={item.id}
                   accessibilityRole="button"
-                  accessibilityState={{ selected: isActive, disabled: !isAvailable }}
-                  disabled={!isAvailable}
-                  // Sem `onPress` quando não há tela: um `if (item.route)` lá
-                  // dentro seria um ramo que o `disabled` nunca deixa alcançar.
-                  onPress={
-                    item.route
-                      ? () => {
-                          close()
-                          router.replace(item.route as never)
-                        }
-                      : undefined
-                  }
+                  accessibilityState={{ selected: isActive }}
+                  onPress={() => {
+                    close()
+                    router.replace(item.route as never)
+                  }}
                   testID={`drawer-item-${item.id}`}
                   style={[
                     styles.item,
                     {
                       borderRadius: theme.radius.md,
                       backgroundColor: isActive ? theme.accentSoft : 'transparent',
-                      // A tela ainda não portada fica apagada, não escondida:
-                      // a lista é o mapa do sistema.
-                      opacity: isAvailable ? 1 : 0.4,
                     },
                   ]}
                 >
