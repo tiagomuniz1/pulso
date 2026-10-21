@@ -1,5 +1,53 @@
 # Changelog — Mobile
 
+## [0.5.0] - 2026-10-21
+
+O resto, e era o caro. Com esta versão **os oito itens do menu da web têm
+tela no app**: o que faltava eram justamente as duas telas guardadas para o
+fim de propósito — o dashboard, que são cinco gráficos, e o construtor de
+modelos de prontuário, que na web se monta arrastando.
+
+### Added
+- **Modelos de receita** — o receituário que o profissional repete no dia a
+  dia: listar, criar, editar, desativar e excluir. Criar depende da **ficha,
+  não do cargo**: o ADMIN sem ficha é zelador dos modelos da clínica e mexe
+  em qualquer um, mas não cria sob uma ficha que não tem
+- **A receita da consulta parte de um modelo.** Carregar não emite nada:
+  traz os itens para edição, porque a dose quase sempre muda de paciente
+  para paciente
+- **Modelos de prontuário** — listar com filtro por escopo e paginação,
+  abrir, criar, editar e excluir, com campos gerais, seções e o catálogo de
+  campos canônicos da plataforma. Criar e editar são **gestão do ADMIN**: o
+  modelo é da clínica, e mexer nele muda o formulário dos colegas da mesma
+  especialidade
+- **Dashboard** — os quatro indicadores, as três roscas, os aniversariantes
+  do dia, a linha de atendimentos do período e a distribuição etária, no
+  mesmo período padrão de trinta dias da web
+- **Situação vacinal e caderneta na ficha do paciente.** A situação vem
+  antes da caderneta: responde "o que falta", que é a pergunta da consulta.
+  Registrar conduta depende da **ficha**, e dispensar e adiar **exigem
+  motivo**
+
+### Changed
+- **O construtor de modelos usa `↑ ↓` e "Mover para…", não arrastar.** A web
+  já oferecia as setas ao lado da alça, porque arrastar nunca foi o único
+  caminho — e arrastar um cartão deste tamanho com o dedo, numa tela que
+  também rola, seria outra interação
+- **A paginação mantém a página anterior enquanto a próxima carrega.** Sem
+  isso a lista desmonta a cada toque em "Próxima", e com ela o próprio
+  controle de paginação, que fica no rodapé
+- **Nenhum item do menu está mais sem tela.** O estado apagado, que existia
+  durante a porta, saiu junto: `NAVIGATION_ITEMS` passou a exigir rota
+
+### Fixed
+- **A fatia única da rosca aparece.** Um arco de 360° tem início e fim no
+  mesmo ponto e o SVG o desenha como nada — ela é partida em duas metades
+- **Período inteiro sem atendimento desenha a linha na base**, em vez de
+  sair `NaN`, que o SVG também engole em silêncio
+- **A data devida de uma vacina não anda um dia para trás.** É formatada sem
+  passar por `Date`: `new Date('2026-04-12')` é meia-noite em UTC, que no
+  Brasil ainda é dia 11
+
 ## [0.4.0] - 2026-10-21
 
 Os cadastros. Com isto o app deixa de ser só o dia de atendimento: sete dos
