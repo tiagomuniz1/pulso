@@ -87,10 +87,30 @@ env:
     id: "patient-details-phone"
 - assertVisible:
     id: "patient-details-document"
-# Prontuários e fotos são dado clínico, e o ADMIN os vê.
+# Prontuários, fotos e vacinas são dado clínico, e o ADMIN os vê.
 - assertVisible:
     id: "patient-history-title"
 
+# A situação vacinal fica no fim da ficha: é preciso rolar até ela. O que
+# este fluxo prova e o teste de unidade não prova é que o cálculo do
+# calendário volta do servidor para um paciente de verdade.
+- scrollUntilVisible:
+    element:
+      id: "vaccine-status-panel"
+    direction: DOWN
+    timeout: 20000
+- assertVisible:
+    id: "vaccine-status-disclaimer"
+- scrollUntilVisible:
+    element:
+      id: "vaccination-history"
+    direction: DOWN
+    timeout: 20000
+
+- scrollUntilVisible:
+    element:
+      id: "patient-detail-back"
+    direction: UP
 - tapOn:
     id: "patient-detail-back"
 - assertVisible:

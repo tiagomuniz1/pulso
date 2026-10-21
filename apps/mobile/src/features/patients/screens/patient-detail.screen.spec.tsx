@@ -1,9 +1,12 @@
 import { KinshipType, PatientGender, UserRole } from '@app/shared'
 import {
   deletePatientUseCase,
+  getMyProfessionalUseCase,
   getPatientUseCase,
+  getPatientVaccineStatusUseCase,
   listPatientMedicalHistoryUseCase,
   listPatientPhotosUseCase,
+  listVaccinationsUseCase,
   type IPatientModel,
 } from '@app/core'
 import { fireEvent, screen, waitFor } from '@testing-library/react-native'
@@ -15,6 +18,10 @@ jest.mock('@app/core/src/features/patients/use-cases/get-patient.use-case')
 jest.mock('@app/core/src/features/patients/use-cases/delete-patient.use-case')
 jest.mock('@app/core/src/features/medical-records/use-cases/list-patient-medical-history.use-case')
 jest.mock('@app/core/src/features/consultation-photos/use-cases/list-patient-photos.use-case')
+jest.mock('@app/core/src/features/vaccine-schedules/use-cases/get-patient-vaccine-status.use-case')
+jest.mock('@app/core/src/features/vaccinations/use-cases/list-vaccinations.use-case')
+jest.mock('@app/core/src/features/vaccines/use-cases/list-vaccines.use-case')
+jest.mock('@app/core/src/features/professionals/use-cases/get-my-professional.use-case')
 
 const mockBack = jest.fn()
 const mockPush = jest.fn()
@@ -63,7 +70,16 @@ beforeEach(() => {
   mockDelete.mockResolvedValue(undefined)
   mockHistory.mockResolvedValue({ data: [], total: 0, page: 1, limit: 50 } as never)
   mockPhotos.mockResolvedValue({ data: [], total: 0, page: 1, limit: 50 } as never)
+  mockVaccineStatus.mockResolvedValue({ patientId: 'pat-1', ageInMonths: 30, items: [] } as never)
+  mockDoses.mockResolvedValue({ data: [], total: 0, page: 1, limit: 100 } as never)
+  mockMine.mockResolvedValue({ id: 'prof-1' } as never)
 })
+
+const mockVaccineStatus = getPatientVaccineStatusUseCase as jest.MockedFunction<
+  typeof getPatientVaccineStatusUseCase
+>
+const mockDoses = listVaccinationsUseCase as jest.MockedFunction<typeof listVaccinationsUseCase>
+const mockMine = getMyProfessionalUseCase as jest.MockedFunction<typeof getMyProfessionalUseCase>
 
 describe('PatientDetailScreen', () => {
   it('mostra os dados do paciente', async () => {
@@ -258,8 +274,30 @@ describe('PatientDetailScreen', () => {
     expect(await screen.findByTestId('patient-details-name')).toBeTruthy()
     expect(screen.queryByTestId('patient-history-title')).toBeNull()
     expect(screen.queryByTestId('patient-photos-title')).toBeNull()
+    // Caderneta e situação vacinal são dado clínico pelo mesmo motivo.
+    expect(screen.queryByTestId('patient-vaccines-title')).toBeNull()
     expect(screen.queryByTestId('patient-details-edit')).toBeNull()
     expect(screen.queryByTestId('patient-details-delete')).toBeNull()
+  })
+
+  /**
+   * **Registrar dose depende da ficha, não do cargo** — é exercício, não
+   * escopo. Um ADMIN que só administra lê a caderneta e não lança nada
+   * nela.
+   */
+  it('quem não tem ficha lê a caderneta, mas não registra dose', async () => {
+    mockMine.mockResolvedValue(null as never)
+
+    await renderWithProviders(<PatientDetailScreen />)
+
+    await screen.findByTestId('vaccination-history')
+    await waitFor(() => expect(screen.queryByTestId('vaccination-new')).toBeNull())
+  })
+
+  it('quem tem ficha registra dose', async () => {
+    await renderWithProviders(<PatientDetailScreen />)
+
+    expect(await screen.findByTestId('vaccination-new')).toBeTruthy()
   })
 
   it('o profissional vê o histórico e as fotos, mas não edita', async () => {
@@ -269,6 +307,11 @@ describe('PatientDetailScreen', () => {
 
     expect(await screen.findByTestId('patient-history-title')).toBeTruthy()
     expect(screen.getByTestId('patient-photos-title')).toBeTruthy()
+    expect(screen.getByTestId('patient-vaccines-title')).toBeTruthy()
+    // A situação vem antes da caderneta: responde "o que falta", que é a
+    // pergunta que se faz na consulta.
+    expect(screen.getByTestId('vaccine-status-panel')).toBeTruthy()
+    expect(screen.getByTestId('vaccination-history')).toBeTruthy()
     expect(screen.queryByTestId('patient-details-edit')).toBeNull()
   })
 

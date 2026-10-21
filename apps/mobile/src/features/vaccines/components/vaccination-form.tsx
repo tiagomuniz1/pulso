@@ -26,7 +26,11 @@ export function VaccinationForm({
   onSubmit,
 }: {
   patientId: string
-  appointmentId: string
+  /**
+   * Ausente na ficha do paciente, onde não há consulta a que amarrar — e
+   * sem ela a própria pergunta "aplicada nesta clínica" deixa de existir.
+   */
+  appointmentId?: string
   vaccines: IVaccineModel[]
   isOpen: boolean
   isSaving: boolean
@@ -56,7 +60,7 @@ export function VaccinationForm({
       vaccineId,
       // Aplicada aqui é desta consulta; transcrita de fora não tem consulta
       // a que se amarrar, e o vínculo fica de fora.
-      ...(atOurClinic ? { appointmentId, appliedAtOurClinic: true } : {}),
+      ...(appointmentId && atOurClinic ? { appointmentId, appliedAtOurClinic: true } : {}),
       doseLabel: doseLabel.trim(),
       appliedAt,
       ...(!atOurClinic && where.trim() ? { appliedAtDescription: where.trim() } : {}),
@@ -114,20 +118,22 @@ export function VaccinationForm({
         testID="vaccination-applied-at"
       />
 
-      <Pressable
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: atOurClinic }}
-        onPress={() => setAtOurClinic(!atOurClinic)}
-        testID="vaccination-at-our-clinic"
-        style={styles.checkbox}
-      >
-        <Feather
-          name={atOurClinic ? 'check-square' : 'square'}
-          size={18}
-          color={atOurClinic ? theme.accent : theme.textDim}
-        />
-        <Text style={{ color: theme.text, fontSize: 14 }}>Aplicada nesta clínica</Text>
-      </Pressable>
+      {appointmentId ? (
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: atOurClinic }}
+          onPress={() => setAtOurClinic(!atOurClinic)}
+          testID="vaccination-at-our-clinic"
+          style={styles.checkbox}
+        >
+          <Feather
+            name={atOurClinic ? 'check-square' : 'square'}
+            size={18}
+            color={atOurClinic ? theme.accent : theme.textDim}
+          />
+          <Text style={{ color: theme.text, fontSize: 14 }}>Aplicada nesta clínica</Text>
+        </Pressable>
+      ) : null}
 
       {atOurClinic ? null : (
         <TextField

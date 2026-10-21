@@ -364,7 +364,7 @@ describe('VaccineSection', () => {
     expect(screen.getByTestId('vaccinations-loading')).toBeTruthy()
   })
 
-  it('avisa quando salvar falha', async () => {
+  it('avisa quando salvar a dose falha', async () => {
     mockCreateDose.mockRejectedValue({ status: 422, title: 'x', detail: 'y' })
 
     await render()
@@ -375,6 +375,23 @@ describe('VaccineSection', () => {
       expect(screen.getByTestId('vaccination-vaccine')).toHaveTextContent(/Tríplice viral/),
     )
     fireEvent.press(screen.getByTestId('vaccination-submit'))
+
+    expect(await screen.findByTestId('vaccination-create-error')).toBeTruthy()
+  })
+
+  // A indicação tem aviso próprio: ela é documento emitido e a dose é
+  // registro — confundi-los diria à pessoa que falhou o que não falhou.
+  it('avisa quando salvar a indicação falha', async () => {
+    mockCreateIndication.mockRejectedValue({ status: 422, title: 'x', detail: 'y' })
+
+    await render()
+    fireEvent.press(await screen.findByTestId('indication-new'))
+    fireEvent.press(await screen.findByTestId('indication-vaccine-0'))
+    fireEvent.press(await screen.findByTestId('indication-vaccine-0-option-v1'))
+    await waitFor(() =>
+      expect(screen.getByTestId('indication-vaccine-0')).toHaveTextContent(/Tríplice viral/),
+    )
+    fireEvent.press(screen.getByTestId('indication-submit'))
 
     expect(await screen.findByTestId('vaccine-create-error')).toBeTruthy()
   })

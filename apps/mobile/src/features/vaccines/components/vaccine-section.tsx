@@ -2,17 +2,13 @@ import { useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { ErrorState, LoadingState } from '../../../components/ui/screen'
 import { useTheme } from '../../../theme/theme-context'
-import { formatShortDate } from '../../appointments/utils/agenda-date.util'
 import {
   useActiveVaccines,
-  useCreateVaccination,
   useCreateVaccineIndication,
-  useDeleteVaccination,
   useDeleteVaccineIndication,
-  usePatientVaccinations,
   useVaccineIndications,
 } from '../hooks/use-vaccines.hook'
-import { VaccinationForm } from './vaccination-form'
+import { VaccinationHistory } from './vaccination-history'
 import { VaccineIndicationForm } from './vaccine-indication-form'
 
 /**
@@ -39,21 +35,16 @@ export function VaccineSection({
 }) {
   const theme = useTheme()
   const [isIndicationOpen, setIndicationOpen] = useState(false)
-  const [isDoseOpen, setDoseOpen] = useState(false)
 
   const vaccines = useActiveVaccines()
   const indications = useVaccineIndications(appointmentId)
-  const vaccinations = usePatientVaccinations(patientId)
   const createIndication = useCreateVaccineIndication(appointmentId)
   const removeIndication = useDeleteVaccineIndication(appointmentId)
-  const createDose = useCreateVaccination(patientId)
-  const removeDose = useDeleteVaccination(patientId)
 
   const catalog = vaccines.data?.data ?? []
-  // Derivadas uma vez: espalhar `?? []` por cada uso criaria ramos que só a
+  // Derivada uma vez: espalhar `?? []` por cada uso criaria ramos que só a
   // ausência de dado exercitaria, e aqui ela não acontece.
   const issued = indications.data ?? []
-  const doses = vaccinations.data?.data ?? []
 
   return (
     <View style={styles.wrapper} testID="vaccine-section">
@@ -119,68 +110,15 @@ export function VaccineSection({
         </View>
       ))}
 
-      <View style={[styles.header, styles.secondHeader]}>
-        <View style={styles.headerText}>
-          <Text style={[styles.title, { color: theme.text }]}>Caderneta de vacinação</Text>
-        </View>
-        {/* Registrar depende da ficha, não de ser o dono do atendimento: não
-            há assinatura em jogo, e a caderneta transcreve o que a paciente
-            tomou onde quer que tenha sido. */}
-        {hasFicha ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setDoseOpen(true)}
-            testID="vaccination-new"
-            style={[styles.newButton, { borderRadius: theme.radius.md, backgroundColor: theme.accentSoft }]}
-          >
-            <Text style={{ color: theme.accent, fontSize: 13, fontWeight: '600' }}>
-              + Registrar dose
-            </Text>
-          </Pressable>
-        ) : null}
+      <View style={styles.secondHeader}>
+        <VaccinationHistory
+          patientId={patientId}
+          appointmentId={appointmentId}
+          hasFicha={hasFicha}
+        />
       </View>
 
-      {vaccinations.isLoading ? <LoadingState testID="vaccinations-loading" /> : null}
-      {vaccinations.isError ? (
-        <ErrorState
-          testID="vaccinations-error"
-          message="Não foi possível carregar a caderneta."
-          onRetry={() => void vaccinations.refetch()}
-        />
-      ) : null}
-      {!vaccinations.isLoading && !vaccinations.isError && doses.length === 0 ? (
-        <Text style={[styles.empty, { color: theme.textMute }]} testID="vaccinations-empty">
-          Nenhuma dose registrada.
-        </Text>
-      ) : null}
-      {doses.map((dose) => (
-        <View
-          key={dose.id}
-          style={[styles.item, { borderRadius: theme.radius.md, borderColor: theme.line }]}
-          testID={`vaccination-item-${dose.id}`}
-        >
-          <View style={styles.itemText}>
-            <Text style={[styles.itemTitle, { color: theme.text }]}>{dose.vaccineName}</Text>
-            <Text style={[styles.itemMeta, { color: theme.textMute }]}>
-              {dose.doseLabel ? `${dose.doseLabel} · ` : ''}
-              {formatShortDate(dose.appliedAt)}
-              {dose.appliedAtDescription ? ` · ${dose.appliedAtDescription}` : ''}
-            </Text>
-          </View>
-          {hasFicha ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => removeDose.mutate(dose.id)}
-              testID={`vaccination-delete-${dose.id}`}
-              hitSlop={8}
-            >
-              <Text style={{ color: theme.danger, fontSize: 13 }}>Excluir</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      ))}
-
-      {createIndication.isError || createDose.isError ? (
+      {createIndication.isError ? (
         <Text style={[styles.notice, { color: theme.danger }]} testID="vaccine-create-error">
           Não foi possível salvar. Tente de novo.
         </Text>
@@ -197,15 +135,6 @@ export function VaccineSection({
         }
       />
 
-      <VaccinationForm
-        patientId={patientId}
-        appointmentId={appointmentId}
-        vaccines={catalog}
-        isOpen={isDoseOpen}
-        isSaving={createDose.isPending}
-        onClose={() => setDoseOpen(false)}
-        onSubmit={(input) => createDose.mutate(input, { onSuccess: () => setDoseOpen(false) })}
-      />
     </View>
   )
 }

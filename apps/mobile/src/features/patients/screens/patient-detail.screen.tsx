@@ -8,6 +8,9 @@ import { ErrorState, LoadingState, Screen, ScreenScroll } from '../../../compone
 import { useTheme } from '../../../theme/theme-context'
 import { useSessionStore } from '../../auth/session.store'
 import { HistoryTab } from '../../appointments/components/history-tab'
+import { useMyProfessional } from '../../documents/hooks/use-can-issue.hook'
+import { VaccinationHistory } from '../../vaccines/components/vaccination-history'
+import { VaccineStatusPanel } from '../../vaccine-schedules/components/vaccine-status-panel'
 import { PatientPhotoGallery } from '../../photos/components/patient-photo-gallery'
 import { PatientDetails } from '../components/patient-details'
 import { useDeletePatient, usePatient } from '../hooks/use-patients.hook'
@@ -40,6 +43,9 @@ export function PatientDetailScreen() {
 
   const canManage = role === UserRole.ADMIN
   const canSeeClinicalData = role === UserRole.ADMIN || role === UserRole.PROFESSIONAL
+  // Registrar dose e registrar conduta dependem da **ficha**, não do cargo:
+  // é exercício, não escopo (ver `ai/context/permissions.md`).
+  const hasFicha = Boolean(useMyProfessional())
 
   const [isDeleting, setDeleting] = useState(false)
   const { data: patient, isPending, isError, refetch } = usePatient(id)
@@ -98,6 +104,13 @@ export function PatientDetailScreen() {
 
               <SectionTitle testID="patient-photos-title">Fotos de Evolução</SectionTitle>
               <PatientPhotoGallery patientId={patient.id} />
+
+              {/* A situação vem antes da caderneta: responde "o que falta",
+                  que é a pergunta que se faz na consulta. A caderneta
+                  responde "o que já tomou". */}
+              <SectionTitle testID="patient-vaccines-title">Vacinas</SectionTitle>
+              <VaccineStatusPanel patientId={patient.id} />
+              <VaccinationHistory patientId={patient.id} hasFicha={hasFicha} />
             </>
           ) : null}
         </ScreenScroll>
