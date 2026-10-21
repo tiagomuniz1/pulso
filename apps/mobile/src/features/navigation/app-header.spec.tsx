@@ -9,6 +9,9 @@ import { useNavigationStore } from './navigation.store'
 
 jest.mock('../auth/auth.service', () => ({ logout: jest.fn(async () => undefined) }))
 
+const mockPush = jest.fn()
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }))
+
 const mockLogout = logout as jest.MockedFunction<typeof logout>
 
 function signIn(fullName = 'Ana Paula Souza') {
@@ -66,13 +69,51 @@ describe('AppHeader', () => {
     expect(screen.getByTestId('header-user')).toHaveTextContent('AS')
   })
 
-  it('sai da conta ao tocar no avatar', async () => {
+  /**
+   * O avatar abre o menu, não sai da conta.
+   *
+   * Saía direto enquanto não havia tela de perfil. Agora há, e um toque
+   * acidental no próprio nome que derrubasse a sessão seria o pior caminho
+   * possível — ainda mais numa tela usada de pé, com uma mão só.
+   */
+  it('o avatar abre o menu da conta', async () => {
     await renderWithProviders(<AppHeader />)
 
     fireEvent.press(screen.getByTestId('header-user'))
 
+    expect(await screen.findByTestId('header-user-menu')).toHaveTextContent(/Ana Paula Souza/)
+    expect(screen.getByTestId('header-user-menu')).toHaveTextContent(/ana@pulso\.test/)
+    expect(mockLogout).not.toHaveBeenCalled()
+  })
+
+  it('sai da conta pelo menu', async () => {
+    await renderWithProviders(<AppHeader />)
+
+    fireEvent.press(screen.getByTestId('header-user'))
+    fireEvent.press(await screen.findByTestId('header-logout'))
+
     await waitFor(() => expect(mockLogout).toHaveBeenCalled())
     await waitFor(() => expect(useSessionStore.getState().status).toBe('anonymous'))
+  })
+
+  // É por aqui que PROFESSIONAL e recepção chegam ao próprio cadastro: a
+  // listagem de usuários não lhes é oferecida.
+  it('abre o próprio perfil pelo menu', async () => {
+    await renderWithProviders(<AppHeader />)
+
+    fireEvent.press(screen.getByTestId('header-user'))
+    fireEvent.press(await screen.findByTestId('header-profile'))
+
+    expect(mockPush).toHaveBeenCalledWith('/(app)/users/u1/edit')
+  })
+
+  it('o fundo fecha o menu', async () => {
+    await renderWithProviders(<AppHeader />)
+
+    fireEvent.press(screen.getByTestId('header-user'))
+    fireEvent.press(await screen.findByTestId('header-user-menu-backdrop'))
+
+    await waitFor(() => expect(screen.queryByTestId('header-user-menu')).toBeNull())
   })
 
   it('sobrevive a não haver usuário', async () => {
@@ -81,5 +122,17 @@ describe('AppHeader', () => {
     await renderWithProviders(<AppHeader />)
 
     expect(screen.getByTestId('header-user')).toBeTruthy()
+  })
+
+  // Sem sessão não há para onde ir, e o menu não deve navegar para
+  // `/users/undefined/edit`.
+  it('sem usuário, o perfil não navega', async () => {
+    useSessionStore.setState({ status: 'loading', user: null })
+
+    await renderWithProviders(<AppHeader />)
+    fireEvent.press(screen.getByTestId('header-user'))
+    fireEvent.press(await screen.findByTestId('header-profile'))
+
+    expect(mockPush).not.toHaveBeenCalled()
   })
 })

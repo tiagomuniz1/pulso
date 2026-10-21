@@ -81,6 +81,7 @@ export function PatientDetailScreen() {
       ) : null}
 
       {!isPending && !isError && patient ? (
+        <>
         <ScreenScroll testID="patient-detail-content">
           <PatientDetails
             patient={patient}
@@ -100,18 +101,24 @@ export function PatientDetailScreen() {
             </>
           ) : null}
         </ScreenScroll>
-      ) : null}
 
-      <ConfirmSheet
-        testID="patient-detail-delete-dialog"
-        title="Excluir paciente"
-        message={`Tem certeza que deseja excluir o paciente ${patient?.fullName ?? ''}? Esta ação não pode ser desfeita.`}
-        confirmLabel="Excluir"
-        isOpen={isDeleting}
-        isPending={remove.isPending}
-        onClose={() => setDeleting(false)}
-        onConfirm={confirmDelete}
-      />
+        {/* Dentro do ramo que já tem o paciente: fora dele a mensagem
+            precisaria de um `?? ''` para um caso que não acontece — a folha
+            só abre a partir de um botão que não existe sem paciente. */}
+        {isDeleting ? (
+          <ConfirmSheet
+            testID="patient-detail-delete-dialog"
+            title="Excluir paciente"
+            message={`Tem certeza que deseja excluir o paciente ${patient.fullName}? Esta ação não pode ser desfeita.`}
+            confirmLabel="Excluir"
+            isOpen
+            isPending={remove.isPending}
+            onClose={() => setDeleting(false)}
+            onConfirm={confirmDelete}
+          />
+        ) : null}
+        </>
+      ) : null}
     </Screen>
   )
 }

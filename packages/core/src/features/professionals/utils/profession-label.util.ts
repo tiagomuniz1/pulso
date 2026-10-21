@@ -1,5 +1,12 @@
+/**
+ * Como a profissão e o registro aparecem na tela.
+ *
+ * Mora no `@app/core` porque a web e o app escrevem os mesmos textos a
+ * partir das mesmas registrações — e o sufixo "+2" de quem tem mais de um
+ * conselho é o tipo de detalhe que divergiria em silêncio.
+ */
 import { COUNCIL_TYPE_LABELS, COUNCIL_TYPE_OCCUPATION_LABELS, COUNCIL_TYPE_PROFESSION_LABELS } from '@app/shared'
-import type { IProfessionalRegistrationModel } from '@app/core'
+import type { IProfessionalRegistrationModel } from '../types/professional-model.types'
 
 export function primaryRegistration(
   registrations: IProfessionalRegistrationModel[],

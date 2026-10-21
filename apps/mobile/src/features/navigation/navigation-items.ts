@@ -27,7 +27,7 @@ export const NAVIGATION_ITEMS: INavigationItem[] = [
     route: null,
     roles: [UserRole.ADMIN, UserRole.PROFESSIONAL, UserRole.USER],
   },
-  { id: 'users', label: 'Usuários', icon: 'users', route: null, roles: [UserRole.ADMIN] },
+  { id: 'users', label: 'Usuários', icon: 'users', route: '/(app)/users', roles: [UserRole.ADMIN] },
   {
     id: 'patients',
     label: 'Pacientes',

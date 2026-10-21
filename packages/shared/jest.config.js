@@ -26,6 +26,7 @@ module.exports = {
     'src/utils/**/*.ts',
     '!src/utils/index.ts',
     'src/config/appointment-status.config.ts',
+    'src/config/user-role-label.config.ts',
     'src/config/recurrence-status.config.ts',
   ],
   coverageThreshold: {
