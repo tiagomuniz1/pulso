@@ -32,7 +32,7 @@ export const NAVIGATION_ITEMS: INavigationItem[] = [
     id: 'patients',
     label: 'Pacientes',
     icon: 'user',
-    route: null,
+    route: '/(app)/patients',
     roles: [UserRole.ADMIN, UserRole.USER],
   },
   {

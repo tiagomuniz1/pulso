@@ -40,16 +40,29 @@ function textoBuscavel(registro: IMedicalRecordModel): string {
     .toLowerCase()
 }
 
+/**
+ * O histórico do paciente, usado em dois lugares.
+ *
+ * Dentro da consulta vem recortado: só a especialidade daquele atendimento, e
+ * sem o prontuário que está sendo escrito. Na ficha do paciente vem inteiro —
+ * ali a pergunta é "o que já aconteceu com esta pessoa", e recortar por uma
+ * especialidade que não existe naquele contexto não faria sentido. Por isso
+ * os dois recortes são opcionais: ausentes, o servidor devolve tudo o que o
+ * perfil alcança.
+ */
 export function HistoryTab({
   patientId,
   specialtyId,
   appointmentId,
 }: {
   patientId: string
-  /** Especialidade da consulta atual. `null` é o atendimento generalista. */
-  specialtyId: string | null
+  /**
+   * Especialidade da consulta atual. `null` é o atendimento generalista —
+   * que é diferente de `undefined`, "sem recorte nenhum".
+   */
+  specialtyId?: string | null
   /** A consulta atual não entra no próprio histórico. */
-  appointmentId: string
+  appointmentId?: string
 }) {
   const theme = useTheme()
   const [busca, setBusca] = useState('')
@@ -59,8 +72,10 @@ export function HistoryTab({
     queryKey: ['medical-records', 'history', patientId, specialtyId, appointmentId],
     queryFn: () =>
       listPatientMedicalHistoryUseCase(patientId, {
-        specialtyId: specialtyId ?? 'null',
-        excludeAppointmentId: appointmentId,
+        // `undefined` some da query string; `'null'` pede exatamente os
+        // prontuários de consulta sem especialidade.
+        ...(specialtyId !== undefined ? { specialtyId: specialtyId ?? 'null' } : {}),
+        ...(appointmentId !== undefined ? { excludeAppointmentId: appointmentId } : {}),
         limit: TAMANHO_DA_PAGINA,
       }),
   })

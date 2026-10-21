@@ -1,0 +1,123 @@
+import { useState } from 'react'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { useLocalSearchParams, useRouter } from 'expo-router'
+import Feather from '@expo/vector-icons/Feather'
+import { UserRole } from '@app/shared'
+import { ConfirmSheet } from '../../../components/ui/confirm-sheet'
+import { ErrorState, LoadingState, Screen, ScreenScroll } from '../../../components/ui/screen'
+import { useTheme } from '../../../theme/theme-context'
+import { useSessionStore } from '../../auth/session.store'
+import { HistoryTab } from '../../appointments/components/history-tab'
+import { PatientPhotoGallery } from '../../photos/components/patient-photo-gallery'
+import { PatientDetails } from '../components/patient-details'
+import { useDeletePatient, usePatient } from '../hooks/use-patients.hook'
+
+function SectionTitle({ children, testID }: { children: string; testID: string }) {
+  const theme = useTheme()
+  return (
+    <Text style={[styles.sectionTitle, { color: theme.text }]} testID={testID}>
+      {children}
+    </Text>
+  )
+}
+
+/**
+ * A ficha do paciente.
+ *
+ * A web empilha quatro blocos: dados, histórico de prontuários, fotos de
+ * evolução e vacinas. Os três primeiros estão aqui; **a situação vacinal
+ * ainda não**, porque o calendário de vacinas é a única parte cuja camada de
+ * dados não migrou para o `@app/core` — ela vem junto com o resto de vacinas.
+ *
+ * Histórico e fotos são dado clínico: a recepção não os vê, exatamente como
+ * na web (`canSeeMedicalHistory`).
+ */
+export function PatientDetailScreen() {
+  const theme = useTheme()
+  const router = useRouter()
+  const { id } = useLocalSearchParams<{ id: string }>()
+  const role = useSessionStore((state) => state.user?.role)
+
+  const canManage = role === UserRole.ADMIN
+  const canSeeClinicalData = role === UserRole.ADMIN || role === UserRole.PROFESSIONAL
+
+  const [isDeleting, setDeleting] = useState(false)
+  const { data: patient, isPending, isError, refetch } = usePatient(id)
+  const remove = useDeletePatient()
+
+  function confirmDelete() {
+    remove.mutate(id, {
+      onSuccess: () => {
+        setDeleting(false)
+        router.back()
+      },
+      onError: () => setDeleting(false),
+    })
+  }
+
+  return (
+    <Screen testID="patient-detail-screen">
+      <View style={[styles.bar, { borderColor: theme.line }]}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.back()}
+          hitSlop={12}
+          testID="patient-detail-back"
+          style={styles.back}
+        >
+          <Feather name="arrow-left" size={18} color={theme.accent} />
+          <Text style={{ color: theme.accent, fontWeight: '600' }}>Voltar</Text>
+        </Pressable>
+      </View>
+
+      {isPending ? <LoadingState testID="patient-detail-loading" /> : null}
+
+      {isError ? (
+        <ErrorState
+          testID="patient-detail-error"
+          message="Não foi possível carregar os dados do paciente."
+          onRetry={() => void refetch()}
+        />
+      ) : null}
+
+      {!isPending && !isError && patient ? (
+        <ScreenScroll testID="patient-detail-content">
+          <PatientDetails
+            patient={patient}
+            canManage={canManage}
+            onEdit={() => router.push(`/(app)/patients/${patient.id}/edit`)}
+            onDelete={() => setDeleting(true)}
+            onOpenPatient={(other) => router.push(`/(app)/patients/${other}`)}
+          />
+
+          {canSeeClinicalData ? (
+            <>
+              <SectionTitle testID="patient-history-title">Histórico de Prontuários</SectionTitle>
+              <HistoryTab patientId={patient.id} />
+
+              <SectionTitle testID="patient-photos-title">Fotos de Evolução</SectionTitle>
+              <PatientPhotoGallery patientId={patient.id} />
+            </>
+          ) : null}
+        </ScreenScroll>
+      ) : null}
+
+      <ConfirmSheet
+        testID="patient-detail-delete-dialog"
+        title="Excluir paciente"
+        message={`Tem certeza que deseja excluir o paciente ${patient?.fullName ?? ''}? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        isOpen={isDeleting}
+        isPending={remove.isPending}
+        onClose={() => setDeleting(false)}
+        onConfirm={confirmDelete}
+      />
+    </Screen>
+  )
+}
+
+const styles = StyleSheet.create({
+  bar: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
+  back: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  sectionTitle: { fontSize: 15, fontWeight: '700', marginTop: 12 },
+})

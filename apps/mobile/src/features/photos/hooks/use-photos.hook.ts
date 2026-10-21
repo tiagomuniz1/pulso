@@ -3,6 +3,7 @@ import * as ImagePicker from 'expo-image-picker'
 import {
   deleteConsultationPhotoUseCase,
   listAppointmentPhotosUseCase,
+  listPatientPhotosUseCase,
   uploadConsultationPhotosUseCase,
   type IApiError,
   type UploadFile,
@@ -77,4 +78,22 @@ export async function pickFromLibrary(): Promise<UploadFile[] | null> {
   if (result.canceled) return []
 
   return toUploadFiles(result.assets)
+}
+
+/**
+ * A galeria do paciente — as fotos de todas as consultas dele.
+ *
+ * O recorte por profissional é do servidor: o PROFESSIONAL recebe só as
+ * fotos das próprias consultas, e não há parâmetro que sobreponha isso.
+ * Uma página grande de propósito, como o histórico: a ficha mostra a
+ * evolução, e paginar de dez em dez esconderia o começo do tratamento.
+ */
+const TAMANHO_DA_GALERIA = 50
+
+export function usePatientPhotos(patientId: string) {
+  return useQuery({
+    queryKey: ['consultation-photos', 'by-patient', patientId],
+    queryFn: () => listPatientPhotosUseCase(patientId, 1, TAMANHO_DA_GALERIA),
+    enabled: Boolean(patientId),
+  })
 }

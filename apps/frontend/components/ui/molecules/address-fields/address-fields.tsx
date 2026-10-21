@@ -2,6 +2,7 @@
 
 import type { FieldErrors, FieldValues, UseFormRegister, Path } from 'react-hook-form'
 import { z } from 'zod'
+import { hasAnyAddressValue, toNormalizedAddress } from '@app/shared'
 import { Input } from '@/components/ui/atoms/input/input'
 
 export const zipCodeRegex = /^\d{5}-\d{3}$/
@@ -164,12 +165,6 @@ export const EMPTY_ADDRESS: Required<Omit<AddressFormValues, 'complement' | 'cou
   country: '',
 }
 
-/** True quando a pessoa digitou qualquer coisa no bloco (ignorando espaços). */
-export function hasAnyAddressValue(address: PartialAddressFormValues): boolean {
-  if (!address) return false
-  return Object.values(address).some((value) => typeof value === 'string' && value.trim() !== '')
-}
-
 /**
  * Valida o bloco só quando ele foi tocado, e devolve os erros já ancorados em
  * `address.<campo>` para o react-hook-form pintar o campo certo.
@@ -196,18 +191,12 @@ export function validateOptionalAddress(
   }
 }
 
-/** Bloco do formulário → o `address` que vai para a API (ou nada). */
-export function toAddressInput(address: PartialAddressFormValues) {
-  if (!hasAnyAddressValue(address)) return undefined
-
-  return {
-    street: address!.street!.trim(),
-    number: address!.number!.trim(),
-    complement: address?.complement?.trim() ? address.complement.trim() : null,
-    neighborhood: address!.neighborhood!.trim(),
-    city: address!.city!.trim(),
-    state: address!.state!.trim().toUpperCase(),
-    zipCode: address!.zipCode!.trim(),
-    country: address?.country?.trim() ? address.country.trim().toUpperCase() : 'BR',
-  }
-}
+/**
+ * Bloco do formulário → o `address` que vai para a API (ou nada).
+ *
+ * A normalização mora no `@app/shared` desde que o app passou a ter o mesmo
+ * formulário: a UF em minúsculas e o país ausente são erros silenciosos, que
+ * passam pelo formulário e só aparecem no cadastro depois. Aqui fica só o
+ * nome que a web sempre usou.
+ */
+export const toAddressInput = toNormalizedAddress

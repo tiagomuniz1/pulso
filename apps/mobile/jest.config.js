@@ -8,8 +8,12 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {
     // Código-fonte, não o build: o babel do preset já transpila TypeScript, e
-    // apontar para `dist` obrigaria a reconstruir o core antes de cada rodada.
+    // apontar para `dist` obrigaria a reconstruir o pacote antes de cada
+    // rodada. Com o `shared` fora daqui o sintoma era pior do que um erro de
+    // compilação: a função nova existia no fonte, o teste a importava do
+    // `dist` antigo e o erro era "is not a function", longe da causa.
     '^@app/core$': '<rootDir>/../../packages/core/src/index.ts',
+    '^@app/shared$': '<rootDir>/../../packages/shared/src/index.ts',
   },
   collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/app/**', '!src/tests/**'],
   coveragePathIgnorePatterns: ['/node_modules/'],
