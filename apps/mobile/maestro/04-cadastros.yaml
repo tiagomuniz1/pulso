@@ -1,0 +1,80 @@
+appId: center.pulso.app
+name: Percorrer os cadastros pelo menu
+env:
+  EMAIL: ${MAESTRO_EMAIL}
+  PASSWORD: ${MAESTRO_PASSWORD}
+  CLINIC: ${MAESTRO_CLINIC}
+---
+- runFlow: shared/login.yaml
+
+# Os cinco cadastros da fase 5, abertos pelo menu. O que este fluxo prova é
+# o que teste de unidade não prova: que a rota existe, que o item do menu
+# aponta para ela e que a tela monta com dado de verdade.
+
+- tapOn:
+    id: "header-menu"
+- tapOn:
+    id: "drawer-item-patients"
+- extendedWaitUntil:
+    visible:
+      id: "patient-list-screen"
+    timeout: 15000
+- assertVisible:
+    id: "patient-list-header"
+- assertVisible:
+    id: "patient-list-search"
+
+- tapOn:
+    id: "header-menu"
+- tapOn:
+    id: "drawer-item-users"
+- extendedWaitUntil:
+    visible:
+      id: "user-list-screen"
+    timeout: 15000
+- assertVisible:
+    id: "user-list-header"
+
+- tapOn:
+    id: "header-menu"
+- tapOn:
+    id: "drawer-item-professionals"
+- extendedWaitUntil:
+    visible:
+      id: "professional-list-screen"
+    timeout: 15000
+- assertVisible:
+    id: "professional-list-header"
+
+- tapOn:
+    id: "header-menu"
+- tapOn:
+    id: "drawer-item-schedules"
+- extendedWaitUntil:
+    visible:
+      id: "schedule-list-screen"
+    timeout: 15000
+- assertVisible:
+    id: "schedule-list-day"
+
+- tapOn:
+    id: "header-menu"
+- tapOn:
+    id: "drawer-item-appointment-labels"
+- extendedWaitUntil:
+    visible:
+      id: "appointment-label-list-screen"
+    timeout: 15000
+- assertVisible:
+    id: "appointment-label-list-header"
+
+# O menu marca onde se está. Era uma constante enquanto havia um item só, e
+# com sete marcaria "Consultas" o tempo todo.
+- tapOn:
+    id: "header-menu"
+- assertVisible:
+    id: "drawer-item-appointment-labels"
+- tapOn:
+    id: "drawer-backdrop"
+- assertVisible:
+    id: "appointment-label-list-screen"

@@ -54,20 +54,43 @@ function literalPrefix(flowId: string): string {
 /**
  * O id existe no código, literal ou interpolado.
  *
- * `drawer-item-appointments` não aparece escrito em lugar nenhum: a lista
- * monta `testID={`drawer-item-${item.id}`}`. Então se o literal não casa,
- * tira-se **um** segmento e exige-se a interpolação exatamente ali. Um
- * segmento só, e com o `${` colado: aceitar qualquer prefixo faria
- * `agenda-hoje` passar por causa de `agenda-slot-booked-${…}`.
+ * Três formas, e as três são necessárias:
+ *
+ * 1. **literal** — `testID="agenda-screen"` no JSX, ou `testID: 'x'` em quem
+ *    recebe o id por propriedade;
+ * 2. **montado na origem** — `testID={`drawer-item-${item.id}`}`: o prefixo
+ *    é fixo e o resto vem do dado;
+ * 3. **montado por quem recebe** — o `ChoiceField` nomeia cada pastilha com
+ *    `${testID}-${option.value}`, e o prefixo literal está em quem o chama.
+ *
+ * A terceira é a que exige cuidado. Aceitar "qualquer sufixo sobre um id
+ * que existe" não guarda nada: `patient-list-busca` passaria por causa de
+ * `patient-list`. Então o que se confere é **o componente que recebeu
+ * aquele id** e quais sufixos ele sabe produzir — os fixos por nome, e os
+ * dinâmicos como curinga, que é tudo que dá para afirmar sem desenhar a
+ * tela.
  */
 function isExposed(prefix: string): boolean {
   const trimmed = prefix.replace(/-$/, '')
-  if (SOURCE.includes(`testID="${trimmed}"`)) return true
-  // `agenda-slot-booked-.*` chega aqui já como o próprio pai.
-  if (interpolates(trimmed)) return true
+  if (isLiteral(trimmed) || interpolates(trimmed)) return true
 
-  const parent = trimmed.slice(0, trimmed.lastIndexOf('-'))
-  return parent.length > 0 && interpolates(parent)
+  const segments = trimmed.split('-')
+  for (let cut = segments.length - 1; cut > 0; cut -= 1) {
+    const parent = segments.slice(0, cut).join('-')
+    const suffix = segments.slice(cut).join('-')
+    if (interpolates(parent)) return true
+    if (acceptsSuffix(parent, suffix)) return true
+  }
+  return false
+}
+
+/**
+ * Escrito como `testID="x"` no JSX — ou como `testID: 'x'`, que é a forma
+ * de quem recebe o id por propriedade, como o botão do cabeçalho de
+ * listagem.
+ */
+function isLiteral(id: string): boolean {
+  return SOURCE.includes(`testID="${id}"`) || SOURCE.includes(`testID: '${id}'`)
 }
 
 /**
@@ -77,6 +100,42 @@ function isExposed(prefix: string): boolean {
  */
 function interpolates(prefix: string): boolean {
   return SOURCE.includes(`testID={\`${prefix}-\${`) || SOURCE.includes(`= \`${prefix}-\${`)
+}
+
+/** O componente que recebeu aquele id literal — o `<X` mais próximo antes. */
+function ownerOf(id: string): string | null {
+  const index = SOURCE.indexOf(`testID="${id}"`)
+  if (index === -1) return null
+  const opened = [...SOURCE.slice(0, index).matchAll(/<([A-Z]\w*)/g)].pop()
+  return opened ? opened[1] : null
+}
+
+/**
+ * Os sufixos que um componente sabe produzir a partir do próprio `testID`.
+ *
+ * `null` quando ele produz sufixo dinâmico (`${option.value}`) — aí
+ * qualquer sufixo é possível e o teste não tem como ser mais específico.
+ */
+function suffixesOf(component: string): Set<string> | null {
+  const definition = SOURCE.match(
+    new RegExp(`function ${component}\\(([\\s\\S]*?)\\n}\\n`),
+  )
+  if (!definition) return new Set()
+
+  const body = definition[1]
+  if (/testID=\{`\$\{testID\}-\$\{/.test(body)) return null
+
+  const statics = [...body.matchAll(/testID=\{`\$\{testID\}-([\w-]+)`\}/g)]
+  return new Set(statics.map((match) => match[1]))
+}
+
+function acceptsSuffix(parent: string, suffix: string): boolean {
+  if (!isLiteral(parent)) return false
+  const owner = ownerOf(parent)
+  if (!owner) return false
+
+  const suffixes = suffixesOf(owner)
+  return suffixes === null || suffixes.has(suffix)
 }
 
 function referencedIds(): { file: string; id: string }[] {

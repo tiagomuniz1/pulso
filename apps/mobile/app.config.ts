@@ -11,7 +11,7 @@ import type { ExpoConfig } from 'expo/config'
 const config: ExpoConfig = {
   name: 'Pulso',
   slug: 'pulso',
-  version: '0.3.0',
+  version: '0.4.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
   // Acompanha o tema do sistema, como a web acompanha `prefers-color-scheme`.

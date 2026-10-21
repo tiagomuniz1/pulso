@@ -1,0 +1,84 @@
+appId: center.pulso.app
+name: Cadastrar e abrir um paciente
+env:
+  EMAIL: ${MAESTRO_EMAIL}
+  PASSWORD: ${MAESTRO_PASSWORD}
+  CLINIC: ${MAESTRO_CLINIC}
+  PATIENT_NAME: ${MAESTRO_PATIENT_NAME}
+  PATIENT_EMAIL: ${MAESTRO_PATIENT_EMAIL}
+  PATIENT_CPF: ${MAESTRO_PATIENT_CPF}
+---
+- runFlow: shared/login.yaml
+
+- tapOn:
+    id: "header-menu"
+- tapOn:
+    id: "drawer-item-patients"
+- extendedWaitUntil:
+    visible:
+      id: "patient-list-screen"
+    timeout: 15000
+
+- tapOn:
+    id: "patient-list-new"
+- assertVisible:
+    id: "patient-form"
+
+- tapOn:
+    id: "patient-form-fullname"
+- inputText: ${PATIENT_NAME}
+- tapOn:
+    id: "patient-form-email"
+- inputText: ${PATIENT_EMAIL}
+- tapOn:
+    id: "patient-form-phone"
+- inputText: "11999998888"
+- tapOn:
+    id: "patient-form-birthdate"
+- inputText: "15051990"
+- tapOn:
+    id: "patient-form-document"
+- inputText: ${PATIENT_CPF}
+- hideKeyboard
+- tapOn:
+    id: "patient-form-gender-female"
+# O botão fica no fim de um formulário longo; sem rolar, o toque cai fora.
+- scrollUntilVisible:
+    element:
+      id: "patient-form-submit"
+    direction: DOWN
+- tapOn:
+    id: "patient-form-submit"
+
+- extendedWaitUntil:
+    visible:
+      id: "patient-list-screen"
+    timeout: 15000
+
+# A busca é do servidor: achar o que acabou de ser criado prova as duas
+# coisas de uma vez.
+- tapOn:
+    id: "patient-list-search"
+- inputText: ${PATIENT_NAME}
+- hideKeyboard
+- extendedWaitUntil:
+    visible: ${PATIENT_NAME}
+    timeout: 15000
+
+- tapOn: ${PATIENT_NAME}
+- extendedWaitUntil:
+    visible:
+      id: "patient-details"
+    timeout: 15000
+- assertVisible:
+    id: "patient-details-phone"
+- assertVisible:
+    id: "patient-details-document"
+# Prontuários e fotos são dado clínico, e o ADMIN os vê.
+- assertVisible:
+    id: "patient-history-title"
+
+- tapOn:
+    id: "patient-detail-back"
+- assertVisible:
+    id: "patient-list-screen"

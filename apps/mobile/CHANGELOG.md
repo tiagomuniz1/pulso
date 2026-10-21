@@ -1,5 +1,62 @@
 # Changelog — Mobile
 
+## [0.4.0] - 2026-10-21
+
+Os cadastros. Com isto o app deixa de ser só o dia de atendimento: sete dos
+oito itens do menu da web têm tela, e quem usa o celular não precisa mais
+abrir o navegador para cadastrar uma paciente ou corrigir o próprio nome.
+
+### Added
+- **Pacientes** — lista com busca no servidor, ficha, cadastro e edição, e as
+  consultas do paciente. A ficha traz também o histórico de prontuários e as
+  fotos de evolução, que a recepção não vê
+- **Usuários** — lista, ficha, cadastro e edição. É por esta última que
+  PROFESSIONAL e recepção alcançam o próprio cadastro: eles não têm a
+  listagem no menu, e até agora o app não tinha onde editar os próprios dados
+- **Profissionais** — lista, ficha, cadastro e edição, com um ou mais
+  registros de conselho e as especialidades da clínica
+- **Agendas** — lista com os três filtros da web, ficha, cadastro e edição
+- **Rótulos de consulta** — o catálogo da clínica, com a paleta curada de
+  dezesseis cores
+- **Menu da conta no cabeçalho**, com "Meu perfil" e "Sair". Antes o avatar
+  saía da conta direto, porque a tela de perfil não existia
+- **"Consultas" do profissional abre a agenda dele** — era o `?doctor=` da
+  web, e no app não existia
+
+### Changed
+- **O item do menu marcado acompanha a rota.** Com um item só a constante
+  bastava; com sete ela marcaria "Consultas" enquanto a pessoa lê a lista de
+  pacientes
+- **Data é campo de texto com máscara `DD/MM/AAAA`**, e não seletor nativo. A
+  web usa `<input type="date">`, que no celular é o seletor do sistema — mas
+  o campo mais usado é data de nascimento, e um calendário para 15/05/1962
+  custa dezenas de toques para voltar setenta anos
+
+### Fixed
+- **O bloco de endereço perdia um campo** quando dois mudavam antes de o
+  React redesenhar: ele montava o próximo valor a partir da prop, que é a do
+  render anterior. Achado pelo próprio teste
+
+### Shared
+Quatro coisas saíram da web para os pacotes compartilhados, todas por
+divergência que passaria em silêncio:
+
+- `users` e `schedules` inteiros para o **`@app/core`**, e
+  `clinic-specialties` junto
+- a **normalização de endereço** para o `@app/shared` — UF em minúsculas e
+  país ausente só aparecem errados no cadastro, semanas depois
+- os **rótulos de perfil**, que eram **duas constantes com o mesmo nome e
+  valores diferentes** em arquivos diferentes da web
+- a conta que diz **quando a duração da consulta não fecha a janela** da
+  agenda, com a mensagem junto
+
+### Notes
+- **A situação vacinal ainda não está na ficha do paciente.** É a única
+  parte daquela tela cuja camada de dados não migrou para o `@app/core`, e
+  vem junto com o resto de vacinas
+- Faltam, do menu: **Dashboard**, **Modelos de prontuário** e **Modelos de
+  receita** — as três telas mais caras, que não são porte e sim redesenho
+
 ## [0.3.0] - 2026-10-21
 
 Câmera, arquivos e a porta das lojas. Com isto os dois motivos declarados do

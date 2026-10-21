@@ -67,7 +67,7 @@ export const NAVIGATION_ITEMS: INavigationItem[] = [
     id: 'appointment-labels',
     label: 'Rótulos de consulta',
     icon: 'tag',
-    route: null,
+    route: '/(app)/appointment-labels',
     roles: [UserRole.ADMIN],
   },
   {
