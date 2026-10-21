@@ -1,6 +1,6 @@
-jest.mock('@/lib/api-client')
+jest.mock('../../../api/api-client.registry')
 
-import { apiClient } from '@/lib/api-client'
+import { apiClient } from '../../../api/api-client.registry'
 import { UserRole } from '@app/shared'
 import { userService } from './users.service'
 
@@ -90,5 +90,19 @@ describe('userService', () => {
     await userService.getAll({ search: 'alice', page: 1, limit: 20 })
 
     expect(mockApiClient.get).toHaveBeenCalledWith('/users?search=alice&page=1&limit=20')
+  })
+
+  /**
+   * O corpo da resposta importa: o backend responde `503` quando o e-mail não
+   * sai, e `200` só quando saiu (ver `permissions.md`). Quem chama precisa do
+   * retorno para a tela não confirmar uma entrega que não aconteceu.
+   */
+  it('sendSetPasswordEmail posts to the user endpoint and returns the body', async () => {
+    mockApiClient.post.mockResolvedValue({ sentTo: 'alice@example.com' })
+
+    const result = await userService.sendSetPasswordEmail('uuid-1')
+
+    expect(mockApiClient.post).toHaveBeenCalledWith('/users/uuid-1/send-set-password-email')
+    expect(result).toEqual({ sentTo: 'alice@example.com' })
   })
 })

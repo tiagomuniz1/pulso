@@ -1,18 +1,18 @@
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
-jest.mock('../services/users.service')
+jest.mock('@app/core/src/features/users/services/users.service')
 jest.mock('@app/core/src/features/professionals/services/professionals.service')
 
 import { screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useRouter } from 'next/navigation'
 import { UserRole } from '@app/shared'
-import { userService } from '../services/users.service'
+import { userService } from '@app/core'
 import { professionalsService } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { useAuthStore } from '@/stores/auth.store'
 import { UserForm } from './user-form'
-import type { IUserModel } from '../types/user-model.types'
-import type { ICreateUserInput } from '../types/user-input.types'
+import type { IUserModel } from '@app/core'
+import type { ICreateUserInput } from '@app/core'
 
 const mockPush = jest.fn()
 

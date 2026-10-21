@@ -1,13 +1,13 @@
-jest.mock('../use-cases/get-schedule.use-case')
+jest.mock('@app/core/src/features/schedules/use-cases/get-schedule.use-case')
 
 import React from 'react'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { DayOfWeek } from '@app/shared'
 import { createQueryClient } from '@/lib/react-query.config'
-import { getScheduleUseCase } from '../use-cases/get-schedule.use-case'
+import { getScheduleUseCase } from '@app/core'
 import { useSchedule } from './use-schedule.hook'
-import type { IScheduleModel } from '../types/schedule-model.types'
+import type { IScheduleModel } from '@app/core'
 
 function wrapper({ children }: { children: React.ReactNode }) {
   const client = createQueryClient()

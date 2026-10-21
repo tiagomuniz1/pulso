@@ -13,7 +13,7 @@ import { cn } from '@/lib/cn'
 import { USER_ROLE_LABELS, USER_ROLE_DESCRIPTIONS } from '@/lib/user-role-labels'
 import { primaryProfessionLabel, primaryRegistrationLabel } from '@/components/features/professionals/utils/profession-label'
 import { useProfessionalByUserId } from '../hooks/use-professional-by-user-id.hook'
-import type { IUserModel } from '../types/user-model.types'
+import type { IUserModel } from '@app/core'
 
 interface UserDetailsProps {
   user: IUserModel

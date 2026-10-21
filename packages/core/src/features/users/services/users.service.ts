@@ -1,4 +1,4 @@
-import { apiClient } from '@/lib/api-client'
+import { apiClient } from '../../../api/api-client.registry'
 import type { CreateUserDto, PaginatedUsersResponseDto, SendSetPasswordEmailResponseDto, UpdateUserDto, UserResponseDto } from '@app/shared'
 import type { IUserListParams } from '../types/user-input.types'
 

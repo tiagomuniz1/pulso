@@ -3,7 +3,7 @@
 import { Modal } from '@/components/ui/organisms/modal/modal'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Typography } from '@/components/ui/atoms/typography/typography'
-import type { IUserModel } from '../types/user-model.types'
+import type { IUserModel } from '@app/core'
 
 export interface DeleteUserDialogProps {
   user: IUserModel | null

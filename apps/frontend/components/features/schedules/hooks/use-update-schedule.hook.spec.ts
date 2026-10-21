@@ -1,5 +1,5 @@
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
-jest.mock('../use-cases/update-schedule.use-case')
+jest.mock('@app/core/src/features/schedules/use-cases/update-schedule.use-case')
 jest.mock('@/lib/slug-context', () => ({ useSlug: () => 'test-clinic', useBasePath: () => '/test-clinic' }))
 
 import React from 'react'
@@ -8,9 +8,9 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { DayOfWeek } from '@app/shared'
 import { createQueryClient } from '@/lib/react-query.config'
-import { updateScheduleUseCase } from '../use-cases/update-schedule.use-case'
+import { updateScheduleUseCase } from '@app/core'
 import { useUpdateSchedule } from './use-update-schedule.hook'
-import type { IScheduleModel } from '../types/schedule-model.types'
+import type { IScheduleModel } from '@app/core'
 
 const mockPush = jest.fn()
 

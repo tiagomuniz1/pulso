@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/atoms/button/button'
 import { useSchedule } from '@/components/features/schedules/hooks/use-schedule.hook'
 import { useUpdateSchedule } from '@/components/features/schedules/hooks/use-update-schedule.hook'
 import { ScheduleForm } from '@/components/features/schedules/components/schedule-form'
-import type { IUpdateScheduleInput } from '@/components/features/schedules/types/schedule-input.types'
+import type { IUpdateScheduleInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export default function EditSchedulePage() {

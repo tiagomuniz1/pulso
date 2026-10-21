@@ -18,7 +18,7 @@ import {
   validateOptionalAddress,
 } from '@/components/ui/molecules/address-fields/address-fields'
 import { cn } from '@/lib/cn'
-import { userService } from '@/components/features/users/services/users.service'
+import { userService } from '@app/core'
 import { TitularSearch } from './titular-search'
 const KINSHIP_TYPES = Object.values(KinshipType)
 

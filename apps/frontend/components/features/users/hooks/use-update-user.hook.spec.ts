@@ -1,4 +1,4 @@
-jest.mock('../use-cases/update-user.use-case')
+jest.mock('@app/core/src/features/users/use-cases/update-user.use-case')
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
 jest.mock('@/lib/slug-context', () => ({ useSlug: () => 'test-clinic', useBasePath: () => '/test-clinic' }))
 
@@ -8,7 +8,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { UserRole } from '@app/shared'
 import { createQueryClient } from '@/lib/react-query.config'
-import { updateUserUseCase } from '../use-cases/update-user.use-case'
+import { updateUserUseCase } from '@app/core'
 import { useUpdateUser } from './use-update-user.hook'
 
 const mockPush = jest.fn()

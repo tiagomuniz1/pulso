@@ -3,8 +3,8 @@
 import { Modal } from '@/components/ui/organisms/modal/modal'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Typography } from '@/components/ui/atoms/typography/typography'
-import { DAY_OF_WEEK_LABELS } from '../types/schedule-model.types'
-import type { IScheduleModel } from '../types/schedule-model.types'
+import { DAY_OF_WEEK_LABELS } from '@app/core'
+import type { IScheduleModel } from '@app/core'
 
 export interface ScheduleDeleteDialogProps {
   schedule: IScheduleModel | null

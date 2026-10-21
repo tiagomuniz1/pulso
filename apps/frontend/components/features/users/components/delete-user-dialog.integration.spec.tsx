@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { UserRole } from '@app/shared'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { DeleteUserDialog } from './delete-user-dialog'
-import type { IUserModel } from '../types/user-model.types'
+import type { IUserModel } from '@app/core'
 
 const user: IUserModel = {
   id: 'uuid-1',

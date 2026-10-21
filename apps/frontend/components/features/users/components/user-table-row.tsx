@@ -5,7 +5,7 @@ import { COUNCIL_TYPE_OCCUPATION_LABELS, UserRole } from '@app/shared'
 import { useBasePath } from '@/lib/slug-context'
 import { Button } from '@/components/ui/atoms/button/button'
 import { cn } from '@/lib/cn'
-import type { IUserModel } from '../types/user-model.types'
+import type { IUserModel } from '@app/core'
 
 function getInitials(fullName: string): string {
   const parts = fullName.trim().split(/\s+/)

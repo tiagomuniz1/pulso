@@ -14,8 +14,8 @@ import { useBasePath } from '@/lib/slug-context'
 import { useAuthStore } from '@/stores/auth.store'
 import { USER_ROLE_LABELS, USER_ROLE_DESCRIPTIONS } from '@/lib/user-role-labels'
 import { useProfessionalByUserId } from '../hooks/use-professional-by-user-id.hook'
-import type { ICreateUserInput, IUpdateUserInput } from '../types/user-input.types'
-import type { IUserModel } from '../types/user-model.types'
+import type { ICreateUserInput, IUpdateUserInput } from '@app/core'
+import type { IUserModel } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 const createSchema = z.object({

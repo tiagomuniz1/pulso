@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { DayOfWeek } from '@app/shared'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { ScheduleDetails } from './schedule-details'
-import type { IScheduleModel } from '../types/schedule-model.types'
+import type { IScheduleModel } from '@app/core'
 
 beforeEach(() => {
   ;(useRouter as jest.Mock).mockReturnValue({ push: jest.fn() })

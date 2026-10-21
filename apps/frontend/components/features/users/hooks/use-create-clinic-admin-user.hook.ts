@@ -3,9 +3,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useBasePath } from '@/lib/slug-context'
-import { createUserUseCase } from '../use-cases/create-user.use-case'
-import type { ICreateUserInput } from '../types/user-input.types'
-import type { IUserModel } from '../types/user-model.types'
+import { createUserUseCase } from '@app/core'
+import type { ICreateUserInput } from '@app/core'
+import type { IUserModel } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export function useCreateClinicAdminUser(clinicId: string) {

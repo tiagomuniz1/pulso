@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { listSchedulesUseCase } from '../use-cases/list-schedules.use-case'
-import type { IScheduleListParams } from '../types/schedule-input.types'
+import { listSchedulesUseCase } from '@app/core'
+import type { IScheduleListParams } from '@app/core'
 
 export function useSchedules(params?: IScheduleListParams) {
   return useQuery({

@@ -13,7 +13,7 @@ import { useUsers } from '../hooks/use-users.hook'
 import { useDeleteUser } from '../hooks/use-delete-user.hook'
 import { UserTableRow, getInitials, roleBadge, professionLabel } from './user-table-row'
 import { DeleteUserDialog } from './delete-user-dialog'
-import type { IUserModel } from '../types/user-model.types'
+import type { IUserModel } from '@app/core'
 import { cn } from '@/lib/cn'
 
 export function UserList() {

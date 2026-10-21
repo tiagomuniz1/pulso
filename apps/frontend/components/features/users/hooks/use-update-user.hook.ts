@@ -3,9 +3,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useBasePath } from '@/lib/slug-context'
-import { updateUserUseCase } from '../use-cases/update-user.use-case'
-import type { IUpdateUserInput } from '../types/user-input.types'
-import type { IUserModel } from '../types/user-model.types'
+import { updateUserUseCase } from '@app/core'
+import type { IUpdateUserInput } from '@app/core'
+import type { IUserModel } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export function useUpdateUser() {

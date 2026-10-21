@@ -6,7 +6,7 @@ import userEvent from '@testing-library/user-event'
 import { useRouter } from 'next/navigation'
 import { CouncilType, UserRole } from '@app/shared'
 import { UserTableRow } from './user-table-row'
-import type { IUserModel } from '../types/user-model.types'
+import type { IUserModel } from '@app/core'
 
 const makeUser = (overrides: Partial<IUserModel> = {}): IUserModel => ({
   id: 'uuid-1',

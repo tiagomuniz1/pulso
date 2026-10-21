@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getUserUseCase } from '../use-cases/get-user.use-case'
+import { getUserUseCase } from '@app/core'
 
 export function useUser(id: string) {
   return useQuery({
