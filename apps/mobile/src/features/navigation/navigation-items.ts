@@ -39,7 +39,7 @@ export const NAVIGATION_ITEMS: INavigationItem[] = [
     id: 'professionals',
     label: 'Profissionais',
     icon: 'file-text',
-    route: null,
+    route: '/(app)/professionals',
     roles: [UserRole.ADMIN, UserRole.PROFESSIONAL, UserRole.USER],
   },
   {

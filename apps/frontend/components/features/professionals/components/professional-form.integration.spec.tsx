@@ -1,7 +1,7 @@
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
 jest.mock('@app/core/src/features/professionals/services/professionals.service')
 jest.mock('@app/core/src/features/users/services/users.service')
-jest.mock('@/components/features/clinic-specialties/services/clinic-specialties.service')
+jest.mock('@app/core/src/features/clinic-specialties/services/clinic-specialties.service')
 jest.mock('@/stores/auth.store')
 
 import { screen, waitFor, act, fireEvent } from '@testing-library/react'
@@ -9,7 +9,7 @@ import userEvent from '@testing-library/user-event'
 import { CouncilType } from '@app/shared'
 import { useRouter } from 'next/navigation'
 import { userService } from '@app/core'
-import { clinicSpecialtiesService } from '@/components/features/clinic-specialties/services/clinic-specialties.service'
+import { clinicSpecialtiesService } from '@app/core'
 import { useAuthStore } from '@/stores/auth.store'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { ProfessionalForm } from './professional-form'

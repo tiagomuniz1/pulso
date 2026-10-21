@@ -1,14 +1,14 @@
-jest.mock('../services/clinic-specialties.service')
+jest.mock('@app/core/src/features/clinic-specialties/services/clinic-specialties.service')
 jest.mock('@/components/features/specialties/services/specialties.service')
-jest.mock('../use-cases/link-specialty.use-case')
-jest.mock('../use-cases/unlink-specialty.use-case')
+jest.mock('@app/core/src/features/clinic-specialties/use-cases/link-specialty.use-case')
+jest.mock('@app/core/src/features/clinic-specialties/use-cases/unlink-specialty.use-case')
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { clinicSpecialtiesService } from '../services/clinic-specialties.service'
+import { clinicSpecialtiesService } from '@app/core'
 import { specialtiesService } from '@/components/features/specialties/services/specialties.service'
-import { linkSpecialtyUseCase } from '../use-cases/link-specialty.use-case'
-import { unlinkSpecialtyUseCase } from '../use-cases/unlink-specialty.use-case'
+import { linkSpecialtyUseCase } from '@app/core'
+import { unlinkSpecialtyUseCase } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { ClinicSpecialtySection } from './clinic-specialty-section'
 

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { FlatList, StyleSheet } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { UserRole } from '@app/shared'
 import { EmptyState, ErrorState, LoadingState, Screen } from '../../../components/ui/screen'
 import { useSessionStore } from '../../auth/session.store'
@@ -34,6 +34,8 @@ export function AgendaScreen() {
 
   const router = useRouter()
   const user = useSessionStore((state) => state.user)
+  /** Quem chegou aqui pelo "Consultas" da lista de profissionais. */
+  const { professionalId: fromRoute } = useLocalSearchParams<{ professionalId?: string }>()
 
   const professionals = useAgendaProfessionals()
   const labels = useActiveAppointmentLabels()
@@ -50,12 +52,17 @@ export function AgendaScreen() {
    * com ficha abria a agenda de outra pessoa e tinha que se escolher no
    * seletor toda manhã. Só vale como ponto de partida — a escolha dele tem
    * precedência. Sem ficha, o primeiro da lista.
+   *
+   * O profissional vindo da rota entra **depois** da escolha no seletor e
+   * **antes** do padrão: é o `?doctor=` da web, que abre a agenda de quem se
+   * clicou na lista — mas trocar no seletor depois disso tem de funcionar.
    */
   const professionalId = useMemo(() => {
     if (selected) return selected
+    if (fromRoute) return fromRoute
     if (user?.role === UserRole.PROFESSIONAL) return 'self'
     return myProfessional?.id ?? professionals.data?.[0]?.id ?? null
-  }, [selected, user?.role, myProfessional?.id, professionals.data])
+  }, [selected, fromRoute, user?.role, myProfessional?.id, professionals.data])
 
   const { slots, isLoading, isError, refetch } = useDayAgenda(professionalId, date, labelFilter)
   const exceptions = useScheduleExceptions(professionalId, date)

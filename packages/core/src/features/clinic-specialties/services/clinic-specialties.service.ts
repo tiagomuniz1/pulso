@@ -1,4 +1,4 @@
-import { apiClient } from '@/lib/api-client'
+import { apiClient } from '../../../api/api-client.registry'
 import type { ClinicSpecialtyResponseDto, PaginatedClinicSpecialtiesResponseDto } from '@app/shared'
 import type { IClinicSpecialtyListParams } from '../types/clinic-specialty.types'
 

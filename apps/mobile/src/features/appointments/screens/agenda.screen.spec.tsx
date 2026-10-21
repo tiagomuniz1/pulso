@@ -8,7 +8,7 @@ import {
   listProfessionalsUseCase,
   listScheduleExceptionsUseCase,
 } from '@app/core'
-import { fireEvent, screen, waitFor } from '@testing-library/react-native'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native'
 import { renderWithProviders } from '../../../tests/render-with-providers'
 import { useSessionStore } from '../../auth/session.store'
 import { useThemeStore } from '../../../theme/theme.store'
@@ -24,7 +24,17 @@ jest.mock('@app/core/src/features/professionals/use-cases/get-my-professional.us
 jest.mock('@app/core/src/features/patients/use-cases/list-patients.use-case')
 
 const mockPush = jest.fn()
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }))
+/**
+ * Sobrescrito nos casos que chegam à agenda pela lista de profissionais.
+ *
+ * O prefixo `mock` não é estilo: o jest só permite que a fábrica de
+ * `jest.mock` leia variáveis externas com esse prefixo.
+ */
+let mockRouteParams: Record<string, string> = {}
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: mockPush }),
+  useLocalSearchParams: () => mockRouteParams,
+}))
 
 const mockAppointments = listAppointmentsUseCase as jest.MockedFunction<typeof listAppointmentsUseCase>
 const mockAvailability = getAvailabilityUseCase as jest.MockedFunction<typeof getAvailabilityUseCase>
@@ -99,6 +109,7 @@ function asRole(role: UserRole) {
 describe('AgendaScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mockRouteParams = {}
     asRole(UserRole.ADMIN)
     mockProfessionals.mockResolvedValue([professional('prof-1', 'Dra. Ana')])
     mockLabels.mockResolvedValue(page([]))
@@ -414,6 +425,51 @@ describe('AgendaScreen', () => {
 
     await waitFor(() =>
       expect(mockAvailability).toHaveBeenCalledWith({ professionalId: 'prof-2', date: TODAY }),
+    )
+  })
+
+  /**
+   * O "Consultas" da lista de profissionais abre a agenda **daquela**
+   * pessoa, como o `?doctor=` da web. Sem isto o toque cairia na agenda de
+   * outra pessoa e não teria sentido nenhum.
+   */
+  it('abre na agenda de quem veio pela rota', async () => {
+    mockRouteParams = { professionalId: 'prof-2' }
+    mockProfessionals.mockResolvedValue([
+      professional('prof-1', 'Dra. Ana'),
+      professional('prof-2', 'Dr. Bruno'),
+    ])
+
+    await renderWithProviders(<AgendaScreen />)
+
+    await waitFor(() =>
+      expect(mockAvailability).toHaveBeenCalledWith({ professionalId: 'prof-2', date: TODAY }),
+    )
+  })
+
+  /**
+   * A rota é ponto de partida, não prisão: trocar no seletor depois tem de
+   * funcionar, senão quem chegou pelo link fica preso naquela agenda.
+   */
+  it('a escolha no seletor vence a rota', async () => {
+    mockRouteParams = { professionalId: 'prof-2' }
+    mockProfessionals.mockResolvedValue([
+      professional('prof-1', 'Dra. Ana'),
+      professional('prof-2', 'Dr. Bruno'),
+    ])
+
+    await renderWithProviders(<AgendaScreen />)
+    await waitFor(() => expect(mockAvailability).toHaveBeenCalled())
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('toolbar-professional-select'))
+    })
+    await act(async () => {
+      fireEvent.press(await screen.findByTestId('toolbar-professional-select-option-prof-1'))
+    })
+
+    await waitFor(() =>
+      expect(mockAvailability).toHaveBeenLastCalledWith({ professionalId: 'prof-1', date: TODAY }),
     )
   })
 
