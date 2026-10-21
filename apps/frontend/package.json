@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "test:unit": "jest --testPathPattern='.*\\.spec\\.(ts|tsx)$' --passWithNoTests",
-    "test:integration": "jest --testPathPattern='.*\\.integration\\.(ts|tsx)$' --passWithNoTests",
+    "test:integration": "jest --testPathPattern='.*\\.integration\\.spec\\.(ts|tsx)$'",
     "test": "yarn test:unit && yarn test:integration",
     "test:unit:coverage": "jest --testPathPattern='.*\\.spec\\.(ts|tsx)$' --coverage --passWithNoTests",
     "typecheck": "tsc --noEmit && yarn typecheck:test && yarn typecheck:e2e",
