@@ -12,7 +12,7 @@ import { AgeDistributionCard } from './components/AgeDistributionCard'
 import { BirthdayPanel } from './components/BirthdayPanel'
 import { DashboardDateRangeFilter } from './components/DashboardDateRangeFilter'
 import { toLocalDateString } from '@/lib/format-date'
-import type { IDashboardFilters } from './types/dashboard.types'
+import type { IDashboardFilters } from '@app/core'
 
 function defaultDates(): { from: string; to: string } {
   const today = new Date()

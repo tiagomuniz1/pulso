@@ -1,0 +1,96 @@
+appId: center.pulso.app
+name: Modelos de receita, do menu à receita da consulta
+env:
+  # Entra como ADMIN porque o fluxo passa pelo menu e, no fim, abre uma
+  # consulta qualquer da clínica para emitir a partir do modelo.
+  EMAIL: ${MAESTRO_ADMIN_EMAIL}
+  PASSWORD: ${MAESTRO_ADMIN_PASSWORD}
+  CLINIC: ${MAESTRO_CLINIC}
+---
+- runFlow: shared/login.yaml
+
+# O catálogo do profissional: o receituário que ele repete no dia a dia.
+- tapOn:
+    id: "header-menu"
+- tapOn:
+    id: "drawer-item-prescription-templates"
+- extendedWaitUntil:
+    visible:
+      id: "prescription-template-list-screen"
+    timeout: 15000
+- assertVisible:
+    id: "prescription-template-list-header"
+
+# Criar um modelo com um princípio ativo digitado. O modo "Digitar" existe
+# porque a base da ANVISA não tem manipulado nem genérico sem marca.
+- tapOn:
+    id: "prescription-template-list-new"
+- extendedWaitUntil:
+    visible:
+      id: "prescription-template-sheet"
+    timeout: 10000
+- tapOn:
+    id: "prescription-template-name"
+- inputText: "Modelo do Maestro"
+- tapOn:
+    id: "prescription-template-items-mode-digitar"
+- tapOn:
+    id: "prescription-template-items-typed"
+- inputText: "Dipirona sódica 500mg"
+- tapOn:
+    id: "prescription-template-items-add-typed"
+- assertVisible:
+    id: "prescription-template-items-item-0"
+- tapOn:
+    id: "prescription-template-items-instructions-0"
+- inputText: "1 comprimido de 8 em 8 horas"
+- hideKeyboard
+- tapOn:
+    id: "prescription-template-submit"
+- extendedWaitUntil:
+    visible:
+      id: "prescription-template-list-success"
+    timeout: 15000
+
+# Reabrir pela edição prova que o que foi gravado volta preenchido — é o
+# caminho que mais quebra quando dosagem e quantidade chegam nulas.
+- tapOn:
+    id: "prescription-template-edit-.*"
+- extendedWaitUntil:
+    visible:
+      id: "prescription-template-items-item-0"
+    timeout: 10000
+- assertVisible:
+    id: "prescription-template-items-dosage-0"
+- tapOn:
+    id: "prescription-template-sheet-close"
+
+# E o motivo de o modelo existir: aparecer na receita da consulta.
+- tapOn:
+    id: "header-menu"
+- tapOn:
+    id: "drawer-item-appointments"
+- extendedWaitUntil:
+    visible:
+      id: "agenda-screen"
+    timeout: 15000
+- tapOn:
+    id: "agenda-slot-booked-.*"
+- extendedWaitUntil:
+    visible:
+      id: "appointment-detail-screen"
+    timeout: 15000
+- tapOn:
+    id: "appointment-tab-documents"
+- tapOn:
+    id: "document-new-prescription"
+- extendedWaitUntil:
+    visible:
+      id: "prescription-templates"
+    timeout: 10000
+- tapOn:
+    id: "prescription-template-.*"
+- assertVisible:
+    id: "prescription-items-item-0"
+- tapOn:
+    id: "prescription-form-close"

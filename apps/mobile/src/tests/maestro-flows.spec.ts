@@ -78,8 +78,12 @@ function isExposed(prefix: string): boolean {
   for (let cut = segments.length - 1; cut > 0; cut -= 1) {
     const parent = segments.slice(0, cut).join('-')
     const suffix = segments.slice(cut).join('-')
+    // O prefixo literal mais longo decide. Cair para um mais curto que
+    // interpola — `prescription-template-${id}` sob
+    // `prescription-template-items-dosage-0` — aceitaria qualquer sufixo e
+    // esvaziaria o teste.
+    if (isLiteral(parent)) return acceptsSuffix(parent, suffix)
     if (interpolates(parent)) return true
-    if (acceptsSuffix(parent, suffix)) return true
   }
   return false
 }
@@ -110,32 +114,55 @@ function ownerOf(id: string): string | null {
   return opened ? opened[1] : null
 }
 
+/** O corpo da função de um componente, para ler o que ele nomeia. */
+function bodyOf(component: string): string | null {
+  const definition = SOURCE.match(new RegExp(`function ${component}\\(([\\s\\S]*?)\\n}\\n`))
+  return definition ? definition[1] : null
+}
+
+/** Quem recebe `${testID}-<sufixo>` dentro de um corpo — o `<X` mais próximo antes. */
+function receiverOf(body: string, suffix: string): string | null {
+  const index = body.indexOf('testID={`${testID}-' + suffix + '`}')
+  if (index === -1) return null
+  const opened = [...body.slice(0, index).matchAll(/<([A-Z]\w*)/g)].pop()
+  return opened ? opened[1] : null
+}
+
 /**
- * Os sufixos que um componente sabe produzir a partir do próprio `testID`.
+ * Aquele corpo sabe produzir aquele sufixo a partir do próprio `testID`?
  *
- * `null` quando ele produz sufixo dinâmico (`${option.value}`) — aí
- * qualquer sufixo é possível e o teste não tem como ser mais específico.
+ * Quatro formas, e a última é o motivo de isto ser recursivo:
+ *
+ * 1. **inteiramente dinâmico** (`${testID}-${option.value}`) — qualquer
+ *    sufixo é possível e não há o que afirmar;
+ * 2. **fixo** (`${testID}-search`);
+ * 3. **fixo com cauda dinâmica** (`${testID}-item-${index}`) — só o começo
+ *    pode ser afirmado;
+ * 4. **repassado** — o editor nomeia uma pastilha de `${testID}-mode` e
+ *    quem a recebe acrescenta `-digitar`. Sem descer até lá, o fluxo que
+ *    toca a pastilha não teria como ser verificado.
  */
-function suffixesOf(component: string): Set<string> | null {
-  const definition = SOURCE.match(
-    new RegExp(`function ${component}\\(([\\s\\S]*?)\\n}\\n`),
-  )
-  if (!definition) return new Set()
+function bodyProduces(body: string, suffix: string): boolean {
+  if (/testID=\{`\$\{testID\}-\$\{/.test(body)) return true
 
-  const body = definition[1]
-  if (/testID=\{`\$\{testID\}-\$\{/.test(body)) return null
+  const fixed = [...body.matchAll(/testID=\{`\$\{testID\}-([\w-]+)`\}/g)].map((m) => m[1])
+  if (fixed.includes(suffix)) return true
 
-  const statics = [...body.matchAll(/testID=\{`\$\{testID\}-([\w-]+)`\}/g)]
-  return new Set(statics.map((match) => match[1]))
+  const open = [...body.matchAll(/testID=\{`\$\{testID\}-([\w-]+)-\$\{/g)].map((m) => m[1])
+  if (open.some((start) => suffix.startsWith(`${start}-`))) return true
+
+  return fixed.some((start) => {
+    if (!suffix.startsWith(`${start}-`)) return false
+    const receiver = receiverOf(body, start)
+    const inner = receiver ? bodyOf(receiver) : null
+    return inner ? bodyProduces(inner, suffix.slice(start.length + 1)) : false
+  })
 }
 
 function acceptsSuffix(parent: string, suffix: string): boolean {
-  if (!isLiteral(parent)) return false
   const owner = ownerOf(parent)
-  if (!owner) return false
-
-  const suffixes = suffixesOf(owner)
-  return suffixes === null || suffixes.has(suffix)
+  const body = owner ? bodyOf(owner) : null
+  return body ? bodyProduces(body, suffix) : false
 }
 
 function referencedIds(): { file: string; id: string }[] {

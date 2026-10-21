@@ -1,4 +1,4 @@
-import { apiClient } from '@/lib/api-client'
+import { apiClient } from '../../../api/api-client.registry'
 import type { DashboardResponseDto } from '@app/shared'
 import type { IDashboardFilters } from '../types/dashboard.types'
 

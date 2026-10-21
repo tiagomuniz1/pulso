@@ -1,9 +1,9 @@
-jest.mock('../use-cases/update-prescription-template.use-case')
+jest.mock('@app/core/src/features/prescription-templates/use-cases/update-prescription-template.use-case')
 
 import React from 'react'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { updatePrescriptionTemplateUseCase } from '../use-cases/update-prescription-template.use-case'
+import { updatePrescriptionTemplateUseCase } from '@app/core'
 import { useUpdatePrescriptionTemplate } from './use-update-prescription-template.hook'
 
 function makeWrapper(client: QueryClient) {

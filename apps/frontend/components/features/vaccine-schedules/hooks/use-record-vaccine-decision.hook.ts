@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { recordVaccineDecisionUseCase } from '../use-cases/record-vaccine-decision.use-case'
+import { recordVaccineDecisionUseCase } from '@app/core'
 
 export function useRecordVaccineDecision() {
   const queryClient = useQueryClient()

@@ -53,7 +53,7 @@ export const NAVIGATION_ITEMS: INavigationItem[] = [
     id: 'prescription-templates',
     label: 'Modelos de receita',
     icon: 'link',
-    route: null,
+    route: '/(app)/prescription-templates',
     roles: [UserRole.ADMIN, UserRole.PROFESSIONAL],
   },
   {

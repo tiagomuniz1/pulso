@@ -1,30 +1,35 @@
 import { useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { useQuery } from '@tanstack/react-query'
-import { listMedicationsUseCase, type ICreatePrescriptionInput } from '@app/core'
+import type { ICreatePrescriptionInput, IPrescriptionTemplateModel } from '@app/core'
 import { Button } from '../../../components/ui/button'
-import { ChoiceField, TextField } from '../../../components/ui/fields'
+import { TextField } from '../../../components/ui/fields'
 import { useTheme } from '../../../theme/theme-context'
+import {
+  MedicationItemsEditor,
+  toMedicationPayload,
+  type IMedicationItem,
+} from '../../medications/components/medication-items-editor'
+import { usePrescriptionTemplates } from '../../prescription-templates/hooks/use-prescription-templates.hook'
 import { DocumentSheet } from './document-sheet'
 
-interface PrescriptionItem {
-  /** Do catálogo; ausente quando o princípio ativo foi digitado. */
-  medicationId?: string
-  label: string
-  dosage: string
-  quantity: string
-  instructions: string
+/** Modelo guardado → itens em edição, prontos para ajustar antes de emitir. */
+export function itemsFromTemplate(template: IPrescriptionTemplateModel): IMedicationItem[] {
+  return template.items.map((item) => ({
+    ...(item.medicationId ? { medicationId: item.medicationId } : {}),
+    label: item.name,
+    dosage: item.dosage ?? '',
+    quantity: item.quantity ?? '',
+    instructions: item.instructions,
+  }))
 }
 
 /**
- * Receita: catálogo ou texto livre.
+ * Receita: catálogo ou texto livre, com os modelos do profissional à mão.
  *
- * Os dois modos existem porque a base da ANVISA não tem tudo — manipulado e
- * princípio ativo sem marca ficam de fora, e recusá-los tornaria a receita
- * inútil para metade das prescrições.
- *
- * "Salvar como modelo" não vem: depende de `prescription-templates`, ainda
- * não portado. É aditivo e entra depois sem mexer nisto.
+ * **Partir de um modelo é o motivo de o modelo existir** — ele é o
+ * receituário que a pessoa repete no dia a dia. Carregar não emite nada:
+ * traz os itens para edição, porque a dose quase sempre muda de paciente
+ * para paciente.
  */
 export function PrescriptionForm({
   appointmentId,
@@ -40,29 +45,12 @@ export function PrescriptionForm({
   onSubmit: (input: ICreatePrescriptionInput) => void
 }) {
   const theme = useTheme()
-  const [mode, setMode] = useState<'catalogo' | 'digitar'>('catalogo')
-  const [search, setSearch] = useState('')
-  const [typed, setTyped] = useState('')
-  const [items, setItems] = useState<PrescriptionItem[]>([])
+  const [items, setItems] = useState<IMedicationItem[]>([])
   const [notes, setNotes] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  const { data: found } = useQuery({
-    queryKey: ['medications', 'search', search],
-    queryFn: () => listMedicationsUseCase({ search, limit: 10 }),
-    enabled: mode === 'catalogo' && search.trim().length > 0,
-  })
-
-  function add(item: PrescriptionItem) {
-    setItems([...items, item])
-    setSearch('')
-    setTyped('')
-    setError(null)
-  }
-
-  function update(index: number, patch: Partial<PrescriptionItem>) {
-    setItems(items.map((item, i) => (i === index ? { ...item, ...patch } : item)))
-  }
+  const templates = usePrescriptionTemplates()
+  const available = (templates.data ?? []).filter((template) => template.isActive)
 
   function handleSubmit() {
     if (items.length === 0) {
@@ -73,16 +61,15 @@ export function PrescriptionForm({
 
     onSubmit({
       appointmentId,
-      items: items.map((item) => ({
-        ...(item.medicationId
-          ? { medicationId: item.medicationId }
-          : { activeIngredientName: item.label }),
-        ...(item.dosage.trim() ? { dosage: item.dosage.trim() } : {}),
-        ...(item.quantity.trim() ? { quantity: item.quantity.trim() } : {}),
-        instructions: item.instructions.trim(),
-      })),
+      items: toMedicationPayload(items),
       ...(notes.trim() ? { notes: notes.trim() } : {}),
     })
+  }
+
+  function loadTemplate(template: IPrescriptionTemplateModel) {
+    setItems(itemsFromTemplate(template))
+    setNotes(template.notes ?? '')
+    setError(null)
   }
 
   return (
@@ -100,116 +87,34 @@ export function PrescriptionForm({
         />
       }
     >
-      <ChoiceField
-        label="Como adicionar"
-        required
-        options={[
-          { value: 'catalogo', label: 'Buscar medicamento' },
-          { value: 'digitar', label: 'Digitar' },
-        ]}
-        selected={[mode]}
-        onToggle={(value) => setMode(value as 'catalogo' | 'digitar')}
-        testID="prescription-mode"
-      />
-
-      {mode === 'catalogo' ? (
-        <>
-          <TextField
-            label="Buscar no catálogo"
-            value={search}
-            onChange={setSearch}
-            placeholder="Digite para buscar medicamento..."
-            error={items.length === 0 ? error : null}
-            testID="prescription-search"
-          />
-          {(found?.data ?? []).map((medication) => (
+      {available.length > 0 ? (
+        <View style={styles.templates} testID="prescription-templates">
+          <Text style={[styles.templatesTitle, { color: theme.textMute }]}>Partir de um modelo</Text>
+          {available.map((template) => (
             <Pressable
-              key={medication.id}
+              key={template.id}
               accessibilityRole="button"
-              onPress={() =>
-                add({
-                  medicationId: medication.id,
-                  label: medication.name,
-                  dosage: '',
-                  quantity: '',
-                  instructions: '',
-                })
-              }
-              testID={`prescription-result-${medication.id}`}
-              style={[styles.result, { borderColor: theme.line, borderRadius: theme.radius.md }]}
+              onPress={() => loadTemplate(template)}
+              testID={`prescription-template-${template.id}`}
+              style={[styles.template, { borderColor: theme.line, borderRadius: theme.radius.md }]}
             >
-              <Text style={{ color: theme.text, fontSize: 14 }}>{medication.name}</Text>
-              {medication.activeIngredient ? (
-                <Text style={{ color: theme.textMute, fontSize: 12 }}>
-                  {medication.activeIngredient}
-                </Text>
-              ) : null}
+              <Text style={{ color: theme.text, fontSize: 14 }}>{template.name}</Text>
+              <Text style={{ color: theme.textMute, fontSize: 12 }}>
+                {template.items.length === 1
+                  ? '1 medicamento'
+                  : `${template.items.length} medicamentos`}
+              </Text>
             </Pressable>
           ))}
-        </>
-      ) : (
-        <>
-          <TextField
-            label="Princípio ativo ou manipulado"
-            value={typed}
-            onChange={setTyped}
-            placeholder="Ex: Dipirona sódica 500mg"
-            error={items.length === 0 ? error : null}
-            testID="prescription-typed"
-          />
-          <Button
-            label="Adicionar"
-            variant="outline"
-            disabled={!typed.trim()}
-            onPress={() => add({ label: typed.trim(), dosage: '', quantity: '', instructions: '' })}
-            testID="prescription-add-typed"
-          />
-        </>
-      )}
-
-      {items.map((item, index) => (
-        <View
-          key={`${item.label}-${index}`}
-          style={[styles.item, { borderRadius: theme.radius.lg, borderColor: theme.accent }]}
-          testID={`prescription-item-${index}`}
-        >
-          <View style={styles.itemHeader}>
-            <Text style={[styles.itemName, { color: theme.text }]} numberOfLines={2}>
-              {item.label}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setItems(items.filter((_, i) => i !== index))}
-              testID={`prescription-remove-${index}`}
-              hitSlop={8}
-            >
-              <Text style={{ color: theme.danger, fontSize: 13 }}>Remover</Text>
-            </Pressable>
-          </View>
-          <TextField
-            label="Dosagem"
-            value={item.dosage}
-            onChange={(dosage) => update(index, { dosage })}
-            placeholder="Ex: 500mg, 20mg/ml"
-            testID={`prescription-dosage-${index}`}
-          />
-          <TextField
-            label="Quantidade"
-            value={item.quantity}
-            onChange={(quantity) => update(index, { quantity })}
-            placeholder="Ex: 1 caixa, 30 cps"
-            testID={`prescription-quantity-${index}`}
-          />
-          <TextField
-            label="Posologia"
-            value={item.instructions}
-            onChange={(instructions) => update(index, { instructions })}
-            multiline
-            placeholder="Posologia..."
-            testID={`prescription-instructions-${index}`}
-          />
         </View>
-      ))}
+      ) : null}
+
+      <MedicationItemsEditor
+        items={items}
+        onChange={setItems}
+        error={error}
+        testID="prescription-items"
+      />
 
       <TextField
         label="Observações gerais"
@@ -224,8 +129,7 @@ export function PrescriptionForm({
 }
 
 const styles = StyleSheet.create({
-  result: { borderWidth: 1, padding: 12, gap: 2 },
-  item: { borderWidth: 1, padding: 16, gap: 12 },
-  itemHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
-  itemName: { flex: 1, fontSize: 14, fontWeight: '600' },
+  templates: { gap: 8 },
+  templatesTitle: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  template: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, gap: 2 },
 })

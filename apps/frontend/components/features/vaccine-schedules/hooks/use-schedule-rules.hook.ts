@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { listScheduleRulesUseCase } from '../use-cases/list-schedule-rules.use-case'
+import { listScheduleRulesUseCase } from '@app/core'
 
 export function useScheduleRules(vaccineId?: string) {
   return useQuery({

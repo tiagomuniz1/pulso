@@ -1,9 +1,9 @@
-jest.mock('../use-cases/delete-prescription-template.use-case')
+jest.mock('@app/core/src/features/prescription-templates/use-cases/delete-prescription-template.use-case')
 
 import React from 'react'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { deletePrescriptionTemplateUseCase } from '../use-cases/delete-prescription-template.use-case'
+import { deletePrescriptionTemplateUseCase } from '@app/core'
 import { useDeletePrescriptionTemplate } from './use-delete-prescription-template.hook'
 
 function makeWrapper(client: QueryClient) {

@@ -24,6 +24,7 @@ jest.mock('@app/core/src/features/prescriptions/use-cases/create-prescription.us
 jest.mock('@app/core/src/features/atestados/use-cases/create-atestado.use-case')
 jest.mock('@app/core/src/features/exames/use-cases/create-exam-request.use-case')
 jest.mock('@app/core/src/features/medications/use-cases/list-medications.use-case')
+jest.mock('@app/core/src/features/prescription-templates/use-cases/list-prescription-templates.use-case')
 jest.mock('../../../lib/document-download', () => ({
   downloadAndShareDocument: jest.fn(async () => undefined),
 }))
@@ -390,15 +391,15 @@ describe('DocumentSection, emitir', () => {
       <DocumentSection kind="receita" appointmentId="a" canManage canIssue />,
     )
     fireEvent.press(await screen.findByTestId('document-new-receita'))
-    fireEvent.press(await screen.findByTestId('prescription-mode-digitar'))
+    fireEvent.press(await screen.findByTestId('prescription-items-mode-digitar'))
 
-    const typed = await screen.findByTestId('prescription-typed')
+    const typed = await screen.findByTestId('prescription-items-typed')
     fireEvent.changeText(typed, 'Dipirona 500mg')
     await waitFor(() =>
-      expect(screen.getByTestId('prescription-typed').props.value).toBe('Dipirona 500mg'),
+      expect(screen.getByTestId('prescription-items-typed').props.value).toBe('Dipirona 500mg'),
     )
-    fireEvent.press(screen.getByTestId('prescription-add-typed'))
-    await screen.findByTestId('prescription-item-0')
+    fireEvent.press(screen.getByTestId('prescription-items-add-typed'))
+    await screen.findByTestId('prescription-items-item-0')
 
     fireEvent.press(screen.getByTestId('prescription-submit'))
 
