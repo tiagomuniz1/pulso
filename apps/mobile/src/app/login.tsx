@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { login } from '../features/auth/auth.service'
+import { loginErrorMessage } from '../features/auth/login-error-message'
 import { useSessionStore } from '../features/auth/session.store'
 import { useTheme } from '../theme/theme-context'
 import { ThemeToggle } from '../components/ui/theme-toggle'
@@ -30,11 +31,13 @@ export default function LoginScreen() {
       // O captcha da web é um widget Turnstile, que não existe aqui. Enquanto
       // não houver equivalente nativo, a saída honesta é dizer o que aconteceu
       // em vez de repetir "credenciais inválidas" para sempre.
-      setError(
-        apiError.requiresCaptcha
-          ? 'Muitas tentativas. Entre pelo site para continuar.'
-          : 'E-mail, senha ou clínica incorretos.',
-      )
+      //
+      // E **nem toda falha é credencial errada**: o app dizia "e-mail, senha
+      // ou clínica incorretos" quando não conseguia sequer falar com o
+      // servidor, e quem lesse isso ia trocar a senha de uma conta que estava
+      // perfeita. Custou uma hora de investigação aqui dentro, com o servidor
+      // no ar e as credenciais certas — era o aparelho sem rota até ele.
+      setError(loginErrorMessage(apiError))
     } finally {
       setIsSubmitting(false)
     }

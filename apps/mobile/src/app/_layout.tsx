@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Slot, useRouter, useSegments } from 'expo-router'
+import { Slot, useRootNavigationState, useRouter, useSegments } from 'expo-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
@@ -31,6 +31,16 @@ function SessionGate() {
   const setAnonymous = useSessionStore((state) => state.setAnonymous)
   const segments = useSegments()
   const router = useRouter()
+  /**
+   * A navegação só existe depois que o navegador raiz monta.
+   *
+   * Sem esperar por ela, o primeiro `replace` acontece cedo demais e o
+   * React avisa "state update on a component that hasn't mounted yet" — em
+   * produção é só ruído, mas em desenvolvimento o LogBox **cobre a tela**,
+   * e foi o que derrubou um fluxo Maestro depois de o cadastro ter dado
+   * certo.
+   */
+  const navigationState = useRootNavigationState()
   const [bootstrapped, setBootstrapped] = useState(false)
 
   // Descobre, uma vez, se há sessão guardada no Keychain. Validar contra o
@@ -66,13 +76,13 @@ function SessionGate() {
   }, [setAnonymous])
 
   useEffect(() => {
-    if (!bootstrapped) return
+    if (!bootstrapped || !navigationState?.key) return
 
     const inAuthenticatedArea = segments[0] === '(app)'
 
     if (status === 'authenticated' && !inAuthenticatedArea) router.replace('/(app)')
     if (status === 'anonymous' && inAuthenticatedArea) router.replace('/login')
-  }, [bootstrapped, status, segments, router])
+  }, [bootstrapped, navigationState?.key, status, segments, router])
 
   return <Slot />
 }

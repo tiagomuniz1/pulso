@@ -14,6 +14,33 @@ eval "$(maestro/seed-fixture.sh)"
 yarn workspace @app/mobile maestro:test
 ```
 
+## O `.env` entra no APK, e não no Metro
+
+`EXPO_PUBLIC_API_URL` vira `extra.apiUrl` em `assets/app.config` **dentro do
+APK**, no momento do `assembleDebug`. Reiniciar o Metro com outro valor não
+muda nada: o app lê o arquivo embutido.
+
+Isso custou uma hora. O IP da máquina no `.env` estava de uma semana antes,
+a rede tinha dado outro, e o sintoma era o app dizendo "e-mail, senha ou
+clínica incorretos" com o servidor no ar e a senha certa — a tela usava a
+mesma mensagem para qualquer falha, inclusive de rede. Os dois foram
+corrigidos: a mensagem agora distingue `401` de "não consegui falar com o
+servidor", e fica registrado aqui que **trocar o `.env` exige recompilar**:
+
+```bash
+ipconfig getifaddr en0          # confere o IP de hoje
+printf 'EXPO_PUBLIC_API_URL=http://<ip>:3011\n' > .env
+./android/gradlew -p android :app:assembleDebug
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Verificar depois, sem subir o app:
+
+```bash
+unzip -p android/app/build/outputs/apk/debug/app-debug.apk assets/app.config \
+  | python3 -c "import json,sys; print(json.load(sys.stdin)['extra'])"
+```
+
 O fixture existe porque o banco de desenvolvimento **não** é um seed limpo:
 as suítes `-real` do Cypress deixam centenas de profissionais e consultas
 nele. Um fluxo que dependesse de "a consulta de dois dias atrás" passaria

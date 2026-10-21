@@ -16,9 +16,11 @@ appId: center.pulso.app
 - hideKeyboard
 - tapOn:
     id: "login-submit"
-# Espera estendida: o primeiro login faz a ida ao servidor, lê o Keychain e
-# ainda busca o tema da clínica antes de a agenda montar.
+# Espera estendida: o primeiro login faz a ida ao servidor, lê o Keystore e
+# ainda busca o tema da clínica antes de a agenda montar. Quarenta e cinco
+# segundos porque num emulador frio vinte não bastam — e o sintoma é o pior
+# possível: a tela ainda mostra o botão girando, e a falha parece do login.
 - extendedWaitUntil:
     visible:
       id: "agenda-screen"
-    timeout: 20000
+    timeout: 45000

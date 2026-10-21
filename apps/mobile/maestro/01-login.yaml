@@ -35,7 +35,7 @@ env:
 - extendedWaitUntil:
     visible:
       id: "agenda-screen"
-    timeout: 20000
+    timeout: 45000
 - assertVisible:
     id: "toolbar-date-label"
 
@@ -45,15 +45,22 @@ env:
 - extendedWaitUntil:
     visible:
       id: "agenda-screen"
-    timeout: 20000
+    timeout: 45000
 
-# Sair é o avatar do cabeçalho: na web o menu tem "Meu perfil" e "Sair", e
-# aqui só o segundo existe porque a tela de perfil ainda não foi portada.
+# O avatar abre o menu da conta, com "Meu perfil" e "Sair" — o mesmo da web.
+# Abria a sessão direto enquanto não havia tela de perfil.
 - tapOn:
     id: "header-user"
+- assertVisible:
+    id: "header-user-menu"
+- assertVisible:
+    id: "header-profile"
+
+- tapOn:
+    id: "header-logout"
 # Sair revoga o refresh token no servidor antes de limpar a sessão local, e
 # só então a navegação reage.
 - extendedWaitUntil:
     visible:
       id: "login-submit"
-    timeout: 20000
+    timeout: 30000

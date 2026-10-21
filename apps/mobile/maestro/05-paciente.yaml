@@ -38,10 +38,21 @@ env:
 - tapOn:
     id: "patient-form-birthdate"
 - inputText: "15051990"
+# O formulário é longo: CPF e gênero ficam abaixo da dobra depois que o
+# teclado abre, e `tapOn` num elemento fora da tela não acha nada.
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "patient-form-document"
+    direction: DOWN
 - tapOn:
     id: "patient-form-document"
 - inputText: ${PATIENT_CPF}
 - hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "patient-form-gender-female"
+    direction: DOWN
 - tapOn:
     id: "patient-form-gender-female"
 # O botão fica no fim de um formulário longo; sem rolar, o toque cai fora.
