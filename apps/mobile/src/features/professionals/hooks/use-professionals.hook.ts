@@ -74,7 +74,7 @@ export function useDeleteProfessional() {
 }
 
 /** As especialidades que a clínica tem habilitadas, para o formulário. */
-export function useClinicSpecialties(clinicId: string | undefined) {
+export function useClinicSpecialties(clinicId: string | null | undefined) {
   return useQuery({
     queryKey: ['clinic-specialties', clinicId],
     queryFn: () => listClinicSpecialtiesUseCase(clinicId as string),

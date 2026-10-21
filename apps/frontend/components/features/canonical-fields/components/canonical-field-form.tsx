@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { MedicalRecordFieldType } from '@app/shared'
+import { MEDICAL_RECORD_FIELD_TYPE_LABELS, MedicalRecordFieldType } from '@app/shared'
 import { Input } from '@/components/ui/atoms/input/input'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Alert } from '@/components/ui/molecules/alert/alert'
@@ -14,16 +14,6 @@ import type { ICanonicalFieldModel } from '../types/canonical-field-model.types'
 import type { ICreateCanonicalFieldInput, IUpdateCanonicalFieldInput } from '../types/canonical-field-input.types'
 
 const SELECT_TYPES = [MedicalRecordFieldType.SELECT, MedicalRecordFieldType.MULTISELECT]
-
-const FIELD_TYPE_LABELS: Record<MedicalRecordFieldType, string> = {
-  [MedicalRecordFieldType.TEXT]: 'Texto',
-  [MedicalRecordFieldType.TEXTAREA]: 'Texto longo',
-  [MedicalRecordFieldType.NUMBER]: 'Número',
-  [MedicalRecordFieldType.BOOLEAN]: 'Sim/Não',
-  [MedicalRecordFieldType.DATE]: 'Data',
-  [MedicalRecordFieldType.SELECT]: 'Seleção única',
-  [MedicalRecordFieldType.MULTISELECT]: 'Seleção múltipla',
-}
 
 const optionSchema = z.object({
   value: z.string().min(1, 'Obrigatório').max(60, 'Máx. 60 caracteres'),
@@ -182,7 +172,7 @@ function CanonicalFieldFormCreate({
           <option value="">Selecione um tipo</option>
           {Object.values(MedicalRecordFieldType).map((t) => (
             <option key={t} value={t}>
-              {FIELD_TYPE_LABELS[t]}
+              {MEDICAL_RECORD_FIELD_TYPE_LABELS[t]}
             </option>
           ))}
         </SelectField>
@@ -302,7 +292,7 @@ function CanonicalFieldFormEdit({
           <option value="">Selecione um tipo</option>
           {Object.values(MedicalRecordFieldType).map((t) => (
             <option key={t} value={t}>
-              {FIELD_TYPE_LABELS[t]}
+              {MEDICAL_RECORD_FIELD_TYPE_LABELS[t]}
             </option>
           ))}
         </SelectField>

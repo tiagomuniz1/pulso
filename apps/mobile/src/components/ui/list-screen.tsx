@@ -117,6 +117,51 @@ export function Badge({
   )
 }
 
+/**
+ * Página anterior e próxima, com a posição no meio.
+ *
+ * Não é rolagem infinita: a listagem de modelos chega a centenas de
+ * entradas e a web numera as páginas. Trocar a forma aqui faria "página 3"
+ * querer dizer coisas diferentes nas duas telas.
+ */
+export function Pagination({
+  page,
+  totalPages,
+  onChange,
+  testID,
+}: {
+  page: number
+  totalPages: number
+  onChange: (page: number) => void
+  testID: string
+}) {
+  const theme = useTheme()
+
+  return (
+    <View style={styles.pagination} testID={testID}>
+      <Text style={[styles.pageInfo, { color: theme.textDim }]} testID={`${testID}-info`}>
+        Página {page} de {totalPages}
+      </Text>
+      <View style={styles.pageButtons}>
+        <Button
+          label="Anterior"
+          variant="outline"
+          disabled={page <= 1}
+          onPress={() => onChange(page - 1)}
+          testID={`${testID}-prev`}
+        />
+        <Button
+          label="Próxima"
+          variant="outline"
+          disabled={page >= totalPages}
+          onPress={() => onChange(page + 1)}
+          testID={`${testID}-next`}
+        />
+      </View>
+    </View>
+  )
+}
+
 /** A faixa verde que confirma o que acabou de acontecer, como na web. */
 export function SuccessBanner({ message, testID }: { message: string; testID: string }) {
   const theme = useTheme()
@@ -134,6 +179,9 @@ export function SuccessBanner({ message, testID }: { message: string; testID: st
 }
 
 const styles = StyleSheet.create({
+  pagination: { gap: 12 },
+  pageInfo: { fontSize: 13, textAlign: 'center' },
+  pageButtons: { flexDirection: 'row', gap: 12 },
   header: { gap: 8 },
   title: { fontSize: 24, fontWeight: '700' },
   subtitle: { fontSize: 13 },

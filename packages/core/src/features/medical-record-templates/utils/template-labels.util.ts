@@ -1,5 +1,5 @@
 import { CouncilType, COUNCIL_TYPE_PROFESSION_LABELS } from '@app/shared'
-import type { ITemplateModel } from '@app/core'
+import type { ITemplateModel } from '../types/template-model.types'
 
 /**
  * Especialidade só existe para Medicina (CRM) — um modelo de especialidade não

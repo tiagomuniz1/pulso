@@ -46,7 +46,7 @@ export const NAVIGATION_ITEMS: INavigationItem[] = [
     id: 'medical-record-templates',
     label: 'Modelos de prontuário',
     icon: 'check-square',
-    route: null,
+    route: '/(app)/medical-record-templates',
     roles: [UserRole.ADMIN, UserRole.PROFESSIONAL],
   },
   {

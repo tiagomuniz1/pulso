@@ -1,23 +1,13 @@
 'use client'
 
 import { useFieldArray } from 'react-hook-form'
-import { MedicalRecordFieldType } from '@app/shared'
+import { MEDICAL_RECORD_FIELD_TYPE_LABELS, MedicalRecordFieldType } from '@app/shared'
 import { Input } from '@/components/ui/atoms/input/input'
 import { Button } from '@/components/ui/atoms/button/button'
 import type { Control, UseFormRegister, FieldErrors } from 'react-hook-form'
 import type { ITemplateFormValues } from './template-form'
 
 const SELECT_TYPES = [MedicalRecordFieldType.SELECT, MedicalRecordFieldType.MULTISELECT]
-
-const FIELD_TYPE_LABELS: Record<MedicalRecordFieldType, string> = {
-  [MedicalRecordFieldType.TEXT]: 'Texto',
-  [MedicalRecordFieldType.TEXTAREA]: 'Texto longo',
-  [MedicalRecordFieldType.NUMBER]: 'Número',
-  [MedicalRecordFieldType.BOOLEAN]: 'Sim/Não',
-  [MedicalRecordFieldType.DATE]: 'Data',
-  [MedicalRecordFieldType.SELECT]: 'Seleção única',
-  [MedicalRecordFieldType.MULTISELECT]: 'Seleção múltipla',
-}
 
 function getMsg(err: unknown): string | undefined {
   return (err as { message?: string } | undefined)?.message
@@ -181,7 +171,7 @@ export function FieldEditor({
           >
             {Object.values(MedicalRecordFieldType).map((type) => (
               <option key={type} value={type}>
-                {FIELD_TYPE_LABELS[type]}
+                {MEDICAL_RECORD_FIELD_TYPE_LABELS[type]}
               </option>
             ))}
           </select>

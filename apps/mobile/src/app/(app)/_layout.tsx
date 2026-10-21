@@ -64,6 +64,10 @@ export default function AuthenticatedLayout() {
         <Stack.Screen name="schedules/[id]/edit" options={{ headerShown: false }} />
         <Stack.Screen name="appointment-labels/index" options={{ headerShown: false }} />
         <Stack.Screen name="prescription-templates/index" options={{ headerShown: false }} />
+        <Stack.Screen name="medical-record-templates/index" options={{ headerShown: false }} />
+        <Stack.Screen name="medical-record-templates/new" options={{ headerShown: false }} />
+        <Stack.Screen name="medical-record-templates/[id]/index" options={{ headerShown: false }} />
+        <Stack.Screen name="medical-record-templates/[id]/edit" options={{ headerShown: false }} />
       </Stack>
     </View>
   )

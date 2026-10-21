@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { professionLabel, specialtyLabel } from '@app/core'
 import Link from 'next/link'
 import { useBasePath } from '@/lib/slug-context'
 import { Alert } from '@/components/ui/molecules/alert/alert'
@@ -11,7 +12,6 @@ import { CouncilType, COUNCIL_TYPE_PROFESSION_LABELS, UserRole } from '@app/shar
 import { useClinicSpecialties } from '@/components/features/clinic-specialties/hooks/use-clinic-specialties.hook'
 import { useTemplates } from '../hooks/use-templates.hook'
 import { TemplateListSkeleton } from './template-list-skeleton'
-import { professionLabel, specialtyLabel } from '../utils/template-labels'
 
 const PAGE_SIZE = 20
 

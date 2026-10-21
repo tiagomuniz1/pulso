@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { MEDICAL_RECORD_FIELD_TYPE_LABELS } from '@app/shared'
 import Link from 'next/link'
 import { useBasePath } from '@/lib/slug-context'
 import { Alert } from '@/components/ui/molecules/alert/alert'
@@ -12,16 +13,6 @@ import { CanonicalFieldListSkeleton } from './canonical-field-list-skeleton'
 import { CanonicalFieldToggleDialog } from './canonical-field-toggle-dialog'
 import type { IApiError } from '@/types/api.types'
 import type { ICanonicalFieldModel } from '../types/canonical-field-model.types'
-
-const FIELD_TYPE_LABELS: Record<string, string> = {
-  text: 'Texto',
-  textarea: 'Texto longo',
-  number: 'Número',
-  boolean: 'Sim/Não',
-  date: 'Data',
-  select: 'Seleção única',
-  multiselect: 'Seleção múltipla',
-}
 
 export function CanonicalFieldList() {
   const basePath = useBasePath()
@@ -170,7 +161,7 @@ export function CanonicalFieldList() {
                       className="px-6 py-4 text-sm text-text-dim"
                       data-testid={`canonical-field-type-${field.id}`}
                     >
-                      {FIELD_TYPE_LABELS[field.type] ?? field.type}
+                      {MEDICAL_RECORD_FIELD_TYPE_LABELS[field.type] ?? field.type}
                     </td>
                     <td className="px-6 py-4">
                       <span
@@ -220,7 +211,7 @@ export function CanonicalFieldList() {
                 title={field.label}
                 rows={[
                   { label: 'Chave', value: <span className="font-mono">{field.canonicalKey}</span> },
-                  { label: 'Tipo', value: FIELD_TYPE_LABELS[field.type] ?? field.type },
+                  { label: 'Tipo', value: MEDICAL_RECORD_FIELD_TYPE_LABELS[field.type] ?? field.type },
                   {
                     label: 'Status',
                     value: (

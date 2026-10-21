@@ -94,6 +94,7 @@ export * from './features/medical-record-templates/use-cases/get-template.use-ca
 export * from './features/medical-record-templates/use-cases/list-canonical-fields.use-case'
 export * from './features/medical-record-templates/use-cases/list-templates.use-case'
 export * from './features/medical-record-templates/use-cases/update-template.use-case'
+export * from './features/medical-record-templates/utils/template-labels.util'
 export * from './features/medical-records/mappers/coerce-field-value.mapper'
 export * from './features/medical-records/mappers/to-create-medical-record-dto.mapper'
 export * from './features/medical-records/mappers/to-medical-record-model.mapper'
