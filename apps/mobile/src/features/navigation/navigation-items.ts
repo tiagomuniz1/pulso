@@ -74,7 +74,7 @@ export const NAVIGATION_ITEMS: INavigationItem[] = [
     id: 'schedules',
     label: 'Agendas',
     icon: 'calendar',
-    route: null,
+    route: '/(app)/schedules',
     roles: [UserRole.ADMIN, UserRole.PROFESSIONAL],
   },
 ]

@@ -90,3 +90,15 @@ describe('describeSlotMismatch', () => {
     expect(mensagem).not.toContain('use ')
   })
 })
+
+describe('timeToMinutes', () => {
+  it('converte hora e minuto', () => {
+    expect(timeToMinutes('09:30')).toBe(570)
+    expect(timeToMinutes('00:00')).toBe(0)
+  })
+
+  // Enquanto se digita, o campo passa por "09" antes de virar "09:30".
+  it('sem os minutos, assume em ponto', () => {
+    expect(timeToMinutes('09')).toBe(540)
+  })
+})

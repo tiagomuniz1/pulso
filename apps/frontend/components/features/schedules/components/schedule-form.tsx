@@ -12,7 +12,7 @@ import { cn } from '@/lib/cn'
 import { DAY_OF_WEEK_LABELS } from '@app/core'
 import type { ICreateScheduleInput, IUpdateScheduleInput } from '@app/core'
 import type { IScheduleModel } from '@app/core'
-import { describeSlotMismatch, timeToMinutes } from '../utils/slot-fit.util'
+import { describeSlotMismatch, timeToMinutes } from '@app/shared'
 
 function applyTimeMask(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 4)

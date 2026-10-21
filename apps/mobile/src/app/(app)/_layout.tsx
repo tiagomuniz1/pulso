@@ -58,6 +58,10 @@ export default function AuthenticatedLayout() {
         <Stack.Screen name="professionals/new" options={{ headerShown: false }} />
         <Stack.Screen name="professionals/[id]/index" options={{ headerShown: false }} />
         <Stack.Screen name="professionals/[id]/edit" options={{ headerShown: false }} />
+        <Stack.Screen name="schedules/index" options={{ headerShown: false }} />
+        <Stack.Screen name="schedules/new" options={{ headerShown: false }} />
+        <Stack.Screen name="schedules/[id]/index" options={{ headerShown: false }} />
+        <Stack.Screen name="schedules/[id]/edit" options={{ headerShown: false }} />
       </Stack>
     </View>
   )

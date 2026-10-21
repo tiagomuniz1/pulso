@@ -1,3 +1,10 @@
+/**
+ * Quais durações de consulta fecham a janela da agenda sem sobra.
+ *
+ * Mora no `@app/shared` porque a web e o app montam o mesmo formulário de
+ * agenda, e a conta — e sobretudo a **mensagem** que ela produz — tem de
+ * ser a mesma dos dois lados.
+ */
 const DURACAO_MINIMA = 15
 const DURACAO_MAXIMA = 120
 const MAXIMO_DE_SUGESTOES = 3
@@ -10,9 +17,16 @@ const MAXIMO_DE_SUGESTOES = 3
 const DURACOES_USUAIS = [15, 20, 30, 40, 45, 60, 90, 120]
 const MINUTOS_NO_DIA = 24 * 60
 
+/**
+ * "09:30" → 570. Aceita "09" como nove em ponto, que é o estado do campo
+ * enquanto a pessoa ainda digita.
+ *
+ * O `?? 0` existia nas duas posições; na primeira era morto, porque
+ * `split(':')` nunca devolve lista vazia.
+ */
 export function timeToMinutes(time: string): number {
   const [hours, minutes] = time.split(':').map(Number)
-  return (hours ?? 0) * 60 + (minutes ?? 0)
+  return hours * 60 + (minutes ?? 0)
 }
 
 function minutesToTime(total: number): string {
