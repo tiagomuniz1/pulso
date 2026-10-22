@@ -13,7 +13,6 @@ export interface INavigationItem {
  * Os mesmos itens da sidebar da web, na mesma ordem e com as mesmas regras de
  * perfil (`NAVIGATION_ITEMS` em `lib/constants.tsx`).
  *
- * Os itens cuja tela ainda não foi portada aparecem **apagados**, não
  * Todos levam a uma tela. Durante a porta, os que ainda não tinham ficavam
  * apagados em vez de escondidos — a lista é o mapa do sistema, e esconder
  * metade dela faria o app parecer outro produto. Com a última tela portada

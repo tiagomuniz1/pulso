@@ -28,12 +28,10 @@ function SectionTitle({ children, testID }: { children: string; testID: string }
  * A ficha do paciente.
  *
  * A web empilha quatro blocos: dados, histórico de prontuários, fotos de
- * evolução e vacinas. Os três primeiros estão aqui; **a situação vacinal
- * ainda não**, porque o calendário de vacinas é a única parte cuja camada de
- * dados não migrou para o `@app/core` — ela vem junto com o resto de vacinas.
+ * evolução e vacinas — e os quatro estão aqui.
  *
- * Histórico e fotos são dado clínico: a recepção não os vê, exatamente como
- * na web (`canSeeMedicalHistory`).
+ * Histórico, fotos e vacinas são dado clínico: a recepção não os vê,
+ * exatamente como na web (`canSeeMedicalHistory`).
  */
 export function PatientDetailScreen() {
   const theme = useTheme()
