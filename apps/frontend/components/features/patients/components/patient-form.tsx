@@ -6,7 +6,7 @@ import { useForm, Controller, useController, Control } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useQuery } from '@tanstack/react-query'
-import { KINSHIP_TYPE_LABELS, KinshipType, PatientGender, applyCpfMask, applyPhoneMask, formatCpf, formatPhone } from '@app/shared'
+import { KINSHIP_TYPE_LABELS, KinshipType, PatientGender, applyCpfMask, applyPhoneMask, cpfDigits, formatCpf, formatPhone } from '@app/shared'
 import { Input } from '@/components/ui/atoms/input/input'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Alert } from '@/components/ui/molecules/alert/alert'
@@ -185,7 +185,7 @@ function PatientFormCreate({ isPending, globalError, onSubmit }: PatientFormCrea
 
   function handleFormSubmit(data: CreateFormValues) {
     const shared = {
-      documentNumber: data.isDependent ? undefined : data.documentNumber?.replace(/\D/g, ''),
+      documentNumber: data.isDependent ? undefined : data.documentNumber ? cpfDigits(data.documentNumber) : undefined,
       phoneNumber: data.phoneNumber,
       birthDate: data.birthDate,
       gender: data.gender as PatientGender,
@@ -479,7 +479,7 @@ function PatientFormEdit({ defaultValues, isPending, globalError, onSubmit }: Pa
       phoneNumber: data.phoneNumber || undefined,
       birthDate: data.birthDate || undefined,
       gender: data.gender,
-      documentNumber: data.documentNumber ? data.documentNumber.replace(/\D/g, '') : undefined,
+      documentNumber: data.documentNumber ? cpfDigits(data.documentNumber) : undefined,
       address: toAddressInput(data.address),
     }
 

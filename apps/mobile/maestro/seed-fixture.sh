@@ -81,6 +81,11 @@ post "appointments" "$ADMIN" \
 post "medical-record-templates" "$ADMIN" \
   "{\"name\":\"Modelo Maestro $TS\",\"specialtyId\":\"$SPECIALTY_ID\",\"fields\":[{\"key\":\"queixa\",\"label\":\"Queixa principal\",\"type\":\"text\",\"required\":false,\"order\":1,\"canonical\":false}]}" > /dev/null
 
+# Identificador da rodada, para o que os fluxos criam e o servidor recusa
+# repetido. O nome do modelo de prontuário é único dentro do escopo: com um
+# nome fixo o fluxo passa na primeira execução e toma `409` na segunda — o
+# mesmo motivo pelo qual o paciente leva CPF e e-mail com o epoch.
+echo "export MAESTRO_RUN_ID='$TS'"
 echo "export MAESTRO_EMAIL='$EMAIL'"
 echo "export MAESTRO_PASSWORD='$PASSWORD'"
 echo "export MAESTRO_CLINIC='$CLINIC_SLUG'"

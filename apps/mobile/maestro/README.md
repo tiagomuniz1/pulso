@@ -14,6 +14,19 @@ eval "$(maestro/seed-fixture.sh)"
 yarn workspace @app/mobile maestro:test
 ```
 
+> **O Maestro roda contra o binário de desenvolvimento, que busca o bundle
+> no Metro.** Por isso todo fluxo abre esperando a primeira tela com
+> `extendedWaitUntil`, e não com `assertVisible` seco: numa máquina fria o
+> bundle leva dezenas de segundos, e a falha aparece como "login-slug não
+> existe" — a mensagem errada para "o app ainda está carregando".
+
+> **Não rode nada pesado enquanto a bateria corre.** O `inputText` do
+> Maestro tem limite fixo de 120s e fala com o aparelho por gRPC: com o
+> jest do monorepo competindo pela CPU, ele estoura no meio de um login e
+> a falha sai como `DEADLINE_EXCEEDED`, sem relação nenhuma com o app.
+> Editar arquivo em `src/` também atrapalha — o Fast Refresh recarrega o
+> bundle no meio do fluxo.
+
 ## O `.env` entra no APK, e não no Metro
 
 `EXPO_PUBLIC_API_URL` vira `extra.apiUrl` em `assets/app.config` **dentro do
@@ -46,21 +59,42 @@ as suítes `-real` do Cypress deixam centenas de profissionais e consultas
 nele. Um fluxo que dependesse de "a consulta de dois dias atrás" passaria
 hoje e quebraria amanhã. É a mesma escolha que os specs `-real` fazem.
 
+Pelo mesmo motivo, **tudo que um fluxo cria leva o `MAESTRO_RUN_ID`** no
+nome. O do modelo de prontuário é único dentro do escopo: com nome fixo, o
+fluxo passava na primeira execução e tomava `409` na segunda — e a falha
+aparecia como "template-details-name não existe", que não diz nada sobre
+nome repetido.
+
 ## Estado
 
-Os três fluxos **passam**, em emulador Android, contra a stack local. Duas
-rodadas seguidas com fixture novo, 2m10s cada.
+São oito fluxos, em emulador Android, contra a stack local.
 
-Ficaram sem rodar por tempo demais, e isso custou: quando a agenda virou
-grade de horários e o prontuário virou aba da consulta, **oito dos vinte e
-dois** `testID` citados aqui deixaram de existir e nada reclamou. A primeira
-execução também encontrou um defeito de verdade no app — o cabeçalho não
-respeitava a área segura e metade do avatar ficava sob a barra de status, o
-que no Android torna o botão de sair intocável.
+Ficar sem rodar custa caro, e já custou duas vezes. Na primeira, quando a
+agenda virou grade de horários e o prontuário virou aba da consulta, **oito
+dos vinte e dois** `testID` citados aqui deixaram de existir e nada
+reclamou; aquela execução também achou um defeito de verdade — o cabeçalho
+não respeitava a área segura e metade do avatar ficava sob a barra de
+status, o que no Android torna o botão de sair intocável.
+
+Na segunda, a primeira execução dos fluxos da fase 6 achou o defeito que
+vinha derrubando a suíte e que nenhum teste de unidade pegaria: o desvio de
+navegação do arranque chamava `router.replace()` enquanto o
+`ContextNavigator` do expo-router ainda montava. O React avisava "state
+update on a component that hasn't mounted yet" e, em desenvolvimento, o
+LogBox **cobre a tela inteira** — o fluxo seguia tocando num overlay e
+falhava passos adiante, apontando para o lugar errado. Trocado por
+`<Redirect>`, que navega no `useFocusEffect`, depois da montagem.
+
+Achou também dois `testID` que o guard estático **não** pega: quando o id é
+montado na origem (`appointment-tab-${tab.id}`), só o prefixo pode ser
+verificado e o sufixo vem de dado — `appointment-tab-documents` passava no
+guard e não existia na tela.
 
 `src/tests/maestro-flows.spec.ts` guarda contra a parte barata do problema:
 falha quando um fluxo cita identificador que o app não expõe. Roda junto com
-a suíte de unidade, sem emulador.
+a suíte de unidade, sem emulador, e é o que o `.github/workflows/mobile.yml`
+executa no CI. **Os fluxos em si não rodam em CI**: precisariam de emulador,
+backend, banco e seed. Rodam aqui, antes de entregar.
 
 ## Montar a máquina
 
@@ -86,7 +120,11 @@ só fala com **simulador**, nunca com aparelho físico — exige o Xcode complet
 ## Rodar
 
 ```bash
-emulator -avd pulso-e2e -no-snapshot -no-boot-anim -gpu swiftshader_indirect &
+# `-gpu host` usa o Metal da máquina; `swiftshader_indirect` é software puro
+# e **custa caro**: com ele o QEMU passa de 240% de CPU e o `inputText` do
+# Maestro estoura o próprio limite de 120s no meio de um login. O sintoma é
+# um fluxo que demora o triplo e falha sem erro de aplicação nenhum.
+emulator -avd pulso-e2e -no-snapshot -no-boot-anim -gpu host -memory 4096 -cores 4 &
 adb reverse tcp:8081 tcp:8081
 
 # 10.0.2.2 é o alias do host dentro do emulador: `localhost` ali é o aparelho.

@@ -90,7 +90,10 @@ describe('PatientForm', () => {
       phoneNumber: '(11) 99999-8888',
       birthDate: '1990-05-15',
       gender: PatientGender.FEMALE,
-      documentNumber: '921.158.628-11',
+      // Só dígitos: o backend pede `/^\d{11}$/` e devolve `400` para o
+      // valor mascarado. Este teste já afirmou o mascarado uma vez, e com
+      // ele verde o cadastro de paciente falhava sempre no celular.
+      documentNumber: '92115862811',
       responsiblePatientId: undefined,
       kinshipType: undefined,
       address: undefined,

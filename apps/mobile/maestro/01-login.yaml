@@ -8,8 +8,15 @@ env:
 - launchApp:
     clearState: true
 
-- assertVisible:
-    id: "login-slug"
+# Espera estendida já no primeiro passo: o Maestro roda contra o binário de
+# **desenvolvimento**, que baixa o bundle do Metro ao abrir. Numa máquina
+# fria isso leva dezenas de segundos, e um `assertVisible` seco falha com a
+# tela de login a caminho — a falha aparece como "login-slug não existe",
+# que é a mensagem errada para "o app ainda está carregando".
+- extendedWaitUntil:
+    visible:
+      id: "login-slug"
+    timeout: 90000
 
 - tapOn:
     id: "login-slug"
@@ -45,7 +52,7 @@ env:
 - extendedWaitUntil:
     visible:
       id: "agenda-screen"
-    timeout: 45000
+    timeout: 90000
 
 # O avatar abre o menu da conta, com "Meu perfil" e "Sair" — o mesmo da web.
 # Abria a sessão direto enquanto não havia tela de perfil.

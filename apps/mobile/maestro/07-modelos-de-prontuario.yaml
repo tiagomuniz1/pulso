@@ -6,6 +6,7 @@ env:
   EMAIL: ${MAESTRO_ADMIN_EMAIL}
   PASSWORD: ${MAESTRO_ADMIN_PASSWORD}
   CLINIC: ${MAESTRO_CLINIC}
+  RUN_ID: ${MAESTRO_RUN_ID}
 ---
 - runFlow: shared/login.yaml
 
@@ -46,7 +47,7 @@ env:
     timeout: 10000
 - tapOn:
     id: "template-form-name"
-- inputText: "Modelo do Maestro"
+- inputText: "Modelo do Maestro ${RUN_ID}"
 - hideKeyboard
 
 - tapOn:
@@ -56,19 +57,42 @@ env:
 - inputText: "Queixa principal"
 - hideKeyboard
 
+# O construtor é uma tela longa, e cresce a cada campo adicionado: "Seções"
+# fica abaixo da dobra assim que existe um campo. Tocar sem rolar reporta
+# "elemento não encontrado" num botão que está lá — só que fora da tela.
+- scrollUntilVisible:
+    element:
+      id: "template-form-add-section"
+    direction: DOWN
 - tapOn:
     id: "template-form-add-section"
+- scrollUntilVisible:
+    element:
+      id: "section-editor-title-0"
+    direction: DOWN
 - tapOn:
     id: "section-editor-title-0"
 - inputText: "Exame físico"
 - hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "section-editor-add-field-0"
+    direction: DOWN
 - tapOn:
     id: "section-editor-add-field-0"
+- scrollUntilVisible:
+    element:
+      id: "section-field-editor-0-0-label"
+    direction: DOWN
 - tapOn:
     id: "section-field-editor-0-0-label"
 - inputText: "Ausculta"
 - hideKeyboard
 
+- scrollUntilVisible:
+    element:
+      id: "template-form-submit"
+    direction: DOWN
 - tapOn:
     id: "template-form-submit"
 
@@ -90,7 +114,13 @@ env:
     visible:
       id: "field-editor-0-label"
     timeout: 15000
-- assertVisible:
-    id: "section-editor-title-0"
+- scrollUntilVisible:
+    element:
+      id: "section-editor-title-0"
+    direction: DOWN
+- scrollUntilVisible:
+    element:
+      id: "template-form-cancel"
+    direction: DOWN
 - tapOn:
     id: "template-form-cancel"

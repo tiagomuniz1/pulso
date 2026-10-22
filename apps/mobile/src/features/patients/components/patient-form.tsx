@@ -6,6 +6,7 @@ import {
   PATIENT_GENDER_LABELS,
   PatientGender,
   applyCpfMask,
+  cpfDigits,
   applyPhoneMask,
   formatCpf,
   toNormalizedAddress,
@@ -109,12 +110,23 @@ export function PatientForm({
     if (Object.keys(found).length > 0) return
 
     const shared = {
+      /**
+       * Telefone mascarado, CPF só com dígitos — e não é inconsistência.
+       *
+       * O backend pede exatamente isso: `/^\(\d{2}\) \d{4,5}-\d{4}$/` para
+       * o telefone e `/^\d{11}$/` para o documento. Mandar o CPF como está
+       * na tela devolve `400`, e era o que o app fazia: a web tirava a
+       * máscara e o app não, então **cadastrar paciente com CPF falhava
+       * sempre** — sem mensagem, porque o formulário não mostra erro de
+       * validação do servidor. O teste de unidade não pegou: ele afirmava o
+       * valor mascarado, que era o que o componente mandava.
+       */
       phoneNumber: values.phoneNumber,
       // Já convertida pela validação — converter de novo aqui exigiria um
       // ramo para o caso que ela acabou de descartar.
       birthDate: birthDate as string,
       gender: values.gender as PatientGender,
-      documentNumber: values.isDependent ? undefined : values.documentNumber,
+      documentNumber: values.isDependent ? undefined : cpfDigits(values.documentNumber),
       responsiblePatientId: values.isDependent ? values.responsiblePatientId : undefined,
       kinshipType: values.isDependent ? (values.kinshipType as KinshipType) : undefined,
       address: toNormalizedAddress(values.address),

@@ -63,10 +63,14 @@ env:
 - tapOn:
     id: "patient-form-submit"
 
+# Voltar à listagem é o que prova que o `POST` passou. Enquanto o app
+# mandava o CPF mascarado, o servidor devolvia `400`, o formulário ficava
+# aberto sem dizer nada e a falha aparecia aqui — que é exatamente o lugar
+# certo para ela aparecer.
 - extendedWaitUntil:
     visible:
       id: "patient-list-screen"
-    timeout: 15000
+    timeout: 20000
 
 # A busca é do servidor: achar o que acabou de ser criado prova as duas
 # coisas de uma vez.
@@ -78,7 +82,12 @@ env:
     visible: ${PATIENT_NAME}
     timeout: 15000
 
-- tapOn: ${PATIENT_NAME}
+# Abre pelo "Ver detalhes" do cartão, e não tocando no nome: o nome
+# também está escrito **dentro do campo de busca**, e tocar ali apenas
+# devolve o foco ao campo e reabre o teclado — a ficha nunca abre, e a
+# falha aparece como "patient-details não existe".
+- tapOn:
+    id: "patient-card-open-.*"
 - extendedWaitUntil:
     visible:
       id: "patient-details"

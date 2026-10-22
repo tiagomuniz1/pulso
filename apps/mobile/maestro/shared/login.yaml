@@ -2,6 +2,13 @@ appId: center.pulso.app
 ---
 - launchApp:
     clearState: true
+# O bundle vem do Metro neste binário: numa máquina fria a primeira tela
+# leva dezenas de segundos, e tocar antes dela existir falha dizendo que o
+# campo não existe.
+- extendedWaitUntil:
+    visible:
+      id: "login-slug"
+    timeout: 90000
 - tapOn:
     id: "login-slug"
 - inputText: ${CLINIC}
@@ -23,4 +30,4 @@ appId: center.pulso.app
 - extendedWaitUntil:
     visible:
       id: "agenda-screen"
-    timeout: 45000
+    timeout: 90000

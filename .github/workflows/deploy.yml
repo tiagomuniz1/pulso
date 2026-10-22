@@ -41,7 +41,8 @@ jobs:
       #
       # O `mobile` fica de fora de propósito: não é implantado por este
       # workflow, e reprovar o deploy da web por um teste de app seria acoplar
-      # duas entregas que não se afetam. Ele tem o próprio ciclo (EAS).
+      # duas entregas que não se afetam. Ele tem o próprio ciclo (EAS) e o
+      # próprio portão, em `mobile.yml`, que roda no PR.
       - name: Run unit tests
         run: |
           yarn workspace @app/shared test

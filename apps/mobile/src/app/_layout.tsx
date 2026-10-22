@@ -1,12 +1,9 @@
-import { useEffect, useState } from 'react'
-import { Slot, useRootNavigationState, useRouter, useSegments } from 'expo-router'
+import { Slot } from 'expo-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
-import { fetchCurrentUser } from '../features/auth/auth.service'
+import { SessionGate } from '../features/auth/session-gate'
 import { useSessionStore } from '../features/auth/session.store'
-import { readSession } from '../lib/token-storage'
-import { setOnSessionExpired } from '../lib/api-client'
 import { ThemeProvider } from '../theme/theme-context'
 import { useClinicTheme } from '../features/themes/use-clinic-theme.hook'
 import { registerCoreApiClient } from '../lib/core-client'
@@ -24,68 +21,6 @@ const queryClient = new QueryClient({
     mutations: { retry: 0 },
   },
 })
-
-function SessionGate() {
-  const status = useSessionStore((state) => state.status)
-  const setAuthenticated = useSessionStore((state) => state.setAuthenticated)
-  const setAnonymous = useSessionStore((state) => state.setAnonymous)
-  const segments = useSegments()
-  const router = useRouter()
-  /**
-   * A navegação só existe depois que o navegador raiz monta.
-   *
-   * Sem esperar por ela, o primeiro `replace` acontece cedo demais e o
-   * React avisa "state update on a component that hasn't mounted yet" — em
-   * produção é só ruído, mas em desenvolvimento o LogBox **cobre a tela**,
-   * e foi o que derrubou um fluxo Maestro depois de o cadastro ter dado
-   * certo.
-   */
-  const navigationState = useRootNavigationState()
-  const [bootstrapped, setBootstrapped] = useState(false)
-
-  // Descobre, uma vez, se há sessão guardada no Keychain. Validar contra o
-  // servidor em vez de confiar no token: ele pode ter sido revogado enquanto o
-  // app estava fechado, e aí o usuário entraria numa tela que falha inteira.
-  useEffect(() => {
-    let active = true
-
-    void (async () => {
-      const stored = await readSession()
-      if (!stored) {
-        if (active) setAnonymous()
-      } else {
-        try {
-          const user = await fetchCurrentUser()
-          if (active) setAuthenticated(user)
-        } catch {
-          if (active) setAnonymous()
-        }
-      }
-      if (active) setBootstrapped(true)
-    })()
-
-    return () => {
-      active = false
-    }
-  }, [setAuthenticated, setAnonymous])
-
-  // O api-client avisa quando o refresh falha de vez; a navegação reage.
-  useEffect(() => {
-    setOnSessionExpired(() => setAnonymous())
-    return () => setOnSessionExpired(null)
-  }, [setAnonymous])
-
-  useEffect(() => {
-    if (!bootstrapped || !navigationState?.key) return
-
-    const inAuthenticatedArea = segments[0] === '(app)'
-
-    if (status === 'authenticated' && !inAuthenticatedArea) router.replace('/(app)')
-    if (status === 'anonymous' && inAuthenticatedArea) router.replace('/login')
-  }, [bootstrapped, navigationState?.key, status, segments, router])
-
-  return <Slot />
-}
 
 /**
  * Veste o app com a marca da clínica assim que há sessão.
@@ -110,7 +45,9 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <ClinicTheme>
           <StatusBar style="auto" />
-          <SessionGate />
+          <SessionGate>
+            <Slot />
+          </SessionGate>
         </ClinicTheme>
       </QueryClientProvider>
     </SafeAreaProvider>

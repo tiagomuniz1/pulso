@@ -1,5 +1,29 @@
 # Changelog — Mobile
 
+## [0.5.1] - 2026-10-22
+
+A primeira execução dos oito fluxos Maestro desde a fase 6. Achou dois
+defeitos que a suíte de unidade não pegaria — um deles porque o teste
+afirmava justamente o comportamento errado.
+
+### Fixed
+- **Cadastrar paciente com CPF falhava sempre.** O backend pede
+  `/^\d{11}$/` e o app mandava o valor mascarado da tela; o servidor
+  devolvia `400` e o formulário ficava aberto sem dizer nada. A web já
+  tirava a máscara — agora as duas usam `cpfDigits`, do `@app/shared`. O
+  teste de unidade estava verde porque afirmava `'921.158.628-11'`, que era
+  o que o componente mandava
+- **O LogBox cobria a tela no arranque.** O desvio de navegação chamava
+  `router.replace()` enquanto o `ContextNavigator` do expo-router ainda
+  montava, e o React avisava "state update on a component that hasn't
+  mounted yet". Em produção é ruído; em desenvolvimento o overlay toma a
+  tela inteira. Trocado por `<Redirect>`, que navega depois da montagem
+
+### Changed
+- **`SessionGate` saiu de `src/app/` para `src/features/auth/`.** Ali o
+  Jest não mede cobertura, e a decisão de mostrar agenda ou login no
+  arranque é a mais crítica do app — estava sem teste nenhum
+
 ## [0.5.0] - 2026-10-21
 
 O resto, e era o caro. Com esta versão **os oito itens do menu da web têm

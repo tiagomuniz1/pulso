@@ -1,4 +1,4 @@
-import { applyCpfMask, formatCpf } from './format-cpf.util'
+import { applyCpfMask, cpfDigits, formatCpf } from './format-cpf.util'
 
 describe('applyCpfMask', () => {
   it('returns empty string for empty input', () => {
@@ -53,5 +53,28 @@ describe('formatCpf', () => {
 
   it('strips any mask before formatting', () => {
     expect(formatCpf('123.456.789-01')).toBe('123.456.789-01')
+  })
+})
+
+describe('cpfDigits', () => {
+  it('tira a pontuação da máscara', () => {
+    expect(cpfDigits('921.158.628-11')).toBe('92115862811')
+  })
+
+  it('deixa quem já é só dígito como está', () => {
+    expect(cpfDigits('92115862811')).toBe('92115862811')
+  })
+
+  it('texto vazio continua vazio', () => {
+    expect(cpfDigits('')).toBe('')
+  })
+
+  /**
+   * Não valida nem corta: quem decide se o CPF serve é a validação do
+   * formulário, e truncar aqui esconderia um dígito a mais em vez de
+   * reprová-lo.
+   */
+  it('não trunca o que passa de onze dígitos', () => {
+    expect(cpfDigits('921.158.628-115')).toBe('921158628115')
   })
 })
