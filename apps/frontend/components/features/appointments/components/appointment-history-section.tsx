@@ -4,11 +4,11 @@ import { useMemo, useState } from 'react'
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { Skeleton } from '@/components/ui/atoms/skeleton/skeleton'
 import { usePatientMedicalHistory } from '@/components/features/medical-records/hooks/use-patient-medical-history.hook'
-import { formatFieldValue } from '@/components/features/medical-records/utils/format-field-value.util'
-import type {
-  IMedicalRecordModel,
-  IRecordFieldModel,
-} from '@/components/features/medical-records/types/medical-record-model.types'
+import {
+  formatFieldValue,
+  type IMedicalRecordModel,
+  type IRecordFieldModel,
+} from '@app/core'
 
 // Carrega uma página larga de propósito: a busca é local, e paginar em 10
 // faria o médico procurar dentro de um pedaço do histórico sem saber disso.
@@ -67,7 +67,9 @@ export function AppointmentHistorySection({
     limit: TAMANHO_DA_PAGINA,
   })
 
-  const registros = data?.data ?? []
+  // Memoizado porque o `?? []` cria um array novo a cada render, e o
+  // `useMemo` do filtro abaixo o tem como dependência.
+  const registros = useMemo(() => data?.data ?? [], [data])
   const total = data?.total ?? 0
   const truncado = total > registros.length
 

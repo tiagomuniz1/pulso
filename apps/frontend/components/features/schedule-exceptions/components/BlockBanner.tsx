@@ -1,10 +1,9 @@
 'use client'
 
 import { UserRole } from '@app/shared'
+import type { IScheduleExceptionModel } from '@app/core'
 import { Button } from '@/components/ui/atoms/button/button'
 import { useDeleteScheduleException } from '../hooks/use-delete-schedule-exception.hook'
-import type { IScheduleExceptionModel } from '../types/schedule-exception-model.types'
-
 interface BlockBannerProps {
   exception: IScheduleExceptionModel
   role: UserRole

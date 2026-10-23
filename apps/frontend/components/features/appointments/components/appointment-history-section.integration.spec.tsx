@@ -1,9 +1,9 @@
-jest.mock('@/components/features/medical-records/services/medical-records.service')
+jest.mock('@app/core/src/features/medical-records/services/medical-records.service')
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
-import { medicalRecordsService } from '@/components/features/medical-records/services/medical-records.service'
+import { medicalRecordsService } from '@app/core'
 import { AppointmentHistorySection } from './appointment-history-section'
 
 const mockService = medicalRecordsService as jest.Mocked<typeof medicalRecordsService>

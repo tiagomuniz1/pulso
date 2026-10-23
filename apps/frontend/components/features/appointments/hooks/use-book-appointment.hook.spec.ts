@@ -1,13 +1,13 @@
-jest.mock('../use-cases/book-appointment.use-case')
+jest.mock('@app/core/src/features/appointments/use-cases/book-appointment.use-case')
 
 import React from 'react'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { AppointmentStatus } from '@app/shared'
 import { createQueryClient } from '@/lib/react-query.config'
-import { bookAppointmentUseCase } from '../use-cases/book-appointment.use-case'
+import { bookAppointmentUseCase } from '@app/core'
 import { useBookAppointment } from './use-book-appointment.hook'
-import type { IAppointmentModel } from '../types/appointment-model.types'
+import type { IAppointmentModel } from '@app/core'
 
 function wrapper({ children }: { children: React.ReactNode }) {
   return React.createElement(QueryClientProvider, { client: createQueryClient() }, children)

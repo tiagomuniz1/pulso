@@ -1,10 +1,10 @@
-jest.mock('../use-cases/delete-user.use-case')
+jest.mock('@app/core/src/features/users/use-cases/delete-user.use-case')
 
 import React from 'react'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createQueryClient } from '@/lib/react-query.config'
-import { deleteUserUseCase } from '../use-cases/delete-user.use-case'
+import { deleteUserUseCase } from '@app/core'
 import { useDeleteUser } from './use-delete-user.hook'
 
 function wrapper({ children }: { children: React.ReactNode }) {

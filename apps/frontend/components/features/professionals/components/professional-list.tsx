@@ -13,8 +13,8 @@ import { useProfessionals } from '../hooks/use-professionals.hook'
 import { useDeleteProfessional } from '../hooks/use-delete-professional.hook'
 import { ProfessionalListSkeleton } from './professional-list-skeleton'
 import { ProfessionalDeleteDialog } from './professional-delete-dialog'
-import { primaryProfessionLabel, primaryOccupationLabel, primaryRegistrationLabel } from '../utils/profession-label'
-import type { IProfessionalModel } from '../types/professional-model.types'
+import { primaryProfessionLabel, primaryOccupationLabel, primaryRegistrationLabel } from '@app/core'
+import type { IProfessionalModel } from '@app/core'
 
 export function ProfessionalList() {
   const basePath = useBasePath()

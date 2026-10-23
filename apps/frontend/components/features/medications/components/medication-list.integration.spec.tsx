@@ -1,16 +1,16 @@
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
 jest.mock('@/lib/slug-context', () => ({ useSlug: jest.fn(() => 'backoffice'), useBasePath: () => '/backoffice' }))
-jest.mock('../services/medications.service')
-jest.mock('../use-cases/update-medication.use-case')
-jest.mock('../use-cases/delete-medication.use-case')
+jest.mock('@app/core/src/features/medications/services/medications.service')
+jest.mock('@app/core/src/features/medications/use-cases/update-medication.use-case')
+jest.mock('@app/core/src/features/medications/use-cases/delete-medication.use-case')
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useRouter } from 'next/navigation'
 import { MedicationSource } from '@app/shared'
-import { medicationsService } from '../services/medications.service'
-import { updateMedicationUseCase } from '../use-cases/update-medication.use-case'
-import { deleteMedicationUseCase } from '../use-cases/delete-medication.use-case'
+import { medicationsService } from '@app/core'
+import { updateMedicationUseCase } from '@app/core'
+import { deleteMedicationUseCase } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { MedicationList } from './medication-list'
 

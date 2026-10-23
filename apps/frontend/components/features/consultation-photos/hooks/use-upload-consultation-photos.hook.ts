@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { uploadConsultationPhotosUseCase } from '../use-cases/upload-consultation-photos.use-case'
+import { uploadConsultationPhotosUseCase } from '@app/core'
 
 export function useUploadConsultationPhotos(appointmentId: string) {
   const queryClient = useQueryClient()

@@ -9,9 +9,9 @@ import { Skeleton } from '@/components/ui/atoms/skeleton/skeleton'
 import { Modal } from '@/components/ui/organisms/modal/modal'
 import { useVaccines } from '@/components/features/vaccines/hooks/use-vaccines.hook'
 import { useScheduleRules } from '../hooks/use-schedule-rules.hook'
-import { vaccineSchedulesService } from '../services/vaccine-schedules.service'
+import { vaccineSchedulesService } from '@app/core'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import type { IVaccineScheduleRuleModel } from '../types/vaccine-schedule.types'
+import type { IVaccineScheduleRuleModel } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 function idadeLegivel(meses: number): string {

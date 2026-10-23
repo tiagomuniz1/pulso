@@ -10,7 +10,7 @@ import { useClinicSpecialties } from '../hooks/use-clinic-specialties.hook'
 import { useLinkSpecialty } from '../hooks/use-link-specialty.hook'
 import { useUnlinkSpecialty } from '../hooks/use-unlink-specialty.hook'
 import type { IApiError } from '@/types/api.types'
-import type { IClinicSpecialtyModel } from '../types/clinic-specialty.types'
+import type { IClinicSpecialtyModel } from '@app/core'
 
 interface ClinicSpecialtySectionProps {
   clinicId: string

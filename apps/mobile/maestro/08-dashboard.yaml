@@ -1,0 +1,72 @@
+appId: center.pulso.app
+name: Dashboard, do menu aos gráficos
+env:
+  EMAIL: ${MAESTRO_ADMIN_EMAIL}
+  PASSWORD: ${MAESTRO_ADMIN_PASSWORD}
+  CLINIC: ${MAESTRO_CLINIC}
+---
+- runFlow: shared/login.yaml
+
+- tapOn:
+    id: "header-menu"
+- tapOn:
+    id: "drawer-item-dashboard"
+- extendedWaitUntil:
+    visible:
+      id: "dashboard-screen"
+    timeout: 15000
+
+# Os quatro indicadores do topo, que é o que se olha de relance.
+- assertVisible:
+    id: "dashboard-kpi-scheduled"
+- assertVisible:
+    id: "dashboard-kpi-confirmed"
+- assertVisible:
+    id: "dashboard-kpi-completed"
+- assertVisible:
+    id: "dashboard-kpi-no-show"
+
+# Trocar a data refaz a consulta — e é o único controle da tela.
+- assertVisible:
+    id: "dashboard-date-from"
+- tapOn:
+    id: "dashboard-date-from"
+- eraseText
+- inputText: "01012026"
+- hideKeyboard
+- extendedWaitUntil:
+    visible:
+      id: "dashboard-kpi-scheduled"
+    timeout: 20000
+
+# Os gráficos ficam abaixo da dobra: é preciso rolar até eles.
+- scrollUntilVisible:
+    element:
+      id: "dashboard-patients-chart"
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: "dashboard-procedures-chart"
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: "dashboard-insurance-chart"
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: "dashboard-birthdays"
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: "dashboard-timeline-chart"
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: "dashboard-age-distribution"
+    direction: DOWN
+    timeout: 20000

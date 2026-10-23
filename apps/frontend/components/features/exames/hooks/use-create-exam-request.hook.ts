@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createExamRequestUseCase } from '../use-cases/create-exam-request.use-case'
+import { createExamRequestUseCase } from '@app/core'
 
 export function useCreateExamRequest() {
   const queryClient = useQueryClient()

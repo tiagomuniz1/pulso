@@ -16,7 +16,7 @@ import { useDeleteAppointmentLabel } from '../hooks/use-delete-appointment-label
 import { AppointmentLabelForm } from './appointment-label-form'
 import { AppointmentLabelPill } from './appointment-label-pill'
 import { AppointmentLabelDeleteDialog } from './appointment-label-delete-dialog'
-import type { IAppointmentLabelModel } from '../types/appointment-label-model.types'
+import type { IAppointmentLabelModel } from '@app/core'
 
 const PAGE_SIZE = 50
 

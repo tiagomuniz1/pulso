@@ -68,7 +68,7 @@ describe('Users Detail', () => {
     cy.get('[data-testid="user-details-name"]').should('contain', mockUser.fullName)
     cy.get('[data-testid="user-details-email"]').should('contain', mockUser.email)
     cy.get('[data-testid="user-details-status"]').should('contain', 'Ativo')
-    // O rotulo do perfil USER e "Recepcionista" (lib/user-role-labels.ts), que
+    // O rotulo do perfil USER e "Recepcionista" (USER_ROLE_LABELS no @app/shared), que
     // espelha ai/context/permissions.md. A spec ficou com o rotulo anterior.
     cy.get('[data-testid="user-details-role"]').should('contain', 'Recepcionista')
     cy.get('[data-testid="user-details-created-at"]').should('be.visible')

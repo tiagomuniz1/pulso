@@ -1,7 +1,7 @@
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
 jest.mock('@/stores/auth.store')
-jest.mock('../services/users.service')
-jest.mock('../use-cases/delete-user.use-case')
+jest.mock('@app/core/src/features/users/services/users.service')
+jest.mock('@app/core/src/features/users/use-cases/delete-user.use-case')
 jest.mock('@/lib/slug-context', () => ({ useSlug: () => 'test-clinic', useBasePath: () => '/test-clinic' }))
 
 import { screen, waitFor, fireEvent, act } from '@testing-library/react'
@@ -9,8 +9,8 @@ import userEvent from '@testing-library/user-event'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/auth.store'
 import { CouncilType, UserRole } from '@app/shared'
-import { userService } from '../services/users.service'
-import { deleteUserUseCase } from '../use-cases/delete-user.use-case'
+import { userService } from '@app/core'
+import { deleteUserUseCase } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { UserList } from './user-list'
 

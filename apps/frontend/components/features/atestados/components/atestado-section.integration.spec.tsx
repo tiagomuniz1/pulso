@@ -1,11 +1,11 @@
-jest.mock('../services/atestados.service')
+jest.mock('@app/core/src/features/atestados/services/atestados.service')
 jest.mock('../use-cases/download-atestado-pdf.use-case')
 jest.mock('@/components/features/professionals/hooks/use-professional.hook')
 
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MedicalCertificateType, UserRole } from '@app/shared'
-import { atestadosService } from '../services/atestados.service'
+import { atestadosService } from '@app/core'
 import { downloadAtestadoPdfUseCase } from '../use-cases/download-atestado-pdf.use-case'
 import { useProfessional } from '@/components/features/professionals/hooks/use-professional.hook'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'

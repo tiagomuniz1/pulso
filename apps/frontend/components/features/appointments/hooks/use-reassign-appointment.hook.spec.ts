@@ -1,10 +1,10 @@
-jest.mock('../use-cases/reassign-appointment.use-case')
+jest.mock('@app/core/src/features/appointments/use-cases/reassign-appointment.use-case')
 
 import React from 'react'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createQueryClient } from '@/lib/react-query.config'
-import { reassignAppointmentUseCase } from '../use-cases/reassign-appointment.use-case'
+import { reassignAppointmentUseCase } from '@app/core'
 import { useReassignAppointment } from './use-reassign-appointment.hook'
 
 function wrapper({ children }: { children: React.ReactNode }) {

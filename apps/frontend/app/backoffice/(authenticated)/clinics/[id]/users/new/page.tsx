@@ -9,7 +9,7 @@ import { Typography } from '@/components/ui/atoms/typography/typography'
 import { UserForm } from '@/components/features/users/components/user-form'
 import { useCreateClinicAdminUser } from '@/components/features/users/hooks/use-create-clinic-admin-user.hook'
 import { useBasePath } from '@/lib/slug-context'
-import type { ICreateUserInput } from '@/components/features/users/types/user-input.types'
+import type { ICreateUserInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 const CLINIC_ROLES = [UserRole.USER, UserRole.ADMIN]

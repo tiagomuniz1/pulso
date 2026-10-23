@@ -1,11 +1,11 @@
-jest.mock('../use-cases/complete-appointment.use-case')
+jest.mock('@app/core/src/features/appointments/use-cases/complete-appointment.use-case')
 
 import React from 'react'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { AppointmentStatus } from '@app/shared'
 import { createQueryClient } from '@/lib/react-query.config'
-import { completeAppointmentUseCase } from '../use-cases/complete-appointment.use-case'
+import { completeAppointmentUseCase } from '@app/core'
 import { useCompleteAppointment } from './use-complete-appointment.hook'
 
 function wrapper({ children }: { children: React.ReactNode }) {

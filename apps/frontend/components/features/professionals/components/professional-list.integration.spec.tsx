@@ -1,14 +1,14 @@
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
-jest.mock('../services/professionals.service')
-jest.mock('../use-cases/delete-professional.use-case')
+jest.mock('@app/core/src/features/professionals/services/professionals.service')
+jest.mock('@app/core/src/features/professionals/use-cases/delete-professional.use-case')
 
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useRouter } from 'next/navigation'
 import { CouncilType, UserRole } from '@app/shared'
 import { useAuthStore } from '@/stores/auth.store'
-import { professionalsService } from '../services/professionals.service'
-import { deleteProfessionalUseCase } from '../use-cases/delete-professional.use-case'
+import { professionalsService } from '@app/core'
+import { deleteProfessionalUseCase } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { ProfessionalList } from './professional-list'
 

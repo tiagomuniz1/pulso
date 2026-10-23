@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { IDashboardModel } from '../types/dashboard.types'
+import type { IDashboardModel } from '@app/core'
 
 const PAGE_SIZE = 5
 

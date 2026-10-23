@@ -1,0 +1,78 @@
+name: Mobile
+
+# Portão do app, separado do `deploy.yml` de propósito.
+#
+# O deploy da web não roda os testes do app — e tem razão: reprovar uma
+# entrega por um teste de outra acopla duas coisas que não se afetam. Só que
+# com isso **nada** os rodava, e os 1400 testes do app não barravam nada.
+# Este workflow é o portão que faltava: roda no PR, não implanta coisa
+# alguma, e falha sozinho.
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/core/**'
+      - 'packages/shared/**'
+      - '.github/workflows/mobile.yml'
+      - 'package.json'
+      - 'yarn.lock'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/core/**'
+      - 'packages/shared/**'
+      - '.github/workflows/mobile.yml'
+      - 'package.json'
+      - 'yarn.lock'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Testes, tipos e lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Enable Corepack (Yarn 4)
+        run: corepack enable
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      # O app importa `@app/shared` e `@app/core` pelos `dist`: o `typecheck`
+      # resolve os tipos de lá, não do fonte. Sem construir antes, ele reprova
+      # por "has no exported member" em símbolo que existe.
+      - name: Build shared e core
+        run: |
+          yarn workspace @app/shared build
+          yarn workspace @app/core build
+
+      # Com `--coverage`, e não `test` seco: a régua de 100% mora no
+      # `coverageThreshold` do Jest e só é verificada quando a cobertura é
+      # medida. Sem isto o portão deixaria passar ramo novo sem teste, que é
+      # exatamente o que a régua existe para pegar.
+      #
+      # `shared` e `core` entram porque o app depende deles e nenhum outro
+      # portão os cobre num PR que só mexe no app.
+      - name: Testes com cobertura
+        run: |
+          yarn workspace @app/shared test:coverage
+          yarn workspace @app/core test:coverage
+          yarn workspace @app/mobile test:coverage
+
+      - name: Typecheck
+        run: yarn workspace @app/mobile typecheck
+
+      - name: Lint
+        run: yarn workspace @app/mobile lint
+
+      # Pega a deriva de versão do SDK antes que ela apareça como erro nativo
+      # no build do EAS, que é longo e roda muito depois.
+      - name: expo-doctor
+        working-directory: apps/mobile
+        run: npx expo-doctor

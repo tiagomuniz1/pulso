@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { listPrescriptionTemplatesUseCase } from '../use-cases/list-prescription-templates.use-case'
+import { listPrescriptionTemplatesUseCase } from '@app/core'
 
 export function usePrescriptionTemplates(params?: { professionalId?: string }) {
   return useQuery({

@@ -1,4 +1,4 @@
-jest.mock('../services/appointments.service')
+jest.mock('@app/core/src/features/appointments/services/appointments.service')
 jest.mock('@/lib/slug-context', () => ({
   useSlug: jest.fn(() => 'clinic-slug'),
   useBasePath: () => '/clinic-slug',
@@ -9,7 +9,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useRouter } from 'next/navigation'
 import { AppointmentStatus, DayOfWeek, RecurrenceInterval } from '@app/shared'
-import { appointmentsService } from '../services/appointments.service'
+import { appointmentsService } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { SeriesOccurrencesDialog } from './series-occurrences-dialog'
 

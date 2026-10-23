@@ -8,8 +8,8 @@ import { MedicationSource } from '@app/shared'
 import { Input } from '@/components/ui/atoms/input/input'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Alert } from '@/components/ui/molecules/alert/alert'
-import type { IMedicationModel } from '../types/medication-model.types'
-import type { ICreateMedicationInput, IUpdateMedicationInput } from '../types/medication-input.types'
+import type { IMedicationModel } from '@app/core'
+import type { ICreateMedicationInput, IUpdateMedicationInput } from '@app/core'
 
 const SOURCE_LABELS: Record<MedicationSource, string> = {
   [MedicationSource.ANVISA]: 'ANVISA',

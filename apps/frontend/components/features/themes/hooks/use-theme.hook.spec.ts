@@ -1,10 +1,10 @@
-jest.mock('../use-cases/get-theme-by-id.use-case')
+jest.mock('@app/core/src/features/themes/use-cases/get-theme-by-id.use-case')
 
 import React from 'react'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createQueryClient } from '@/lib/react-query.config'
-import { getThemeByIdUseCase } from '../use-cases/get-theme-by-id.use-case'
+import { getThemeByIdUseCase } from '@app/core'
 import { useTheme } from './use-theme.hook'
 
 const mockGetThemeById = getThemeByIdUseCase as jest.Mock

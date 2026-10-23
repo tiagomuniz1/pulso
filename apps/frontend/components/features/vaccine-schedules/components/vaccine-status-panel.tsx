@@ -9,7 +9,7 @@ import { Modal } from '@/components/ui/organisms/modal/modal'
 import { useMyProfessional } from '@/components/features/professionals/hooks/use-my-professional.hook'
 import { usePatientVaccineStatus } from '../hooks/use-patient-vaccine-status.hook'
 import { useRecordVaccineDecision } from '../hooks/use-record-vaccine-decision.hook'
-import type { IPatientVaccineStatusItem } from '../types/vaccine-schedule.types'
+import type { IPatientVaccineStatusItem } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 // A linguagem é de sugestão, não de ordem: o sistema informa o que o calendário

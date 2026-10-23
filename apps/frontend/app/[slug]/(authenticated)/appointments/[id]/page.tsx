@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { AppointmentStatus, UserRole } from '@app/shared'
+import { AppointmentStatus, UserRole, isAppointmentOpen } from '@app/shared'
 import { useAuthStore } from '@/stores/auth.store'
 import { Skeleton } from '@/components/ui/atoms/skeleton/skeleton'
 import { Alert } from '@/components/ui/molecules/alert/alert'
@@ -80,7 +80,15 @@ export default function AppointmentDetailPage() {
     role === UserRole.ADMIN ||
     (role === UserRole.PROFESSIONAL && appointment?.professionalId === currentDoctorId)
 
-  const canAct = canManage && appointment?.status === AppointmentStatus.SCHEDULED
+  /**
+   * Concluir e cancelar valem para a consulta ainda de pé — agendada **ou
+   * confirmada**, o conjunto que o backend aceita.
+   *
+   * Exigia `SCHEDULED` aqui, e com isso a consulta que a paciente tinha
+   * confirmado aparecia sem botão nenhum: a recepção ligava, confirmava, e
+   * ninguém mais conseguia concluí-la pela web.
+   */
+  const canAct = canManage && !!appointment && isAppointmentOpen(appointment.status)
 
   // Emitir receita/atestado/exame e enviar foto vem da ficha de profissional,
   // não do cargo — e só na própria consulta, porque o documento carrega o
@@ -209,7 +217,7 @@ export default function AppointmentDetailPage() {
             <AppointmentHeaderCard
               appointment={appointment}
               canManage={canManage}
-              canAct={!!canAct}
+              canAct={canAct}
               canReassign={canReassign}
               hasRecord={!!record}
               onBack={() => router.back()}

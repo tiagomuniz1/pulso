@@ -1,5 +1,5 @@
 import { DashboardKpiCard } from './DashboardKpiCard'
-import type { IDashboardModel } from '../types/dashboard.types'
+import type { IDashboardModel } from '@app/core'
 
 interface DashboardKpiRowProps {
   kpi: IDashboardModel['kpi']

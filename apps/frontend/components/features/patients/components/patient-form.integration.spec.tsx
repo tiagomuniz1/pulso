@@ -1,17 +1,16 @@
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
-jest.mock('../services/patients.service')
-jest.mock('@/components/features/users/services/users.service')
+jest.mock('@app/core/src/features/patients/services/patients.service')
+jest.mock('@app/core/src/features/users/services/users.service')
 
 import { screen, waitFor, act, fireEvent } from '@testing-library/react'
+import { patientsService } from '@app/core'
+import type { IPatientModel } from '@app/core'
 import userEvent from '@testing-library/user-event'
 import { useRouter } from 'next/navigation'
 import { KinshipType, PatientGender } from '@app/shared'
-import { patientsService } from '../services/patients.service'
-import { userService } from '@/components/features/users/services/users.service'
+import { userService } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { PatientForm } from './patient-form'
-import type { IPatientModel } from '../types/patient-model.types'
-
 const mockPush = jest.fn()
 
 const mockUsers = [

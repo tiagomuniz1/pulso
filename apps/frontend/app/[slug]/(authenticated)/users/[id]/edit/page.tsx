@@ -11,7 +11,7 @@ import { Typography } from '@/components/ui/atoms/typography/typography'
 import { UserForm } from '@/components/features/users/components/user-form'
 import { useUser } from '@/components/features/users/hooks/use-user.hook'
 import { useUpdateUser } from '@/components/features/users/hooks/use-update-user.hook'
-import type { IUpdateUserInput } from '@/components/features/users/types/user-input.types'
+import type { IUpdateUserInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export default function EditUserPage() {

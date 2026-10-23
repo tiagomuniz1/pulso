@@ -2,7 +2,7 @@
 
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { Button } from '@/components/ui/atoms/button/button'
-import type { ITemplateModel } from '@/components/features/medical-record-templates/types/template-model.types'
+import type { ITemplateModel } from '@app/core'
 
 const MAXIMO_DE_SECOES_EXIBIDAS = 3
 

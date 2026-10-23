@@ -1,5 +1,5 @@
 import { CouncilType } from '@app/shared'
-jest.mock('../use-cases/create-professional.use-case')
+jest.mock('@app/core/src/features/professionals/use-cases/create-professional.use-case')
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
 jest.mock('@/lib/slug-context', () => ({ useSlug: () => 'test-clinic', useBasePath: () => '/test-clinic' }))
 
@@ -8,7 +8,7 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { createQueryClient } from '@/lib/react-query.config'
-import { createProfessionalUseCase } from '../use-cases/create-professional.use-case'
+import { createProfessionalUseCase } from '@app/core'
 import { useCreateProfessional } from './use-create-professional.hook'
 
 const mockPush = jest.fn()

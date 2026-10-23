@@ -1,4 +1,4 @@
-jest.mock('../use-cases/update-professional.use-case')
+jest.mock('@app/core/src/features/professionals/use-cases/update-professional.use-case')
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
 jest.mock('@/lib/slug-context', () => ({ useSlug: () => 'test-clinic', useBasePath: () => '/test-clinic' }))
 
@@ -7,7 +7,7 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { createQueryClient } from '@/lib/react-query.config'
-import { updateProfessionalUseCase } from '../use-cases/update-professional.use-case'
+import { updateProfessionalUseCase } from '@app/core'
 import { useUpdateProfessional } from './use-update-professional.hook'
 
 const mockPush = jest.fn()

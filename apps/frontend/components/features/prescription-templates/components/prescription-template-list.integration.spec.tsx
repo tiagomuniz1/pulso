@@ -1,13 +1,13 @@
-jest.mock('../services/prescription-templates.service')
-jest.mock('@/components/features/medications/services/medications.service')
-jest.mock('@/components/features/professionals/services/professionals.service')
+jest.mock('@app/core/src/features/prescription-templates/services/prescription-templates.service')
+jest.mock('@app/core/src/features/medications/services/medications.service')
+jest.mock('@app/core/src/features/professionals/services/professionals.service')
 
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { UserRole } from '@app/shared'
-import { prescriptionTemplatesService } from '../services/prescription-templates.service'
-import { medicationsService } from '@/components/features/medications/services/medications.service'
-import { professionalsService } from '@/components/features/professionals/services/professionals.service'
+import { prescriptionTemplatesService } from '@app/core'
+import { medicationsService } from '@app/core'
+import { professionalsService } from '@app/core'
 import { CouncilType } from '@app/shared'
 import { useAuthStore } from '@/stores/auth.store'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'

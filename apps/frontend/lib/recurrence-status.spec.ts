@@ -1,21 +1,9 @@
 import { RecurringOccurrenceAvailability } from '@app/shared'
-import { RECURRENCE_STATUS_BADGE_CLASS, RECURRENCE_STATUS_LABELS } from './recurrence-status'
+import { RECURRENCE_STATUS_BADGE_CLASS } from './recurrence-status'
 
-describe('recurrence-status', () => {
-  const allStatuses = Object.values(RecurringOccurrenceAvailability)
-
-  it('labels every availability in Brazilian Portuguese', () => {
-    expect(RECURRENCE_STATUS_LABELS).toEqual({
-      available: 'Disponível',
-      already_booked: 'Ocupado',
-      outside_schedule: 'Fora da agenda',
-      blocked_by_exception: 'Bloqueado',
-      in_the_past: 'No passado',
-    })
-  })
-
+describe('RECURRENCE_STATUS_BADGE_CLASS', () => {
   it('has a badge class for every availability', () => {
-    allStatuses.forEach((status) => {
+    Object.values(RecurringOccurrenceAvailability).forEach((status) => {
       expect(RECURRENCE_STATUS_BADGE_CLASS[status]).toBeTruthy()
     })
   })

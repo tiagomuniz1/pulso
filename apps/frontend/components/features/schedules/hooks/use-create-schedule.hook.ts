@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useBasePath } from '@/lib/slug-context'
-import { createScheduleUseCase } from '../use-cases/create-schedule.use-case'
-import type { ICreateScheduleInput } from '../types/schedule-input.types'
-import type { IScheduleModel } from '../types/schedule-model.types'
+import { createScheduleUseCase } from '@app/core'
+import type { ICreateScheduleInput } from '@app/core'
+import type { IScheduleModel } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export function useCreateSchedule() {

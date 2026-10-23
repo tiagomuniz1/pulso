@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { getDashboardStatsUseCase } from '../use-cases/get-dashboard-stats.use-case'
-import type { IDashboardFilters } from '../types/dashboard.types'
+import { getDashboardStatsUseCase } from '@app/core'
+import type { IDashboardFilters } from '@app/core'
 
 export function useDashboardStats(filters: IDashboardFilters = {}) {
   return useQuery({

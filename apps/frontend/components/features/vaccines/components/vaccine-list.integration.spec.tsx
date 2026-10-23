@@ -1,8 +1,8 @@
-jest.mock('../services/vaccines.service')
+jest.mock('@app/core/src/features/vaccines/services/vaccines.service')
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { vaccinesService } from '../services/vaccines.service'
+import { vaccinesService } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { VaccineList } from './vaccine-list'
 

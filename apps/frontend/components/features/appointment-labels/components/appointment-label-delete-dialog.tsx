@@ -2,7 +2,7 @@
 
 import { Modal } from '@/components/ui/organisms/modal/modal'
 import { Button } from '@/components/ui/atoms/button/button'
-import type { IAppointmentLabelModel } from '../types/appointment-label-model.types'
+import type { IAppointmentLabelModel } from '@app/core'
 
 interface AppointmentLabelDeleteDialogProps {
   label: IAppointmentLabelModel | null

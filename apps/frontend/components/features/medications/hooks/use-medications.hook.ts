@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { listMedicationsUseCase } from '../use-cases/list-medications.use-case'
-import type { IMedicationListParams } from '../types/medication-model.types'
+import { listMedicationsUseCase } from '@app/core'
+import type { IMedicationListParams } from '@app/core'
 
 export function useMedications(params?: IMedicationListParams) {
   return useQuery({

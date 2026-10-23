@@ -1,11 +1,11 @@
-jest.mock('../use-cases/get-user.use-case')
+jest.mock('@app/core/src/features/users/use-cases/get-user.use-case')
 
 import React from 'react'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { UserRole } from '@app/shared'
 import { createQueryClient } from '@/lib/react-query.config'
-import { getUserUseCase } from '../use-cases/get-user.use-case'
+import { getUserUseCase } from '@app/core'
 import { useUser } from './use-user.hook'
 
 function wrapper({ children }: { children: React.ReactNode }) {

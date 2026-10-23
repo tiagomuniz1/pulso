@@ -23,8 +23,8 @@ import type { IApiError } from '@/types/api.types'
 import { formatDateToBR } from '@/lib/format-date'
 import { RecurrenceFields } from './recurrence-fields'
 import { RecurrencePreviewList } from './recurrence-preview-list'
-import type { IBookFormValues } from '../types/book-form.types'
-import type { IRecurrencePreviewInput } from '../types/appointment-input.types'
+import type { IBookFormValues } from '@app/core'
+import type { IRecurrencePreviewInput } from '@app/core'
 
 /**
  * Built once per specialtyCount rather than inline on every render, so the
@@ -121,7 +121,9 @@ export function BookAppointmentDialog({
   } = useRecurrencePreview(step === 2 ? previewParams : null)
 
   const occurrences = preview?.occurrences ?? []
-  const specialties = doctor?.specialties ?? []
+  // Memoizado porque o `?? []` cria um array novo a cada render, e o
+  // `useEffect` que pré-seleciona a especialidade o tem como dependência.
+  const specialties = useMemo(() => doctor?.specialties ?? [], [doctor])
   const specialtyCount = specialties.length
   const doctorLoaded = !isDoctorLoading && !!professionalId
 

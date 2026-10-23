@@ -1,13 +1,7 @@
 jest.mock('@/components/features/themes/hooks/use-active-theme.hook')
 
 import { renderHook } from '@testing-library/react'
-import {
-  computeBgDark,
-  computeBgLight,
-  computeDarkAccent,
-  computeDarkSoft,
-  ThemeBorderRadius,
-} from '@app/shared'
+import { ThemeBorderRadius } from '@app/shared'
 import { useActiveTheme } from '@/components/features/themes/hooks/use-active-theme.hook'
 import { useApplyClinicTheme } from './use-apply-clinic-theme.hook'
 
@@ -26,96 +20,6 @@ const sampleTheme = {
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
 }
-
-describe('computeDarkAccent', () => {
-  it('lightens and desaturates blue accent for dark mode', () => {
-    const result = computeDarkAccent('#2563EB')
-    const r = parseInt(result.slice(1, 3), 16)
-    const b = parseInt(result.slice(5, 7), 16)
-    expect(r).toBeGreaterThan(37)
-    expect(b).toBeGreaterThan(235)
-    expect(result).toMatch(/^#[0-9a-f]{6}$/)
-  })
-
-  it('lightens rose accent for dark mode', () => {
-    const result = computeDarkAccent('#E11D48')
-    const rSource = 0xe1
-    const rResult = parseInt(result.slice(1, 3), 16)
-    expect(rResult).toBeGreaterThan(rSource)
-    expect(result).toMatch(/^#[0-9a-f]{6}$/)
-  })
-
-  it('returns a valid 6-digit hex string', () => {
-    expect(computeDarkAccent('#000000')).toMatch(/^#[0-9a-f]{6}$/)
-    expect(computeDarkAccent('#FFFFFF')).toMatch(/^#[0-9a-f]{6}$/)
-  })
-})
-
-describe('computeDarkSoft', () => {
-  it('produces a very dark tinted color from blue accent', () => {
-    const result = computeDarkSoft('#2563EB')
-    const r = parseInt(result.slice(1, 3), 16)
-    const g = parseInt(result.slice(3, 5), 16)
-    const b = parseInt(result.slice(5, 7), 16)
-    expect(r).toBeLessThan(60)
-    expect(g).toBeLessThan(60)
-    expect(b).toBeLessThan(60)
-    expect(result).toMatch(/^#[0-9a-f]{6}$/)
-  })
-
-  it('produces a very dark tinted color from rose accent', () => {
-    const result = computeDarkSoft('#E11D48')
-    const r = parseInt(result.slice(1, 3), 16)
-    expect(r).toBeLessThan(60)
-    expect(result).toMatch(/^#[0-9a-f]{6}$/)
-  })
-
-  it('returns a valid 6-digit hex string', () => {
-    expect(computeDarkSoft('#000000')).toMatch(/^#[0-9a-f]{6}$/)
-    expect(computeDarkSoft('#FFFFFF')).toMatch(/^#[0-9a-f]{6}$/)
-  })
-})
-
-describe('computeBgLight', () => {
-  it('returns a color very close to the base bg (#F7F6F3)', () => {
-    const result = computeBgLight('#2563EB')
-    // rgb(...) format
-    expect(result).toMatch(/^rgb\(\d+,\d+,\d+\)$/)
-    const [r, g, b] = result.match(/\d+/g)!.map(Number)
-    // should stay close to base 247/246/243 — 4% shift at most ~9 units
-    expect(r).toBeGreaterThanOrEqual(238)
-    expect(g).toBeGreaterThanOrEqual(237)
-    expect(b).toBeGreaterThanOrEqual(234)
-  })
-
-  it('produces a warmer tint for a warm accent (rose)', () => {
-    const result = computeBgLight('#E11D48')
-    const [r, , b] = result.match(/\d+/g)!.map(Number)
-    // red channel should be higher than blue due to warm accent
-    expect(r).toBeGreaterThan(b)
-  })
-})
-
-describe('computeBgDark', () => {
-  it('returns a color very close to the base dark bg (#0B1220)', () => {
-    const result = computeBgDark('#2563EB')
-    expect(result).toMatch(/^rgb\(\d+,\d+,\d+\)$/)
-    const [r, g, b] = result.match(/\d+/g)!.map(Number)
-    // should stay close to base 11/18/32 — 4% shift at most ~9 units
-    expect(r).toBeLessThan(21)
-    expect(g).toBeLessThan(28)
-    expect(b).toBeLessThan(42)
-  })
-
-  it('shifts red channel more than blue channel for a warm accent (rose)', () => {
-    const result = computeBgDark('#E11D48')
-    const [r, , b] = result.match(/\d+/g)!.map(Number)
-    // Dark base is #0B1220 (r=11, b=32). Rose accent (r=225, b=72) shifts red more.
-    const rShift = r - 11
-    const bShift = b - 32
-    expect(rShift).toBeGreaterThan(bShift)
-  })
-})
 
 describe('useApplyClinicTheme', () => {
   let setPropertySpy: jest.SpyInstance

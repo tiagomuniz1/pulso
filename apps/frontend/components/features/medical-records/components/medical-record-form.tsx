@@ -11,8 +11,8 @@ import { Tabs } from '@/components/ui/atoms/tabs/tabs'
 import { ModalFormActions } from '@/components/ui/molecules/modal-form-actions/modal-form-actions'
 import { groupFieldsBySection } from '../utils/group-fields-by-section.util'
 import { DynamicField } from './dynamic-field'
-import { coerceFieldValue } from '../mappers/coerce-field-value.mapper'
-import type { IRecordFieldModel } from '../types/medical-record-model.types'
+import { coerceFieldValue } from '@app/core'
+import type { IRecordFieldModel } from '@app/core'
 
 interface IFormSection {
   key: string

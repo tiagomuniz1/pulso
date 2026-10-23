@@ -1,0 +1,108 @@
+jest.mock('../../../api/api-client.registry')
+
+import { apiClient } from '../../../api/api-client.registry'
+import { UserRole } from '@app/shared'
+import { userService } from './users.service'
+
+const mockApiClient = apiClient as jest.Mocked<typeof apiClient>
+
+const makeDto = () => ({
+  id: 'uuid-1',
+  fullName: 'Alice Costa',
+  email: 'alice@example.com',
+  role: UserRole.USER,
+  createdAt: new Date('2024-01-15T10:00:00.000Z'),
+  updatedAt: new Date('2024-01-16T10:00:00.000Z'),
+})
+
+describe('userService', () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  it('getAll calls GET /users and returns result', async () => {
+    const dtos = [makeDto()]
+    mockApiClient.get.mockResolvedValue(dtos)
+
+    const result = await userService.getAll()
+
+    expect(mockApiClient.get).toHaveBeenCalledWith('/users')
+    expect(result).toBe(dtos)
+  })
+
+  it('getById calls GET /users/:id and returns result', async () => {
+    const dto = makeDto()
+    mockApiClient.get.mockResolvedValue(dto)
+
+    const result = await userService.getById('uuid-1')
+
+    expect(mockApiClient.get).toHaveBeenCalledWith('/users/uuid-1')
+    expect(result).toBe(dto)
+  })
+
+  it('create calls POST /users with data and returns result', async () => {
+    const dto = makeDto()
+    mockApiClient.post.mockResolvedValue(dto)
+    const input = { fullName: 'Alice Costa', email: 'alice@example.com', password: 'password123', role: UserRole.USER }
+
+    const result = await userService.create(input)
+
+    expect(mockApiClient.post).toHaveBeenCalledWith('/users', input)
+    expect(result).toBe(dto)
+  })
+
+  it('update calls PATCH /users/:id with data and returns result', async () => {
+    const dto = makeDto()
+    mockApiClient.patch.mockResolvedValue(dto)
+    const input = { fullName: 'Alice Updated' }
+
+    const result = await userService.update('uuid-1', input)
+
+    expect(mockApiClient.patch).toHaveBeenCalledWith('/users/uuid-1', input)
+    expect(result).toBe(dto)
+  })
+
+  it('remove calls DELETE /users/:id', async () => {
+    mockApiClient.delete.mockResolvedValue(undefined)
+
+    await userService.remove('uuid-1')
+
+    expect(mockApiClient.delete).toHaveBeenCalledWith('/users/uuid-1')
+  })
+
+  it('getAll appends search param to query string', async () => {
+    mockApiClient.get.mockResolvedValue({ data: [], total: 0, page: 1, limit: 20 })
+
+    await userService.getAll({ search: 'alice' })
+
+    expect(mockApiClient.get).toHaveBeenCalledWith('/users?search=alice')
+  })
+
+  it('getAll appends page and limit params to query string', async () => {
+    mockApiClient.get.mockResolvedValue({ data: [], total: 0, page: 2, limit: 10 })
+
+    await userService.getAll({ page: 2, limit: 10 })
+
+    expect(mockApiClient.get).toHaveBeenCalledWith('/users?page=2&limit=10')
+  })
+
+  it('getAll appends all params to query string', async () => {
+    mockApiClient.get.mockResolvedValue({ data: [], total: 0, page: 1, limit: 20 })
+
+    await userService.getAll({ search: 'alice', page: 1, limit: 20 })
+
+    expect(mockApiClient.get).toHaveBeenCalledWith('/users?search=alice&page=1&limit=20')
+  })
+
+  /**
+   * O corpo da resposta importa: o backend responde `503` quando o e-mail não
+   * sai, e `200` só quando saiu (ver `permissions.md`). Quem chama precisa do
+   * retorno para a tela não confirmar uma entrega que não aconteceu.
+   */
+  it('sendSetPasswordEmail posts to the user endpoint and returns the body', async () => {
+    mockApiClient.post.mockResolvedValue({ sentTo: 'alice@example.com' })
+
+    const result = await userService.sendSetPasswordEmail('uuid-1')
+
+    expect(mockApiClient.post).toHaveBeenCalledWith('/users/uuid-1/send-set-password-email')
+    expect(result).toEqual({ sentTo: 'alice@example.com' })
+  })
+})

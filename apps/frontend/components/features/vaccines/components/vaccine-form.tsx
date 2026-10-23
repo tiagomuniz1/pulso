@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Input } from '@/components/ui/atoms/input/input'
 import { Alert } from '@/components/ui/molecules/alert/alert'
-import type { IVaccineModel } from '../types/vaccine-model.types'
+import type { IVaccineModel } from '@app/core'
 
 // Limites espelhando o DTO: divergir aqui só adiaria o erro para o servidor.
 const schema = z.object({

@@ -9,7 +9,7 @@ import { UserRole } from '@app/shared'
 import { useProfessionals } from '@/components/features/professionals/hooks/use-professionals.hook'
 import { useCreateSchedule } from '@/components/features/schedules/hooks/use-create-schedule.hook'
 import { ScheduleForm } from '@/components/features/schedules/components/schedule-form'
-import type { ICreateScheduleInput } from '@/components/features/schedules/types/schedule-input.types'
+import type { ICreateScheduleInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 import { useState } from 'react'
 

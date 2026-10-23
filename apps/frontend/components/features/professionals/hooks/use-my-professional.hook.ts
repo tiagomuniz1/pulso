@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getMyProfessionalUseCase } from '../use-cases/get-my-professional.use-case'
+import { getMyProfessionalUseCase } from '@app/core'
 
 // A ficha de profissional do próprio usuário, ou `null` se ele não exerce.
 //

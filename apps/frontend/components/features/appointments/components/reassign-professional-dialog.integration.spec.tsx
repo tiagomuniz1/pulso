@@ -1,9 +1,9 @@
-jest.mock('../use-cases/get-reassign-candidates.use-case')
+jest.mock('@app/core/src/features/appointments/use-cases/get-reassign-candidates.use-case')
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
-import { getReassignCandidatesUseCase } from '../use-cases/get-reassign-candidates.use-case'
+import { getReassignCandidatesUseCase } from '@app/core'
 import { ReassignProfessionalDialog } from './reassign-professional-dialog'
 
 const mockUseCase = getReassignCandidatesUseCase as jest.Mock

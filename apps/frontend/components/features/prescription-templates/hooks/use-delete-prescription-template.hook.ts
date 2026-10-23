@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { deletePrescriptionTemplateUseCase } from '../use-cases/delete-prescription-template.use-case'
+import { deletePrescriptionTemplateUseCase } from '@app/core'
 
 export function useDeletePrescriptionTemplate() {
   const queryClient = useQueryClient()

@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { getTemplateUseCase } from '../use-cases/get-template.use-case'
+import { getTemplateUseCase } from '@app/core'
 
 export function useTemplate(id: string) {
   return useQuery({

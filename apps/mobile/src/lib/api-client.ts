@@ -156,4 +156,14 @@ export const apiClient = {
   put: <T>(url: string, data?: unknown): Promise<T> => unwrap<T>(client.put(url, data)),
   patch: <T>(url: string, data?: unknown): Promise<T> => unwrap<T>(client.patch(url, data)),
   delete: <T>(url: string): Promise<T> => unwrap<T>(client.delete(url)),
+  /**
+   * PDFs e anexos.
+   *
+   * Vai direto no `client`, sem o `unwrap`: o interceptor devolve
+   * `response.data`, que aqui já é o próprio Blob. Entregar o arquivo ao
+   * usuário é outra história — `expo-file-system` mais `expo-sharing`, na
+   * fase 3; o que o core precisa é só dos bytes.
+   */
+  getBlob: (url: string): Promise<Blob> =>
+    unwrap<Blob>(client.get(url, { responseType: 'blob' })),
 }

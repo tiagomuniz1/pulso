@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createAppointmentLabelUseCase } from '../use-cases/create-appointment-label.use-case'
+import { createAppointmentLabelUseCase } from '@app/core'
 
 export function useCreateAppointmentLabel() {
   const queryClient = useQueryClient()

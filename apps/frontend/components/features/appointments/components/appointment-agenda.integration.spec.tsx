@@ -1,7 +1,7 @@
-jest.mock('../services/appointments.service')
-jest.mock('@/components/features/patients/services/patients.service')
-jest.mock('@/components/features/professionals/services/professionals.service')
-jest.mock('@/components/features/schedule-exceptions/services/schedule-exceptions.service')
+jest.mock('@app/core/src/features/appointments/services/appointments.service')
+jest.mock('@app/core/src/features/patients/services/patients.service')
+jest.mock('@app/core/src/features/professionals/services/professionals.service')
+jest.mock('@app/core/src/features/schedule-exceptions/services/schedule-exceptions.service')
 jest.mock('@/stores/auth.store')
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(() => ({ push: jest.fn(), replace: jest.fn() })),
@@ -12,10 +12,8 @@ import { screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { UserRole, CouncilType } from '@app/shared'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { appointmentsService } from '../services/appointments.service'
-import { patientsService } from '@/components/features/patients/services/patients.service'
-import { professionalsService } from '@/components/features/professionals/services/professionals.service'
-import { scheduleExceptionsService } from '@/components/features/schedule-exceptions/services/schedule-exceptions.service'
+import { appointmentsService, patientsService, scheduleExceptionsService } from '@app/core'
+import { professionalsService } from '@app/core'
 import { useAuthStore } from '@/stores/auth.store'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { AppointmentAgenda } from './appointment-agenda'

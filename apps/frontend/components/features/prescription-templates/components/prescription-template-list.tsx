@@ -15,8 +15,8 @@ import { useDeletePrescriptionTemplate } from '../hooks/use-delete-prescription-
 import { PrescriptionTemplateListSkeleton } from './prescription-template-list-skeleton'
 import { PrescriptionTemplateForm } from './prescription-template-form'
 import { PrescriptionTemplateDeleteDialog } from './prescription-template-delete-dialog'
-import type { IPrescriptionTemplateModel } from '../types/prescription-template-model.types'
-import type { ICreatePrescriptionTemplateInput } from '../types/prescription-template-input.types'
+import type { IPrescriptionTemplateModel } from '@app/core'
+import type { ICreatePrescriptionTemplateInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export function PrescriptionTemplateList() {

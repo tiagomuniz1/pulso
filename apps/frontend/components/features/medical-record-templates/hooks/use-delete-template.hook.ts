@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { deleteTemplateUseCase } from '../use-cases/delete-template.use-case'
+import { deleteTemplateUseCase } from '@app/core'
 import { useBasePath } from '@/lib/slug-context'
 
 export function useDeleteTemplate() {

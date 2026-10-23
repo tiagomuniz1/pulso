@@ -1,19 +1,9 @@
 'use client'
 
-import { MedicalRecordFieldType } from '@app/shared'
+import { MEDICAL_RECORD_FIELD_TYPE_LABELS } from '@app/shared'
 import { Button } from '@/components/ui/atoms/button/button'
 import { useCanonicalFields } from '../hooks/use-canonical-fields.hook'
-import type { ICanonicalFieldModel } from '../types/canonical-field-model.types'
-
-const FIELD_TYPE_LABELS: Record<MedicalRecordFieldType, string> = {
-  [MedicalRecordFieldType.TEXT]: 'Texto',
-  [MedicalRecordFieldType.TEXTAREA]: 'Texto longo',
-  [MedicalRecordFieldType.NUMBER]: 'Número',
-  [MedicalRecordFieldType.BOOLEAN]: 'Sim/Não',
-  [MedicalRecordFieldType.DATE]: 'Data',
-  [MedicalRecordFieldType.SELECT]: 'Seleção única',
-  [MedicalRecordFieldType.MULTISELECT]: 'Seleção múltipla',
-}
+import type { ICanonicalFieldModel } from '@app/core'
 
 interface CanonicalFieldPickerProps {
   onAdopt: (field: ICanonicalFieldModel) => void
@@ -57,7 +47,7 @@ export function CanonicalFieldPicker({ onAdopt }: CanonicalFieldPickerProps) {
           <div>
             <p className="text-sm font-medium text-text">{field.label}</p>
             <p className="text-xs text-text-mute">
-              {FIELD_TYPE_LABELS[field.type]} · {field.canonicalKey}
+              {MEDICAL_RECORD_FIELD_TYPE_LABELS[field.type]} · {field.canonicalKey}
             </p>
           </div>
           <Button

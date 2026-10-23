@@ -1,12 +1,11 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { patientsService } from '@app/core'
+import { formatCpf } from '@app/shared'
 import { useController, Control, FieldValues, Path } from 'react-hook-form'
 import { useQuery } from '@tanstack/react-query'
 import { cn } from '@/lib/cn'
-import { formatCpf } from '@/lib/format-cpf'
-import { patientsService } from '../services/patients.service'
-
 interface TitularSearchProps<T extends FieldValues> {
   control: Control<T>
   name: Path<T>

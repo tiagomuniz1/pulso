@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getMedicationUseCase } from '../use-cases/get-medication.use-case'
+import { getMedicationUseCase } from '@app/core'
 
 export function useMedication(id: string) {
   return useQuery({

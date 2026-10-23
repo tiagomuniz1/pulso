@@ -14,8 +14,8 @@ import { AtestadoForm } from './atestado-form'
 import { AtestadoListSkeleton } from './atestado-list-skeleton'
 import { AtestadoDeleteDialog } from './atestado-delete-dialog'
 import { AtestadoPreviewModal } from './atestado-preview-modal'
-import type { IAtestadoModel } from '../types/atestado-model.types'
-import type { ICreateAtestadoInput } from '../types/atestado-input.types'
+import type { IAtestadoModel } from '@app/core'
+import type { ICreateAtestadoInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export interface AtestadoSectionProps {

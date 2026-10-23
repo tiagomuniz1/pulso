@@ -1,0 +1,33 @@
+appId: center.pulso.app
+---
+- launchApp:
+    clearState: true
+# O bundle vem do Metro neste binário: numa máquina fria a primeira tela
+# leva dezenas de segundos, e tocar antes dela existir falha dizendo que o
+# campo não existe.
+- extendedWaitUntil:
+    visible:
+      id: "login-slug"
+    timeout: 90000
+- tapOn:
+    id: "login-slug"
+- inputText: ${CLINIC}
+- tapOn:
+    id: "login-email"
+- inputText: ${EMAIL}
+- tapOn:
+    id: "login-password"
+- inputText: ${PASSWORD}
+# Sem isto o teclado cobre o botão e o toque cai nele — o `tapOn` reporta
+# sucesso, o login nunca acontece, e a falha aparece três passos depois.
+- hideKeyboard
+- tapOn:
+    id: "login-submit"
+# Espera estendida: o primeiro login faz a ida ao servidor, lê o Keystore e
+# ainda busca o tema da clínica antes de a agenda montar. Quarenta e cinco
+# segundos porque num emulador frio vinte não bastam — e o sintoma é o pior
+# possível: a tela ainda mostra o botão girando, e a falha parece do login.
+- extendedWaitUntil:
+    visible:
+      id: "agenda-screen"
+    timeout: 90000

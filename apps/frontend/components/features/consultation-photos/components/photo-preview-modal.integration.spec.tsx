@@ -1,11 +1,11 @@
-jest.mock('../use-cases/fetch-consultation-photo-blob.use-case')
+jest.mock('@app/core/src/features/consultation-photos/use-cases/fetch-consultation-photo-blob.use-case')
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { fetchConsultationPhotoBlobUseCase } from '../use-cases/fetch-consultation-photo-blob.use-case'
+import { fetchConsultationPhotoBlobUseCase } from '@app/core'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { PhotoPreviewModal } from './photo-preview-modal'
-import type { IConsultationPhotoGalleryItemModel, IConsultationPhotoModel } from '../types/consultation-photo-model.types'
+import type { IConsultationPhotoGalleryItemModel, IConsultationPhotoModel } from '@app/core'
 
 const mockFetchBlob = fetchConsultationPhotoBlobUseCase as jest.Mock
 

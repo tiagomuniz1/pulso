@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useBasePath } from '@/lib/slug-context'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Typography } from '@/components/ui/atoms/typography/typography'
-import type { IProfessionalModel } from '../types/professional-model.types'
+import type { IProfessionalModel } from '@app/core'
 
 interface ProfessionalDetailsProps {
   professional: IProfessionalModel

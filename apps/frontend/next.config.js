@@ -24,6 +24,7 @@ module.exports = {
   },
   webpack: (config) => {
     config.resolve.alias['@app/shared'] = path.resolve(__dirname, '../../packages/shared/src')
+    config.resolve.alias['@app/core'] = path.resolve(__dirname, '../../packages/core/src')
     return config
   },
 }

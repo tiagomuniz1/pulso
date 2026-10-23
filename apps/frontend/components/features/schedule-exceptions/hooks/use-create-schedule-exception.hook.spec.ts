@@ -1,13 +1,12 @@
-jest.mock('../use-cases/create-schedule-exception.use-case')
+jest.mock('@app/core/src/features/schedule-exceptions/use-cases/create-schedule-exception.use-case')
 
 import React from 'react'
+import { createScheduleExceptionUseCase } from '@app/core'
+import type { IScheduleExceptionModel } from '@app/core'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createQueryClient } from '@/lib/react-query.config'
-import { createScheduleExceptionUseCase } from '../use-cases/create-schedule-exception.use-case'
 import { useCreateScheduleException } from './use-create-schedule-exception.hook'
-import type { IScheduleExceptionModel } from '../types/schedule-exception-model.types'
-
 function wrapper({ children }: { children: React.ReactNode }) {
   return React.createElement(QueryClientProvider, { client: createQueryClient() }, children)
 }

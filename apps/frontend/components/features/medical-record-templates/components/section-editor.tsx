@@ -9,7 +9,7 @@ import { CanonicalFieldPicker } from './canonical-field-picker'
 import { SortableList, SortableItem } from '@/components/ui/molecules/sortable-list/sortable-list'
 import type { Control, UseFormRegister, FieldErrors, UseFormWatch } from 'react-hook-form'
 import type { ITemplateFormValues } from './template-form'
-import type { ICanonicalFieldModel } from '../types/canonical-field-model.types'
+import type { ICanonicalFieldModel } from '@app/core'
 import type { MoveToContainer } from './field-editor'
 
 interface SectionEditorProps {

@@ -1,9 +1,9 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { updateMedicationUseCase } from '../use-cases/update-medication.use-case'
-import type { IMedicationModel } from '../types/medication-model.types'
-import type { IUpdateMedicationInput } from '../types/medication-input.types'
+import { updateMedicationUseCase } from '@app/core'
+import type { IMedicationModel } from '@app/core'
+import type { IUpdateMedicationInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export function useUpdateMedication() {

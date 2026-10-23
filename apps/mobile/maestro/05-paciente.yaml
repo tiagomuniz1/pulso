@@ -1,0 +1,126 @@
+appId: center.pulso.app
+name: Cadastrar e abrir um paciente
+env:
+  # Entra como ADMIN: pacientes, usuários e rótulos não estão no menu de
+  # quem só atende, e o backend recusaria de todo jeito.
+  EMAIL: ${MAESTRO_ADMIN_EMAIL}
+  PASSWORD: ${MAESTRO_ADMIN_PASSWORD}
+  CLINIC: ${MAESTRO_CLINIC}
+  PATIENT_NAME: ${MAESTRO_PATIENT_NAME}
+  PATIENT_EMAIL: ${MAESTRO_PATIENT_EMAIL}
+  PATIENT_CPF: ${MAESTRO_PATIENT_CPF}
+---
+- runFlow: shared/login.yaml
+
+- tapOn:
+    id: "header-menu"
+- tapOn:
+    id: "drawer-item-patients"
+- extendedWaitUntil:
+    visible:
+      id: "patient-list-screen"
+    timeout: 15000
+
+- tapOn:
+    id: "patient-list-new"
+- assertVisible:
+    id: "patient-form"
+
+- tapOn:
+    id: "patient-form-fullname"
+- inputText: ${PATIENT_NAME}
+- tapOn:
+    id: "patient-form-email"
+- inputText: ${PATIENT_EMAIL}
+- tapOn:
+    id: "patient-form-phone"
+- inputText: "11999998888"
+- tapOn:
+    id: "patient-form-birthdate"
+- inputText: "15051990"
+# O formulário é longo: CPF e gênero ficam abaixo da dobra depois que o
+# teclado abre, e `tapOn` num elemento fora da tela não acha nada.
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "patient-form-document"
+    direction: DOWN
+- tapOn:
+    id: "patient-form-document"
+- inputText: ${PATIENT_CPF}
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "patient-form-gender-female"
+    direction: DOWN
+- tapOn:
+    id: "patient-form-gender-female"
+# O botão fica no fim de um formulário longo; sem rolar, o toque cai fora.
+- scrollUntilVisible:
+    element:
+      id: "patient-form-submit"
+    direction: DOWN
+- tapOn:
+    id: "patient-form-submit"
+
+# Voltar à listagem é o que prova que o `POST` passou. Enquanto o app
+# mandava o CPF mascarado, o servidor devolvia `400`, o formulário ficava
+# aberto sem dizer nada e a falha aparecia aqui — que é exatamente o lugar
+# certo para ela aparecer.
+- extendedWaitUntil:
+    visible:
+      id: "patient-list-screen"
+    timeout: 20000
+
+# A busca é do servidor: achar o que acabou de ser criado prova as duas
+# coisas de uma vez.
+- tapOn:
+    id: "patient-list-search"
+- inputText: ${PATIENT_NAME}
+- hideKeyboard
+- extendedWaitUntil:
+    visible: ${PATIENT_NAME}
+    timeout: 15000
+
+# Abre pelo "Ver detalhes" do cartão, e não tocando no nome: o nome
+# também está escrito **dentro do campo de busca**, e tocar ali apenas
+# devolve o foco ao campo e reabre o teclado — a ficha nunca abre, e a
+# falha aparece como "patient-details não existe".
+- tapOn:
+    id: "patient-card-open-.*"
+- extendedWaitUntil:
+    visible:
+      id: "patient-details"
+    timeout: 15000
+- assertVisible:
+    id: "patient-details-phone"
+- assertVisible:
+    id: "patient-details-document"
+# Prontuários, fotos e vacinas são dado clínico, e o ADMIN os vê.
+- assertVisible:
+    id: "patient-history-title"
+
+# A situação vacinal fica no fim da ficha: é preciso rolar até ela. O que
+# este fluxo prova e o teste de unidade não prova é que o cálculo do
+# calendário volta do servidor para um paciente de verdade.
+- scrollUntilVisible:
+    element:
+      id: "vaccine-status-panel"
+    direction: DOWN
+    timeout: 20000
+- assertVisible:
+    id: "vaccine-status-disclaimer"
+- scrollUntilVisible:
+    element:
+      id: "vaccination-history"
+    direction: DOWN
+    timeout: 20000
+
+- scrollUntilVisible:
+    element:
+      id: "patient-detail-back"
+    direction: UP
+- tapOn:
+    id: "patient-detail-back"
+- assertVisible:
+    id: "patient-list-screen"

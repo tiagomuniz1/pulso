@@ -1,11 +1,11 @@
-jest.mock('../use-cases/book-recurring-appointments.use-case')
+jest.mock('@app/core/src/features/appointments/use-cases/book-recurring-appointments.use-case')
 
 import React from 'react'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { RecurrenceInterval } from '@app/shared'
 import { createQueryClient } from '@/lib/react-query.config'
-import { bookRecurringAppointmentsUseCase } from '../use-cases/book-recurring-appointments.use-case'
+import { bookRecurringAppointmentsUseCase } from '@app/core'
 import { useBookRecurringAppointments } from './use-book-recurring-appointments.hook'
 
 function wrapper({ children }: { children: React.ReactNode }) {

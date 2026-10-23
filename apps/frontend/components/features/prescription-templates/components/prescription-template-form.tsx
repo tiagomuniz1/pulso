@@ -7,8 +7,8 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { useMedications } from '@/components/features/medications/hooks/use-medications.hook'
-import type { IPrescriptionTemplateModel } from '../types/prescription-template-model.types'
-import type { ICreatePrescriptionTemplateInput } from '../types/prescription-template-input.types'
+import type { IPrescriptionTemplateModel } from '@app/core'
+import type { ICreatePrescriptionTemplateInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 const itemSchema = z.object({

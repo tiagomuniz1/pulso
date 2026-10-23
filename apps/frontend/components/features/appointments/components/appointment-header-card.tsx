@@ -12,7 +12,7 @@ import { FirstVisitBadge } from './first-visit-badge'
 import {
   APPOINTMENT_STATUS_LABELS,
   type IAppointmentDetailModel,
-} from '../types/appointment-model.types'
+} from '@app/core'
 
 const genderLabel: Record<PatientGender, string> = {
   [PatientGender.MALE]: 'Masculino',

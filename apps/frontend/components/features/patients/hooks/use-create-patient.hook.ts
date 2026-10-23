@@ -1,11 +1,10 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { createPatientUseCase } from '@app/core'
+import type { ICreatePatientInput, IPatientModel } from '@app/core'
 import { useRouter } from 'next/navigation'
 import { useBasePath } from '@/lib/slug-context'
-import { createPatientUseCase } from '../use-cases/create-patient.use-case'
-import type { ICreatePatientInput } from '../types/patient-input.types'
-import type { IPatientModel } from '../types/patient-model.types'
 import type { IApiError } from '@/types/api.types'
 
 export function useCreatePatient() {

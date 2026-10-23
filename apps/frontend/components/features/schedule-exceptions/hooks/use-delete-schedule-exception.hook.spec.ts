@@ -1,10 +1,10 @@
-jest.mock('../use-cases/delete-schedule-exception.use-case')
+jest.mock('@app/core/src/features/schedule-exceptions/use-cases/delete-schedule-exception.use-case')
 
 import React from 'react'
+import { deleteScheduleExceptionUseCase } from '@app/core'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createQueryClient } from '@/lib/react-query.config'
-import { deleteScheduleExceptionUseCase } from '../use-cases/delete-schedule-exception.use-case'
 import { useDeleteScheduleException } from './use-delete-schedule-exception.hook'
 
 function wrapper({ children }: { children: React.ReactNode }) {

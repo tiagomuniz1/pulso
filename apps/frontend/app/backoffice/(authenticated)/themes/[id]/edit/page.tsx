@@ -10,7 +10,7 @@ import { ThemeForm } from '@/components/features/themes/components/theme-form'
 import { useTheme } from '@/components/features/themes/hooks/use-theme.hook'
 import { useUpdateTheme } from '@/components/features/themes/hooks/use-update-theme.hook'
 import { useBasePath } from '@/lib/slug-context'
-import type { IUpdateThemeInput } from '@/components/features/themes/types/theme-input.types'
+import type { IUpdateThemeInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export default function EditThemePage() {

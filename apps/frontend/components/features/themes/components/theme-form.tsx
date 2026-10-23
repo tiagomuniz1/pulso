@@ -8,8 +8,8 @@ import { ThemeBorderRadius } from '@app/shared'
 import { Input } from '@/components/ui/atoms/input/input'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Alert } from '@/components/ui/molecules/alert/alert'
-import type { ICreateThemeInput, IUpdateThemeInput } from '../types/theme-input.types'
-import type { IThemeModel } from '../types/theme-model.types'
+import type { ICreateThemeInput, IUpdateThemeInput } from '@app/core'
+import type { IThemeModel } from '@app/core'
 
 const HEX_REGEX = /^#[0-9A-Fa-f]{6}$/
 

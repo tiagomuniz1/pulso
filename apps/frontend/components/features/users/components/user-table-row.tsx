@@ -1,11 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { COUNCIL_TYPE_OCCUPATION_LABELS, UserRole } from '@app/shared'
+import { COUNCIL_TYPE_OCCUPATION_LABELS, USER_ROLE_SHORT_LABELS, UserRole } from '@app/shared'
 import { useBasePath } from '@/lib/slug-context'
 import { Button } from '@/components/ui/atoms/button/button'
 import { cn } from '@/lib/cn'
-import type { IUserModel } from '../types/user-model.types'
+import type { IUserModel } from '@app/core'
 
 function getInitials(fullName: string): string {
   const parts = fullName.trim().split(/\s+/)
@@ -13,28 +13,27 @@ function getInitials(fullName: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
-const roleBadge: Record<UserRole, { label: string; className: string }> = {
-  [UserRole.ADMIN]: {
-    label: 'Admin',
-    className: 'bg-accent-soft text-accent',
-  },
-  [UserRole.USER]: {
-    label: 'Usuário',
-    className: 'border border-line text-text-dim bg-transparent',
-  },
-  [UserRole.PROFESSIONAL]: {
-    label: 'Profissional',
-    className: 'border border-line text-text-dim bg-transparent',
-  },
-  [UserRole.PATIENT]: {
-    label: 'Paciente',
-    className: 'border border-line text-text-dim bg-transparent',
-  },
-  [UserRole.PLATFORM_ADMIN]: {
-    label: 'Platform Admin',
-    className: 'bg-accent-soft text-accent',
-  },
+/**
+ * O selo de cada perfil.
+ *
+ * O **nome** vem do `@app/shared`, porque o app escreve os mesmos; a
+ * **classe** fica aqui, porque é Tailwind e o app usa tokens do tema. Mesma
+ * divisão da paleta de rótulos de consulta.
+ */
+const ROLE_BADGE_CLASS: Record<UserRole, string> = {
+  [UserRole.ADMIN]: 'bg-accent-soft text-accent',
+  [UserRole.USER]: 'border border-line text-text-dim bg-transparent',
+  [UserRole.PROFESSIONAL]: 'border border-line text-text-dim bg-transparent',
+  [UserRole.PATIENT]: 'border border-line text-text-dim bg-transparent',
+  [UserRole.PLATFORM_ADMIN]: 'bg-accent-soft text-accent',
 }
+
+const roleBadge: Record<UserRole, { label: string; className: string }> = Object.fromEntries(
+  Object.values(UserRole).map((role) => [
+    role,
+    { label: USER_ROLE_SHORT_LABELS[role], className: ROLE_BADGE_CLASS[role] },
+  ]),
+) as Record<UserRole, { label: string; className: string }>
 
 function professionLabel(user: IUserModel): string {
   return user.councilType ? COUNCIL_TYPE_OCCUPATION_LABELS[user.councilType] : 'Profissional'

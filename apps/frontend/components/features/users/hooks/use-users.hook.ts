@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { listUsersUseCase } from '../use-cases/list-users.use-case'
-import type { IUserListParams } from '../types/user-input.types'
+import { listUsersUseCase } from '@app/core'
+import type { IUserListParams } from '@app/core'
 
 export function useUsers(params?: IUserListParams) {
   return useQuery({

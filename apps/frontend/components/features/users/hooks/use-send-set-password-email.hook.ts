@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation } from '@tanstack/react-query'
-import { sendSetPasswordEmailUseCase } from '../use-cases/send-set-password-email.use-case'
+import { sendSetPasswordEmailUseCase } from '@app/core'
 
 export function useSendSetPasswordEmail() {
   return useMutation({

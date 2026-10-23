@@ -1,7 +1,7 @@
 'use client'
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import type { IDashboardModel } from '../types/dashboard.types'
+import type { IDashboardModel } from '@app/core'
 
 export function formatAgeTooltip(value: any): [any, string] {
   return [value, 'pacientes']

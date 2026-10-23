@@ -15,7 +15,7 @@ import { MedicationListSkeleton } from './medication-list-skeleton'
 import { MedicationToggleDialog } from './medication-toggle-dialog'
 import { MedicationDeleteDialog } from './medication-delete-dialog'
 import type { IApiError } from '@/types/api.types'
-import type { IMedicationModel } from '../types/medication-model.types'
+import type { IMedicationModel } from '@app/core'
 
 const PAGE_SIZE = 20
 

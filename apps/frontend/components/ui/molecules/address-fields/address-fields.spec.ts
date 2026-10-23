@@ -1,12 +1,12 @@
 import { z } from 'zod'
-import {
-  EMPTY_ADDRESS,
-  addressSchema,
-  hasAnyAddressValue,
-  toAddressInput,
-  validateOptionalAddress,
-  zipCodeRegex,
-} from './address-fields'
+import { EMPTY_ADDRESS, addressSchema, validateOptionalAddress, zipCodeRegex } from './address-fields'
+
+/**
+ * `hasAnyAddressValue` e `toAddressInput` saíram daqui: a normalização passou
+ * para o `@app/shared` quando o app ganhou o mesmo formulário, e quem a
+ * cobre agora é `packages/shared/src/utils/address-form.util.spec.ts`. O que
+ * fica neste arquivo é a camada zod, que é da web.
+ */
 
 const filled = {
   street: 'Rua Pedro Melquiades de Medeiros',
@@ -48,21 +48,6 @@ describe('addressSchema', () => {
   })
 })
 
-describe('hasAnyAddressValue', () => {
-  it('is false for undefined and for the empty block', () => {
-    expect(hasAnyAddressValue(undefined)).toBe(false)
-    expect(hasAnyAddressValue({ ...EMPTY_ADDRESS })).toBe(false)
-  })
-
-  it('is false when every field is only whitespace', () => {
-    expect(hasAnyAddressValue({ ...EMPTY_ADDRESS, city: '   ' })).toBe(false)
-  })
-
-  it('is true as soon as one field has content', () => {
-    expect(hasAnyAddressValue({ ...EMPTY_ADDRESS, city: 'Patos' })).toBe(true)
-  })
-})
-
 describe('validateOptionalAddress', () => {
   it('reports nothing when the block was never touched', () => {
     expect(collectIssues(undefined)).toEqual([])
@@ -95,25 +80,3 @@ describe('validateOptionalAddress', () => {
   })
 })
 
-describe('toAddressInput', () => {
-  it('returns undefined when the block is empty', () => {
-    expect(toAddressInput(undefined)).toBeUndefined()
-    expect(toAddressInput({ ...EMPTY_ADDRESS })).toBeUndefined()
-  })
-
-  it('trims every field and uppercases the state', () => {
-    expect(toAddressInput({ ...filled, street: '  Rua São José  ', state: ' pb ' })).toEqual({
-      ...filled,
-      street: 'Rua São José',
-      state: 'PB',
-    })
-  })
-
-  it('turns a blank complement into null', () => {
-    expect(toAddressInput({ ...filled, complement: '   ' })!.complement).toBeNull()
-  })
-
-  it('defaults the country to BR', () => {
-    expect(toAddressInput({ ...filled, country: '' })!.country).toBe('BR')
-  })
-})

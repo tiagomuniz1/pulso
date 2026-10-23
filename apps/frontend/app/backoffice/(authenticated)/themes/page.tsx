@@ -8,7 +8,7 @@ import { Alert } from '@/components/ui/molecules/alert/alert'
 import { useThemes } from '@/components/features/themes/hooks/use-themes.hook'
 import { useDeleteTheme } from '@/components/features/themes/hooks/use-delete-theme.hook'
 import { useBasePath } from '@/lib/slug-context'
-import type { IThemeModel } from '@/components/features/themes/types/theme-model.types'
+import type { IThemeModel } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 function ThemeSwatch({ color, label }: { color: string; label: string }) {

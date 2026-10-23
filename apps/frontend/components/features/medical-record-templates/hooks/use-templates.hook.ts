@@ -1,8 +1,8 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { listTemplatesUseCase } from '../use-cases/list-templates.use-case'
-import type { ITemplateListParams } from '../services/medical-record-templates.service'
+import { listTemplatesUseCase } from '@app/core'
+import type { ITemplateListParams } from '@app/core'
 
 export function useTemplates(params?: ITemplateListParams | null) {
   return useQuery({

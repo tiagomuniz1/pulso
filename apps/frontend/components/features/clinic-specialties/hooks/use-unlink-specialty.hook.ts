@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { unlinkSpecialtyUseCase } from '../use-cases/unlink-specialty.use-case'
+import { unlinkSpecialtyUseCase } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export function useUnlinkSpecialty(clinicId: string) {

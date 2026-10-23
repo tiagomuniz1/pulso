@@ -9,7 +9,7 @@ import { usePatientMedicalHistory } from '../hooks/use-patient-medical-history.h
 import { useMedicalRecord } from '../hooks/use-medical-record.hook'
 import { useDownloadMedicalRecordPdf } from '../hooks/use-download-medical-record-pdf.hook'
 import { MedicalRecordView } from './medical-record-view'
-import type { IMedicalRecordModel } from '../types/medical-record-model.types'
+import type { IMedicalRecordModel } from '@app/core'
 
 interface PatientMedicalHistoryProps {
   patientId: string

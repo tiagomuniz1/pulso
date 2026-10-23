@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MedicalRecordFieldType } from '@app/shared'
-import type { ITemplateModel } from '@/components/features/medical-record-templates/types/template-model.types'
+import type { ITemplateModel } from '@app/core'
 import { MedicalRecordTemplatePicker } from './medical-record-template-picker'
 
 function makeTemplate(overrides: Partial<ITemplateModel> = {}): ITemplateModel {

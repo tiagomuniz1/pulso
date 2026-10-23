@@ -1,0 +1,73 @@
+appId: center.pulso.app
+name: Login e sessão
+env:
+  EMAIL: ${MAESTRO_EMAIL}
+  PASSWORD: ${MAESTRO_PASSWORD}
+  CLINIC: ${MAESTRO_CLINIC}
+---
+- launchApp:
+    clearState: true
+
+# Espera estendida já no primeiro passo: o Maestro roda contra o binário de
+# **desenvolvimento**, que baixa o bundle do Metro ao abrir. Numa máquina
+# fria isso leva dezenas de segundos, e um `assertVisible` seco falha com a
+# tela de login a caminho — a falha aparece como "login-slug não existe",
+# que é a mensagem errada para "o app ainda está carregando".
+- extendedWaitUntil:
+    visible:
+      id: "login-slug"
+    timeout: 90000
+
+- tapOn:
+    id: "login-slug"
+- inputText: ${CLINIC}
+
+- tapOn:
+    id: "login-email"
+- inputText: ${EMAIL}
+
+- tapOn:
+    id: "login-password"
+- inputText: ${PASSWORD}
+
+# Sem isto o teclado cobre o botão e o toque cai nele — o `tapOn` reporta
+# sucesso, o login nunca acontece, e a falha aparece no passo seguinte.
+- hideKeyboard
+- tapOn:
+    id: "login-submit"
+
+# A agenda é a tela inicial: é a pergunta que se faz ao desbloquear o celular.
+# Espera estendida porque o primeiro login vai ao servidor e ainda busca o
+# tema da clínica antes de a agenda montar.
+- extendedWaitUntil:
+    visible:
+      id: "agenda-screen"
+    timeout: 45000
+- assertVisible:
+    id: "toolbar-date-label"
+
+# A sessão sobrevive ao fechamento do app — está no Keychain, não em memória.
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      id: "agenda-screen"
+    timeout: 90000
+
+# O avatar abre o menu da conta, com "Meu perfil" e "Sair" — o mesmo da web.
+# Abria a sessão direto enquanto não havia tela de perfil.
+- tapOn:
+    id: "header-user"
+- assertVisible:
+    id: "header-user-menu"
+- assertVisible:
+    id: "header-profile"
+
+- tapOn:
+    id: "header-logout"
+# Sair revoga o refresh token no servidor antes de limpar a sessão local, e
+# só então a navegação reage.
+- extendedWaitUntil:
+    visible:
+      id: "login-submit"
+    timeout: 30000

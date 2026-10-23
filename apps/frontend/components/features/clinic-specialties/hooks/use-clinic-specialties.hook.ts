@@ -1,8 +1,8 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { listClinicSpecialtiesUseCase } from '../use-cases/list-clinic-specialties.use-case'
-import type { IClinicSpecialtyListParams } from '../types/clinic-specialty.types'
+import { listClinicSpecialtiesUseCase } from '@app/core'
+import type { IClinicSpecialtyListParams } from '@app/core'
 
 export function useClinicSpecialties(clinicId: string, params?: IClinicSpecialtyListParams) {
   return useQuery({

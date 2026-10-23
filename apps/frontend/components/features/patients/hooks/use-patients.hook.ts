@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { listPatientsUseCase } from '../use-cases/list-patients.use-case'
-import type { IPatientListParams } from '../types/patient-input.types'
-
+import { listPatientsUseCase } from '@app/core'
+import type { IPatientListParams } from '@app/core'
 export function usePatients(params?: IPatientListParams) {
   return useQuery({
     queryKey: ['patients', params],

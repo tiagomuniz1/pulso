@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { UserRole, DayOfWeek } from '@app/shared'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { ScheduleForm } from './schedule-form'
-import type { IScheduleModel } from '../types/schedule-model.types'
+import type { IScheduleModel } from '@app/core'
 
 beforeEach(() => {
   jest.clearAllMocks()

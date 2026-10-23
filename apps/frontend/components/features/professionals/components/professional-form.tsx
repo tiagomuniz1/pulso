@@ -11,10 +11,10 @@ import { Alert } from '@/components/ui/molecules/alert/alert'
 import { cn } from '@/lib/cn'
 import { CouncilType, COUNCIL_REGISTRATION_FORMATS, COUNCIL_TYPE_LABELS, UserRole } from '@app/shared'
 import { useAuthStore } from '@/stores/auth.store'
-import { userService } from '@/components/features/users/services/users.service'
-import { clinicSpecialtiesService } from '@/components/features/clinic-specialties/services/clinic-specialties.service'
-import type { ICreateProfessionalInput, IProfessionalRegistrationInput, IUpdateProfessionalInput } from '../types/professional-input.types'
-import type { IProfessionalModel } from '../types/professional-model.types'
+import { userService } from '@app/core'
+import { clinicSpecialtiesService } from '@app/core'
+import type { ICreateProfessionalInput, IProfessionalRegistrationInput, IUpdateProfessionalInput } from '@app/core'
+import type { IProfessionalModel } from '@app/core'
 
 const BRAZILIAN_STATES = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',

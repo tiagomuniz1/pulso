@@ -1,0 +1,109 @@
+appId: center.pulso.app
+name: Modelos de receita, do menu à receita da consulta
+env:
+  # Entra como o profissional que o `seed-fixture.sh` criou, e não como
+  # ADMIN: o fim do fluxo abre a consulta dele para emitir a partir do
+  # modelo, e a agenda de quem atende é a própria, sem seletor. Criar modelo
+  # depende da ficha, e ele tem uma.
+  EMAIL: ${MAESTRO_EMAIL}
+  PASSWORD: ${MAESTRO_PASSWORD}
+  CLINIC: ${MAESTRO_CLINIC}
+  RUN_ID: ${MAESTRO_RUN_ID}
+---
+- runFlow: shared/login.yaml
+
+# O catálogo do profissional: o receituário que ele repete no dia a dia.
+- tapOn:
+    id: "header-menu"
+- tapOn:
+    id: "drawer-item-prescription-templates"
+- extendedWaitUntil:
+    visible:
+      id: "prescription-template-list-screen"
+    timeout: 15000
+- assertVisible:
+    id: "prescription-template-list-header"
+
+# Criar um modelo com um princípio ativo digitado. O modo "Digitar" existe
+# porque a base da ANVISA não tem manipulado nem genérico sem marca.
+- tapOn:
+    id: "prescription-template-list-new"
+- extendedWaitUntil:
+    visible:
+      id: "prescription-template-sheet"
+    timeout: 10000
+- tapOn:
+    id: "prescription-template-name"
+- inputText: "Modelo do Maestro ${RUN_ID}"
+- hideKeyboard
+- tapOn:
+    id: "prescription-template-items-mode-digitar"
+- tapOn:
+    id: "prescription-template-items-typed"
+- inputText: "Dipirona sódica 500mg"
+- hideKeyboard
+- tapOn:
+    id: "prescription-template-items-add-typed"
+- assertVisible:
+    id: "prescription-template-items-item-0"
+- tapOn:
+    id: "prescription-template-items-instructions-0"
+- inputText: "1 comprimido de 8 em 8 horas"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "prescription-template-submit"
+    direction: DOWN
+- tapOn:
+    id: "prescription-template-submit"
+- extendedWaitUntil:
+    visible:
+      id: "prescription-template-list-success"
+    timeout: 15000
+
+# Reabrir pela edição prova que o que foi gravado volta preenchido — é o
+# caminho que mais quebra quando dosagem e quantidade chegam nulas.
+- tapOn:
+    id: "prescription-template-edit-.*"
+- extendedWaitUntil:
+    visible:
+      id: "prescription-template-items-item-0"
+    timeout: 10000
+- assertVisible:
+    id: "prescription-template-items-dosage-0"
+- tapOn:
+    id: "prescription-template-sheet-close"
+
+# E o motivo de o modelo existir: aparecer na receita da consulta.
+- tapOn:
+    id: "header-menu"
+- tapOn:
+    id: "drawer-item-appointments"
+- extendedWaitUntil:
+    visible:
+      id: "agenda-screen"
+    timeout: 15000
+# Amanhã: é onde o fixture pôs a consulta, porque o backend recusa agendar
+# no passado e o fluxo precisa valer a qualquer hora do dia.
+- tapOn:
+    id: "toolbar-next"
+- tapOn:
+    id: "agenda-slot-booked-.*"
+- extendedWaitUntil:
+    visible:
+      id: "appointment-detail-screen"
+    timeout: 15000
+- tapOn:
+    id: "appointment-tab-receitas"
+- tapOn:
+    id: "document-new-receita"
+- extendedWaitUntil:
+    visible:
+      id: "prescription-templates"
+    timeout: 10000
+- tapOn:
+    id: "prescription-template-.*"
+- assertVisible:
+    id: "prescription-items-item-0"
+- tapOn:
+    id: "prescription-form-close"

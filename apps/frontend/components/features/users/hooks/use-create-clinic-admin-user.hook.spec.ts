@@ -1,4 +1,4 @@
-jest.mock('../use-cases/create-user.use-case')
+jest.mock('@app/core/src/features/users/use-cases/create-user.use-case')
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
 jest.mock('@/lib/slug-context', () => ({ useBasePath: () => '/backoffice' }))
 
@@ -8,7 +8,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { UserRole } from '@app/shared'
 import { createQueryClient } from '@/lib/react-query.config'
-import { createUserUseCase } from '../use-cases/create-user.use-case'
+import { createUserUseCase } from '@app/core'
 import { useCreateClinicAdminUser } from './use-create-clinic-admin-user.hook'
 
 const mockPush = jest.fn()

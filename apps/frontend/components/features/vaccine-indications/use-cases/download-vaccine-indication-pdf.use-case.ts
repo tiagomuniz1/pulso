@@ -1,4 +1,4 @@
-import { vaccineIndicationsService } from '../services/vaccine-indications.service'
+import { vaccineIndicationsService } from '@app/core'
 import { downloadBlob } from '@/lib/download-blob'
 
 export async function downloadVaccineIndicationPdfUseCase(id: string, fileName?: string): Promise<void> {

@@ -1,13 +1,13 @@
 import { CouncilType } from '@app/shared'
 jest.mock('next/navigation', () => ({ useRouter: jest.fn() }))
-jest.mock('../services/professionals.service')
+jest.mock('@app/core/src/features/professionals/services/professionals.service')
 
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useRouter } from 'next/navigation'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { ProfessionalDetails } from './professional-details'
-import type { IProfessionalModel } from '../types/professional-model.types'
+import type { IProfessionalModel } from '@app/core'
 
 const mockPush = jest.fn()
 

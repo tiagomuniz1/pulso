@@ -1,11 +1,11 @@
-jest.mock('../use-cases/get-dashboard-stats.use-case')
+jest.mock('@app/core/src/features/dashboard/use-cases/get-dashboard-stats.use-case')
 
 import React from 'react'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { getDashboardStatsUseCase } from '../use-cases/get-dashboard-stats.use-case'
+import { getDashboardStatsUseCase } from '@app/core'
 import { useDashboardStats } from './use-dashboard-stats.hook'
-import type { IDashboardModel } from '../types/dashboard.types'
+import type { IDashboardModel } from '@app/core'
 
 const mockUseCase = getDashboardStatsUseCase as jest.MockedFunction<typeof getDashboardStatsUseCase>
 
@@ -13,9 +13,10 @@ const fakeModel = { kpi: { scheduled: 3 } } as unknown as IDashboardModel
 
 function createWrapper() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  )
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return <QueryClientProvider client={client}>{children}</QueryClientProvider>
+  }
+  return Wrapper
 }
 
 describe('useDashboardStats', () => {

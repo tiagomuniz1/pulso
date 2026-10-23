@@ -7,7 +7,7 @@ import { screen, waitFor, fireEvent } from '@testing-library/react'
 import { renderWithProviders } from '@/tests/utils/render-with-providers'
 import { useDashboardStats } from './hooks/use-dashboard-stats.hook'
 import { DashboardView } from './DashboardView'
-import type { IDashboardModel } from './types/dashboard.types'
+import type { IDashboardModel } from '@app/core'
 
 const mockUseDashboardStats = useDashboardStats as jest.MockedFunction<typeof useDashboardStats>
 

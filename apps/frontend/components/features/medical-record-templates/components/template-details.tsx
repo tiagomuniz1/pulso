@@ -1,31 +1,21 @@
 'use client'
 
 import { useState } from 'react'
+import { professionLabel, specialtyLabel } from '@app/core'
 import Link from 'next/link'
 import { useBasePath } from '@/lib/slug-context'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { useAuthStore } from '@/stores/auth.store'
-import { CouncilType, COUNCIL_TYPE_PROFESSION_LABELS, UserRole, getPrimaryCouncilType } from '@app/shared'
-import type { IProfessionalModel } from '@/components/features/professionals/types/professional-model.types'
+import { MEDICAL_RECORD_FIELD_TYPE_LABELS, UserRole } from '@app/shared'
+import type { IProfessionalModel } from '@app/core'
 import { useMyProfessional } from '@/components/features/professionals/hooks/use-my-professional.hook'
 import { useTemplate } from '../hooks/use-template.hook'
 import { useDeleteTemplate } from '../hooks/use-delete-template.hook'
 import { TemplateListSkeleton } from './template-list-skeleton'
 import { TemplateDeleteDialog } from './template-delete-dialog'
 import type { MedicalRecordFieldType } from '@app/shared'
-import type { ITemplateFieldModel, ITemplateModel, ITemplateSectionModel } from '../types/template-model.types'
-import { professionLabel, specialtyLabel } from '../utils/template-labels'
-
-const FIELD_TYPE_LABELS: Record<MedicalRecordFieldType, string> = {
-  text: 'Texto',
-  textarea: 'Texto longo',
-  number: 'Número',
-  boolean: 'Sim/Não',
-  date: 'Data',
-  select: 'Seleção única',
-  multiselect: 'Seleção múltipla',
-} as Record<MedicalRecordFieldType, string>
+import type { ITemplateFieldModel, ITemplateModel, ITemplateSectionModel } from '@app/core'
 
 // Ownership mirrors the backend's rule in AssertProfessionalOwnsTemplateScope: a specialty
 // template belongs to whoever has that specialty; a profession-wide (generalist) template
@@ -54,7 +44,7 @@ function FieldCard({ field, index }: { field: ITemplateFieldModel; index: number
       </div>
       <p className="text-xs text-text-mute">
         {/* c8 ignore next */
-        FIELD_TYPE_LABELS[field.type] ?? field.type}
+        MEDICAL_RECORD_FIELD_TYPE_LABELS[field.type] ?? field.type}
         {field.canonicalKey ? ` · ${field.canonicalKey}` : ''}
       </p>
       {field.options && field.options.length > 0 && (

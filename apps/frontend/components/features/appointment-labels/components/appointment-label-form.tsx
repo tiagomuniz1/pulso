@@ -9,7 +9,7 @@ import { Alert } from '@/components/ui/molecules/alert/alert'
 import { ModalFormActions } from '@/components/ui/molecules/modal-form-actions/modal-form-actions'
 import { LABEL_STRIP_CLASS } from '../constants/label-color-classes'
 import { AppointmentLabelColorPicker } from './appointment-label-color-picker'
-import type { IAppointmentLabelModel } from '../types/appointment-label-model.types'
+import type { IAppointmentLabelModel } from '@app/core'
 
 interface AppointmentLabelFormProps {
   label?: IAppointmentLabelModel

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { deleteUserUseCase } from '../use-cases/delete-user.use-case'
+import { deleteUserUseCase } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export function useDeleteUser() {

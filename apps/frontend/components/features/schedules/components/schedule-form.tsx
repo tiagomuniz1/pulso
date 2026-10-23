@@ -9,10 +9,10 @@ import { Input } from '@/components/ui/atoms/input/input'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Alert } from '@/components/ui/molecules/alert/alert'
 import { cn } from '@/lib/cn'
-import { DAY_OF_WEEK_LABELS } from '../types/schedule-model.types'
-import type { ICreateScheduleInput, IUpdateScheduleInput } from '../types/schedule-input.types'
-import type { IScheduleModel } from '../types/schedule-model.types'
-import { describeSlotMismatch, timeToMinutes } from '../utils/slot-fit.util'
+import { DAY_OF_WEEK_LABELS } from '@app/core'
+import type { ICreateScheduleInput, IUpdateScheduleInput } from '@app/core'
+import type { IScheduleModel } from '@app/core'
+import { describeSlotMismatch, timeToMinutes } from '@app/shared'
 
 function applyTimeMask(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 4)

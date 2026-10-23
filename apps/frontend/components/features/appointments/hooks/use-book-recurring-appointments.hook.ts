@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { bookRecurringAppointmentsUseCase } from '../use-cases/book-recurring-appointments.use-case'
-import type { IBookRecurringAppointmentsInput } from '../types/appointment-input.types'
-import type { IRecurringAppointmentsResultModel } from '../types/appointment-model.types'
+import { bookRecurringAppointmentsUseCase } from '@app/core'
+import type { IBookRecurringAppointmentsInput } from '@app/core'
+import type { IRecurringAppointmentsResultModel } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 export function useBookRecurringAppointments() {

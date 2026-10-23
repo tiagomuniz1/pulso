@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AppointmentLabelColor, AppointmentStatus } from '@app/shared'
 import { AppointmentSlotCell } from './appointment-slot-cell'
-import type { IAgendaSlot } from '../types/appointment-model.types'
+import type { IAgendaSlot } from '@app/core'
 
 const freeSlot: IAgendaSlot = {
   startTime: '09:00',

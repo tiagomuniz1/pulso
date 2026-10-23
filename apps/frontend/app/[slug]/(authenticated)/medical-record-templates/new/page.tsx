@@ -10,7 +10,7 @@ import { Alert } from '@/components/ui/molecules/alert/alert'
 import { TemplateForm } from '@/components/features/medical-record-templates/components/template-form'
 import { useCreateTemplate } from '@/components/features/medical-record-templates/hooks/use-create-template.hook'
 import { useAuthStore } from '@/stores/auth.store'
-import type { ICreateTemplateInput } from '@/components/features/medical-record-templates/types/template-input.types'
+import type { ICreateTemplateInput } from '@app/core'
 import type { IApiError } from '@/types/api.types'
 
 interface NewMedicalRecordTemplatePageProps {

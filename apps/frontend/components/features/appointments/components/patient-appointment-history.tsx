@@ -10,10 +10,10 @@ import { Skeleton } from '@/components/ui/atoms/skeleton/skeleton'
 import { MobileListCard } from '@/components/ui/molecules/mobile-list-card/mobile-list-card'
 import { useAuthStore } from '@/stores/auth.store'
 import { useProfessionals } from '@/components/features/professionals/hooks/use-professionals.hook'
-import type { IProfessionalModel } from '@/components/features/professionals/types/professional-model.types'
+import type { IProfessionalModel } from '@app/core'
 import { useAppointments } from '../hooks/use-appointments.hook'
-import { APPOINTMENT_STATUS_LABELS } from '../types/appointment-model.types'
-import type { IAppointmentModel } from '../types/appointment-model.types'
+import { APPOINTMENT_STATUS_LABELS } from '@app/core'
+import type { IAppointmentModel } from '@app/core'
 
 const PAGE_SIZE = 20
 

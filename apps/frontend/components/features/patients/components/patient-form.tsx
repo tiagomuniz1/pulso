@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import type { ICreatePatientInput, IPatientModel, IUpdatePatientInput } from '@app/core'
 import { useForm, Controller, useController, Control } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useQuery } from '@tanstack/react-query'
-import { KinshipType, KINSHIP_TYPE_LABELS, PatientGender } from '@app/shared'
+import { KINSHIP_TYPE_LABELS, KinshipType, PatientGender, applyCpfMask, applyPhoneMask, cpfDigits, formatCpf, formatPhone } from '@app/shared'
 import { Input } from '@/components/ui/atoms/input/input'
 import { Button } from '@/components/ui/atoms/button/button'
 import { Alert } from '@/components/ui/molecules/alert/alert'
@@ -17,13 +18,8 @@ import {
   validateOptionalAddress,
 } from '@/components/ui/molecules/address-fields/address-fields'
 import { cn } from '@/lib/cn'
-import { applyPhoneMask, formatPhone } from '@/lib/format-phone'
-import { applyCpfMask, formatCpf } from '@/lib/format-cpf'
-import { userService } from '@/components/features/users/services/users.service'
+import { userService } from '@app/core'
 import { TitularSearch } from './titular-search'
-import type { ICreatePatientInput, IUpdatePatientInput } from '../types/patient-input.types'
-import type { IPatientModel } from '../types/patient-model.types'
-
 const KINSHIP_TYPES = Object.values(KinshipType)
 
 const phoneRegex = /^\(\d{2}\) \d{4,5}-\d{4}$/
@@ -189,7 +185,7 @@ function PatientFormCreate({ isPending, globalError, onSubmit }: PatientFormCrea
 
   function handleFormSubmit(data: CreateFormValues) {
     const shared = {
-      documentNumber: data.isDependent ? undefined : data.documentNumber?.replace(/\D/g, ''),
+      documentNumber: data.isDependent ? undefined : data.documentNumber ? cpfDigits(data.documentNumber) : undefined,
       phoneNumber: data.phoneNumber,
       birthDate: data.birthDate,
       gender: data.gender as PatientGender,
@@ -483,7 +479,7 @@ function PatientFormEdit({ defaultValues, isPending, globalError, onSubmit }: Pa
       phoneNumber: data.phoneNumber || undefined,
       birthDate: data.birthDate || undefined,
       gender: data.gender,
-      documentNumber: data.documentNumber ? data.documentNumber.replace(/\D/g, '') : undefined,
+      documentNumber: data.documentNumber ? cpfDigits(data.documentNumber) : undefined,
       address: toAddressInput(data.address),
     }
 

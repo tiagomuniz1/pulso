@@ -33,8 +33,20 @@ jobs:
         run: corepack enable
       - name: Install dependencies
         run: yarn install --immutable
+      # `core` e `shared` entram porque o que é implantado depende deles: a
+      # regra de quais status de consulta aceitam concluir e cancelar mora no
+      # `shared` e é lida pelos use-cases do backend e pela web. Sem isto, uma
+      # quebra ali passa pelo portão de deploy sem ninguém rodar o teste que
+      # existe para pegá-la.
+      #
+      # O `mobile` fica de fora de propósito: não é implantado por este
+      # workflow, e reprovar o deploy da web por um teste de app seria acoplar
+      # duas entregas que não se afetam. Ele tem o próprio ciclo (EAS) e o
+      # próprio portão, em `mobile.yml`, que roda no PR.
       - name: Run unit tests
         run: |
+          yarn workspace @app/shared test
+          yarn workspace @app/core test
           yarn workspace @app/frontend test:unit
           yarn workspace @app/backend test:unit
           yarn workspace @app/website test:unit

@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { listCanonicalFieldsUseCase } from '../use-cases/list-canonical-fields.use-case'
+import { listCanonicalFieldsUseCase } from '@app/core'
 
 export function useCanonicalFields() {
   return useQuery({

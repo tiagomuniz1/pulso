@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getPatientVaccineStatusUseCase } from '../use-cases/get-patient-vaccine-status.use-case'
+import { getPatientVaccineStatusUseCase } from '@app/core'
 
 export function usePatientVaccineStatus(patientId: string) {
   return useQuery({

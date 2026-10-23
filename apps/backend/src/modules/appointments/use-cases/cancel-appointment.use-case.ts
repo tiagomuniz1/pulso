@@ -14,6 +14,8 @@ import {
   CancelAppointmentDto,
   CancelAppointmentResponseDto,
   UserRole,
+  isAppointmentOpen,
+  OPEN_APPOINTMENT_STATUSES,
 } from '@app/shared'
 import { BaseUseCase } from '../../../common/base.use-case'
 import { CacheService } from '../../../cache/cache.service'
@@ -53,10 +55,8 @@ export class CancelAppointmentUseCase extends BaseUseCase {
       }
     }
 
-    if (
-      appointment.status !== AppointmentStatus.SCHEDULED &&
-      appointment.status !== AppointmentStatus.CONFIRMED
-    ) {
+    // O mesmo conjunto que as telas usam para decidir se oferecem a ação.
+    if (!isAppointmentOpen(appointment.status)) {
       throw new UnprocessableEntityException('Only scheduled or confirmed appointments can be cancelled')
     }
 
@@ -132,7 +132,9 @@ export class CancelAppointmentUseCase extends BaseUseCase {
         appointment.seriesId!,
         clinicId,
         appointment.date,
-        [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED],
+        // Mesmo conjunto da checagem acima: o que vale para a ocorrência
+        // escolhida vale para as irmãs que vão junto.
+        [...OPEN_APPOINTMENT_STATUSES],
         queryRunner,
       )
 
