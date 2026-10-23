@@ -20,6 +20,22 @@ describe('scripts do package.json', () => {
     expect((packageJson.scripts as Record<string, string>)[name]).toBe(command)
   })
 
+  /**
+   * Os dois comandos do Maestro dizem a plataforma.
+   *
+   * Com o emulador Android e o simulador iOS no ar ao mesmo tempo — que é o
+   * caso assim que o iOS entra —, `maestro test` sem `--platform` escolhe um
+   * aparelho sozinho. A bateria passa, e ninguém sabe em qual dos dois.
+   */
+  it.each([
+    ['maestro:test', 'android'],
+    ['maestro:test:ios', 'ios'],
+  ])('`%s` fixa a plataforma', (name, platform) => {
+    expect((packageJson.scripts as Record<string, string>)[name]).toBe(
+      `maestro test --platform ${platform} maestro/`,
+    )
+  })
+
   // A versão aqui e a do `app.config.ts` são a mesma coisa dita duas vezes, e
   // a regra da casa é que elas não divirjam.
   it('a versão bate com a do app.config', () => {

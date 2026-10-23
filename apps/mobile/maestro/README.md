@@ -138,3 +138,51 @@ yarn workspace @app/mobile maestro:test
 A suíte de unidade e integração (`yarn workspace @app/mobile test`) cobre as
 mesmas telas com 100% de linha, ramo e função, e continua sendo a que prova o
 comportamento no detalhe.
+
+## iOS, no simulador
+
+**Até 22/10/2026 nenhum fluxo tinha rodado em iOS** — os oito foram
+exercitados só no emulador Android. Não é escolha: o Maestro não fala com
+aparelho físico em iOS, e esta máquina tem apenas as Command Line Tools, sem
+simulador nenhum.
+
+O que já está pronto para quando o Xcode entrar:
+
+- **O identificador é o mesmo nas duas plataformas** (`center.pulso.app` em
+  `bundleIdentifier` e em `package`), então o `appId` dos fluxos vale nos
+  dois sem alteração.
+- **A configuração gera limpa.** `npx expo prebuild --platform ios
+  --no-install` foi rodado e produziu `ios/` com o bundle correto — o que
+  faltava era o Xcode, não o nosso lado.
+- `ios/` e `android/` são **gerados, não versionados** (estão no
+  `.gitignore`): prebuild é parte do preparo da máquina, não do repositório.
+
+```bash
+# 1. Xcode completo (~10 GB) pela App Store, e depois:
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+sudo xcodebuild -license accept
+brew install cocoapods
+
+# 2. Gerar o projeto nativo e compilar para o simulador.
+cd apps/mobile
+npx expo prebuild --platform ios
+# `localhost`, e não `10.0.2.2`: o simulador divide a rede com o Mac,
+# ao contrário do emulador Android. A URL é embutida no app no build.
+EXPO_PUBLIC_API_URL=http://localhost:3011 npx expo run:ios
+
+# 3. Os mesmos oito fluxos, no simulador.
+eval "$(maestro/seed-fixture.sh)"
+yarn workspace @app/mobile maestro:test:ios
+```
+
+> **Confira o `git diff` do `package.json` depois do prebuild.** Ele
+> reescreve `android` e `ios` para `expo run:*` sem avisar — aconteceu de
+> novo em 22/10/2026, no prebuild de validação acima. `src/tests/package-scripts.spec.ts`
+> reprova quando isso passa despercebido.
+
+**O que mais provavelmente quebra primeiro em iOS**, já que o app tem um
+único ramo por plataforma (`Platform.select({ ios: 'padding' })` no
+`DocumentSheet`): o teclado sobre os formulários longos, a área segura do
+entalhe — no Android um defeito desses escondeu o botão de sair —, o
+teclado numérico sem tecla de retorno nos campos de CPF, telefone e data, e
+os gráficos SVG do dashboard, que nunca foram vistos lá.

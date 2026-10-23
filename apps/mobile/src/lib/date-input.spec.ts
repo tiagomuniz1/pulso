@@ -73,22 +73,34 @@ describe('fromIsoDate', () => {
   })
 })
 
+/**
+ * A data de hoje **no fuso local**, com o deslocamento pedido em dias.
+ *
+ * Nunca `toISOString()`: ele devolve a data em UTC, e `isFutureDate`
+ * compara com a de hoje no fuso da pessoa. Às 23h de Recife (UTC−3) o UTC
+ * já virou, e o teste "hoje não é futuro" passava a afirmar que amanhã não
+ * é futuro — quebrava toda noite entre 21h e meia-noite, e só então.
+ */
+function localDate(offsetInDays: number): string {
+  const date = new Date()
+  date.setDate(date.getDate() + offsetInDays)
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
+}
+
 describe('isFutureDate', () => {
   it('ontem não é futuro', () => {
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    expect(isFutureDate(yesterday.toISOString().slice(0, 10))).toBe(false)
+    expect(isFutureDate(localDate(-1))).toBe(false)
   })
 
   // Hoje não é futuro: quem nasceu hoje é recém-nascido, e o cadastro de
   // dependente sem CPF existe justamente para ele.
   it('hoje não é futuro', () => {
-    expect(isFutureDate(new Date().toISOString().slice(0, 10))).toBe(false)
+    expect(isFutureDate(localDate(0))).toBe(false)
   })
 
   it('amanhã é futuro', () => {
-    const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    expect(isFutureDate(tomorrow.toISOString().slice(0, 10))).toBe(true)
+    expect(isFutureDate(localDate(1))).toBe(true)
   })
 })

@@ -52,7 +52,8 @@
     "doctor": "npx expo-doctor",
     "test": "jest",
     "test:coverage": "jest --coverage",
-    "maestro:test": "maestro test maestro/"
+    "maestro:test": "maestro test --platform android maestro/",
+    "maestro:test:ios": "maestro test --platform ios maestro/"
   },
   "private": true
 }
